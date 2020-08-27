@@ -2,6 +2,8 @@ package server
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"errors"
 	"fmt"
 
@@ -13,14 +15,19 @@ import (
 	"github.com/krok-o/krok/pkg/krok"
 )
 
+const (
+	api = "/rest/api/1"
+)
+
 // Config is the configuration of the bot's main cycle.
 type Config struct {
-	Port          string
-	Hostname      string
-	ServerKeyPath string
-	ServerCrtPath string
-	AutoTLS       bool
-	CacheDir      string
+	Port           string
+	Hostname       string
+	ServerKeyPath  string
+	ServerCrtPath  string
+	AutoTLS        bool
+	CacheDir       string
+	GlobalTokenKey string
 }
 
 // KrokServer is a server.
@@ -35,19 +42,29 @@ type Dependencies struct {
 	Krok   krok.Krok
 }
 
-// Server defines a server which runs and accepts requests and monitors
-// Gaia PRs.
+// Server defines a server which runs and accepts requests.
 type Server interface {
 	Run(context.Context) error
 }
 
-// NewServer creates a new krok server.
-func NewServer(cfg Config, deps Dependencies) *KrokServer {
+// NewKrokServer creates a new krok server.
+func NewKrokServer(cfg Config, deps Dependencies) *KrokServer {
 	return &KrokServer{Config: cfg, Dependencies: deps}
 }
 
-// Run starts up the listening for PR actions.
+// Run starts up listening.
 func (s *KrokServer) Run(ctx context.Context) error {
+	// Setup Global Token Key
+	if s.Config.GlobalTokenKey == "" {
+		s.Logger.Info().Msg("Please set a global secret key... Randomly generating one for now...")
+		b := make([]byte, 32)
+		_, err := rand.Read(b)
+		if err != nil {
+			return err
+		}
+		state := base64.StdEncoding.EncodeToString(b)
+		s.Config.GlobalTokenKey = state
+	}
 	s.Dependencies.Logger.Info().Msg("Start listening...")
 	// Echo instance
 	e := echo.New()
@@ -59,6 +76,10 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// Routes
 	// The route will include a UUID with which we can identify this hook.
 	e.POST("/hook/:id", s.Dependencies.Krok.HandleHooks(ctx))
+
+	// Admin related actions
+	//auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
+	//auth.GET("/hooks")
 
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 

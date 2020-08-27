@@ -18,27 +18,27 @@ type Dependencies struct {
 	Logger zerolog.Logger
 }
 
-// KrokServer is the server's main handler.
-type KrokServer struct {
+// HookHandler is the server's main handler.
+type HookHandler struct {
 	Dependencies
 	Config
 }
 
-// Krok represents what the krok server is capable off.
-type Krok interface {
+// Handler represents what the krok server is capable off.
+type Handler interface {
 	HandleHooks(ctx context.Context) echo.HandlerFunc
 }
 
-// NewKrok creates a new krok server to listen for all hook related events.
-func NewKrok(cfg Config, deps Dependencies) *KrokServer {
-	return &KrokServer{
+// NewHookHandler creates a new krok server to listen for all hook related events.
+func NewHookHandler(cfg Config, deps Dependencies) *HookHandler {
+	return &HookHandler{
 		Config:       cfg,
 		Dependencies: deps,
 	}
 }
 
 // HandleHooks creates a hook handler.
-func (k *KrokServer) HandleHooks(ctx context.Context) echo.HandlerFunc {
+func (k *HookHandler) HandleHooks(ctx context.Context) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
