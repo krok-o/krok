@@ -42,7 +42,7 @@ func (k *HookHandler) HandleHooks(ctx context.Context) echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
-			return c.NoContent(http.StatusBadRequest)
+			return c.String(http.StatusBadRequest, "hook id missing")
 		}
 		// Get the right type based on the saved data.
 		// Fire off the handler for this event.
