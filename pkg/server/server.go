@@ -39,7 +39,7 @@ type KrokServer struct {
 // Dependencies defines needed dependencies for this bot.
 type Dependencies struct {
 	Logger zerolog.Logger
-	Krok   krok.Krok
+	Krok   krok.Handler
 }
 
 // Server defines a server which runs and accepts requests.

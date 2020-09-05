@@ -46,9 +46,9 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	defer tx.Rollback(ctx)
 
 	var (
-		name     string
-		id       string
-		schedule string
+		name      string
+		commandID string
+		schedule  string
 		// Relationship manager will get all the repositories which belong to this command.
 		repositories []models.Repository
 		filename     string
@@ -56,7 +56,7 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 		hash         string
 		enabled      bool
 	)
-	err = tx.QueryRow(ctx, "select handle, commands from users where id = $1", id).Scan(&storedHandle, &commands)
+	err = tx.QueryRow(ctx, "select name, id, schedule, filename, location, hash, enabled from commands where id = $1", id).Scan(&storedHandle, &commands)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
 			return nil, nil
@@ -67,14 +67,14 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 		return nil, err
 	}
 	return &models.Command{
-		Name:         "",
-		ID:           "",
-		Schedule:     "",
-		Repositories: nil,
-		Filename:     "",
-		Location:     "",
-		Hash:         "",
-		Enabled:      false,
+		Name:         name,
+		ID:           commandID,
+		Schedule:     schedule,
+		Repositories: repositories,
+		Filename:     filename,
+		Location:     location,
+		Hash:         hash,
+		Enabled:      enabled,
 	}, nil
 	return nil, nil
 }
