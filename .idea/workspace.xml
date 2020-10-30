@@ -20,19 +20,27 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5e4b3089-08ea-4c49-ba75-dd620dad2b8b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/.idea/krok.iml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmd/root.go" beforeDir="false" afterPath="$PROJECT_DIR$/cmd/root.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/krok.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/krok.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pkg/models/users.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/command_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/command_store.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/models/repository.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/models/repository.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/loader.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/loader.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/user_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/user_store.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/models/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/models/handlers.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
   </component>
   <component name="GOROOT" path="/usr/local/go" />
   <component name="Git.Settings">
@@ -52,13 +60,14 @@
   <component name="PropertiesComponent">
     <property name="ASKED_ADD_EXTERNAL_FILES" value="true" />
     <property name="ASKED_SHARE_PROJECT_CONFIGURATION_FILES" value="true" />
+    <property name="DefaultGoTemplateProperty" value="Go File" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="go.import.settings.migrated" value="true" />
     <property name="go.sdk.automatically.set" value="true" />
     <property name="go.tried.to.enable.integration.vgo.integrator" value="true" />
     <property name="last_opened_file_path" value="$USER_HOME$" />
-    <property name="settings.editor.selected.configurable" value="watcher.settings" />
+    <property name="settings.editor.selected.configurable" value="Errors" />
   </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
@@ -90,10 +99,10 @@
       <screen x="0" y="23" width="1440" height="877" />
     </state>
     <state x="370" y="246" key="EditFileWatcherDialog/0.23.1440.877@0.23.1440.877" timestamp="1604092882607" />
-    <state x="221" y="100" key="SettingsEditor" timestamp="1604092890488">
+    <state x="221" y="100" key="SettingsEditor" timestamp="1604094143306">
       <screen x="0" y="23" width="1440" height="877" />
     </state>
-    <state x="221" y="100" key="SettingsEditor/0.23.1440.877@0.23.1440.877" timestamp="1604092890488" />
+    <state x="221" y="100" key="SettingsEditor/0.23.1440.877@0.23.1440.877" timestamp="1604094143306" />
     <state x="383" y="211" width="672" height="678" key="search.everywhere.popup" timestamp="1604093616979">
       <screen x="0" y="23" width="1440" height="877" />
     </state>

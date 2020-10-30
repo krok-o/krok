@@ -21,7 +21,7 @@ func NewCommandStore(cfg Config, deps Dependencies) *CommandStore {
 }
 
 // Create creates a command record.
-func (s *CommandStore) Create(c *models.Command) error {
+func (s *CommandStore) Create(ctx context.Context, c *models.Command) error {
 	return nil
 }
 
@@ -36,7 +36,11 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	ctx, cancel := context.WithTimeout(ctx, timeoutForTransactions)
 	defer cancel()
 
-	defer conn.Close(ctx)
+	defer func() {
+		if err := conn.Close(ctx); err != nil {
+			log.Debug().Err(err).Msg("Failed to close connection.")
+		}
+	}()
 	var (
 		storedHandle string
 		commands     string
@@ -89,12 +93,17 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 }
 
 // Delete will remove a command.
-func (s *CommandStore) Delete(id string) error {
+func (s *CommandStore) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
 // Update modifies a command record.
-func (s *CommandStore) Update(c *models.Command) (*models.Command, error) {
+func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.Command, error) {
+	return nil, nil
+}
+
+// List gets all the command records.
+func (s *CommandStore) List(ctx context.Context) (*[]models.Command, error) {
 	return nil, nil
 }
 
@@ -104,9 +113,9 @@ type loader struct {
 	err error
 }
 
-// loadValues takes a value, tries to load its value from file and
+// loadValue takes a value, tries to load its value from file and
 // returns an error. If there was an error previously, this is a no-op.
-func (l *loader) loadValues(v string) string {
+func (l *loader) loadValue(v string) string {
 	if l.err != nil {
 		return ""
 	}
@@ -115,15 +124,17 @@ func (l *loader) loadValues(v string) string {
 	return value
 }
 
+// connect will load all necessary values from secret and try to connect
+// to a database.
 func (s *CommandStore) connect() (*pgx.Conn, error) {
 	l := &loader{
 		s:   s,
 		err: nil,
 	}
-	hostname := l.loadValues(s.Hostname)
-	database := l.loadValues(s.Database)
-	username := l.loadValues(s.Username)
-	password := l.loadValues(s.Password)
+	hostname := l.loadValue(s.Hostname)
+	database := l.loadValue(s.Database)
+	username := l.loadValue(s.Username)
+	password := l.loadValue(s.Password)
 	if l.err != nil {
 		s.Logger.Error().Err(l.err).Msg("Failed to load database credentials.")
 		return nil, l.err

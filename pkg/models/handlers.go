@@ -2,11 +2,13 @@ package models
 
 const (
 	// All the different types of hooks.
+
+	// GITHUB based hooks
 	GITHUB = iota
-	// GitLab based hooks
+	// GITLAB based hooks
 	GITLAB
-	// Gitea based hooks
+	// GITEA based hooks
 	GITEA
-	// BitBucket based hooks
+	// BITBUCKET based hooks
 	BITBUCKET
 )
