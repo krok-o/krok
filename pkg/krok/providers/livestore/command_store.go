@@ -20,12 +20,12 @@ func NewCommandStore(cfg Config, deps Dependencies) *CommandStore {
 	return &CommandStore{Config: cfg, Dependencies: deps}
 }
 
-// Create
+// Create creates a command record.
 func (s *CommandStore) Create(c *models.Command) error {
 	return nil
 }
 
-// Get
+// Get returns a command model.
 func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, error) {
 	conn, err := s.connect()
 	if err != nil {
@@ -79,12 +79,12 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	return nil, nil
 }
 
-// Delete
+// Delete will remove a command.
 func (s *CommandStore) Delete(id string) error {
 	return nil
 }
 
-// Update
+// Update modifies a command record.
 func (s *CommandStore) Update(c *models.Command) (*models.Command, error) {
 	return nil, nil
 }
