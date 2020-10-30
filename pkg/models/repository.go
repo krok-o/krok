@@ -1,6 +1,6 @@
 package models
 
-// Auth is authentication option for a repositroy.
+// Auth is authentication option for a repository.
 type Auth struct {
 	SSH      string `json:"ssh"`
 	Username string `json:"username"`

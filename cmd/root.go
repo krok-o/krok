@@ -2,15 +2,15 @@ package cmd
 
 import (
 	"flag"
+
 	"github.com/krok-o/krok/pkg/server"
 )
 
 var (
 	rootArgs struct {
-		devMode       bool
-		debug         bool
-		server        server.Config
-
+		devMode bool
+		debug   bool
+		server  server.Config
 	}
 )
 

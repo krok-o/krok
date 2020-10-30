@@ -24,12 +24,12 @@ type HookHandler struct {
 	Config
 }
 
-// Handler represents what the krok server is capable off.
+// Handler represents what the Krok server is capable off.
 type Handler interface {
 	HandleHooks(ctx context.Context) echo.HandlerFunc
 }
 
-// NewHookHandler creates a new krok server to listen for all hook related events.
+// NewHookHandler creates a new Krok server to listen for all hook related events.
 func NewHookHandler(cfg Config, deps Dependencies) *HookHandler {
 	return &HookHandler{
 		Config:       cfg,

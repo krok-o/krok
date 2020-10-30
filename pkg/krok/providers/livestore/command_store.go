@@ -4,9 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/krok-o/krok/pkg/models"
-
 	"github.com/jackc/pgx/v4"
+
+	"github.com/krok-o/krok/pkg/models"
 )
 
 // CommandStore is a postgres based store for commands.
@@ -27,8 +27,10 @@ func (s *CommandStore) Create(c *models.Command) error {
 
 // Get
 func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, error) {
+	log := s.Logger.With().Str("id", id).Logger()
 	conn, err := s.connect()
 	if err != nil {
+		log.Debug().Err(err).Msg("Failed to connect to database.")
 		return nil, err
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeoutForTransactions)
@@ -41,9 +43,14 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
+		log.Debug().Err(err).Msg("Failed to begin transaction.")
 		return nil, err
 	}
-	defer tx.Rollback(ctx)
+	defer func() {
+		if err := tx.Rollback(ctx); err != nil {
+			log.Debug().Err(err).Msg("Failed to rollback transaction.")
+		}
+	}()
 
 	var (
 		name      string
@@ -59,13 +66,16 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	err = tx.QueryRow(ctx, "select name, id, schedule, filename, location, hash, enabled from commands where id = $1", id).Scan(&storedHandle, &commands)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
+
 			return nil, nil
 		}
 		return nil, err
 	}
 	if err := tx.Commit(ctx); err != nil {
+		log.Debug().Err(err).Msg("Failed to commit transaction.")
 		return nil, err
 	}
+
 	return &models.Command{
 		Name:         name,
 		ID:           commandID,
@@ -76,7 +86,6 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 		Hash:         hash,
 		Enabled:      enabled,
 	}, nil
-	return nil, nil
 }
 
 // Delete
