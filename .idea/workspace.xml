@@ -20,15 +20,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5e4b3089-08ea-4c49-ba75-dd620dad2b8b" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/pkg/models/users.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/command_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/command_store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/loader.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/loader.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/user_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/user_store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/models/handlers.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/models/handlers.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/models/users.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/models/users.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -95,6 +88,10 @@
       <screen x="0" y="23" width="1440" height="877" />
     </state>
     <state x="520" y="302" key="#Go_Modules/0.23.1440.877@0.23.1440.877" timestamp="1604092827955" />
+    <state x="75" y="292" key="#SQL_Dialects" timestamp="1604095182090">
+      <screen x="0" y="23" width="1440" height="877" />
+    </state>
+    <state x="75" y="292" key="#SQL_Dialects/0.23.1440.877@0.23.1440.877" timestamp="1604095182090" />
     <state x="370" y="246" key="EditFileWatcherDialog" timestamp="1604092882607">
       <screen x="0" y="23" width="1440" height="877" />
     </state>
