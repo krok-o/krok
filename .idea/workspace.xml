@@ -20,9 +20,13 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="5e4b3089-08ea-4c49-ba75-dd620dad2b8b" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/pkg/krok/plugin.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pkg/krok/providers/plugins/plugins.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pkg/krok/uuid.go" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/loader.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/loader.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,6 +72,11 @@
     <property name="settings.editor.selected.configurable" value="Errors" />
     <property name="vue.rearranger.settings.migration" value="true" />
   </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/pkg/krok" />
+    </key>
+  </component>
   <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
@@ -107,6 +116,10 @@
       <screen x="0" y="23" width="1440" height="877" />
     </state>
     <state x="221" y="100" key="SettingsEditor/0.23.1440.877@0.23.1440.877" timestamp="1604094143306" />
+    <state x="608" y="173" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser" timestamp="1604260510819">
+      <screen x="0" y="23" width="1920" height="1057" />
+    </state>
+    <state x="608" y="173" key="com.intellij.openapi.editor.actions.MultiplePasteAction$ClipboardContentChooser/0.23.1920.1057@0.23.1920.1057" timestamp="1604260510819" />
     <state x="383" y="211" width="672" height="678" key="search.everywhere.popup" timestamp="1604093616979">
       <screen x="0" y="23" width="1440" height="877" />
     </state>
