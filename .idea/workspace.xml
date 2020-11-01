@@ -21,12 +21,8 @@
   <component name="ChangeListManager">
     <list default="true" id="5e4b3089-08ea-4c49-ba75-dd620dad2b8b" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/database.sql" beforeDir="false" afterPath="$PROJECT_DIR$/database.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.mod" beforeDir="false" afterPath="$PROJECT_DIR$/go.mod" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/go.sum" beforeDir="false" afterPath="$PROJECT_DIR$/go.sum" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ideas.md" beforeDir="false" afterPath="$PROJECT_DIR$/ideas.md" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/livestore/command_store.go" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pkg/models/commands.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/models/commands.go" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" beforeDir="false" afterPath="$PROJECT_DIR$/pkg/krok/providers/repository_store.go" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
