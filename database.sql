@@ -15,13 +15,13 @@ CREATE TABLE repositories (
     ssh TEXT NULL
 );
 
-create table rel_commands_repository (
+create table rel_command_repositories (
     id serial primary key,
     command_id int unique not null,
     repository_id int not null
 );
 
-create table rel_repository_commands (
+create table rel_repositories_command (
     id serial primary key,
     repository_id int unique not null,
     command_id int not null

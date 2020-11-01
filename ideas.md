@@ -16,6 +16,14 @@ Need the map to be on the server?
 *Update*: So as to not having to update a multitude of SDKs, for the time being it is
 decided to stick with Go plugins.
 
+```go
+type Plugin interface {
+    Execute(payload string) (output string, outcome bool, err error)
+}
+```
+
+This pretty much defines a plugin which can be executed.
+
 ## Events
 
 The hooks could follow an event system of some kind. I'm still debating on how to handle the
@@ -39,7 +47,10 @@ I guess that's fine, because it's a security feature. A command is immutable.
 
 ## Database
 
-rel_repository_command
-rel_command_repository
+rel_repositories_command
+rel_command_repositories
 
 When a repository is deleted, delete the relationship from both sides. Same for a hook.
+
+commands -> repositories
+repositories -> commands

@@ -6,18 +6,27 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
 
 // CommandStore is a postgres based store for commands.
 type CommandStore struct {
 	Config
+	CommandDependencies
+}
+
+// CommandDependencies command specific dependencies such as, the repository store.
+// In order to not repeat some SQL, the command store will require the repository
+// store and the repository store will require the command store.
+type CommandDependencies struct {
 	Dependencies
+	RepositoryStore providers.RepositoryStorer
 }
 
 // NewCommandStore creates a new CommandStore
-func NewCommandStore(cfg Config, deps Dependencies) *CommandStore {
-	return &CommandStore{Config: cfg, Dependencies: deps}
+func NewCommandStore(cfg Config, deps CommandDependencies) *CommandStore {
+	return &CommandStore{Config: cfg, CommandDependencies: deps}
 }
 
 // Create creates a command record.
@@ -41,10 +50,6 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 			log.Debug().Err(err).Msg("Failed to close connection.")
 		}
 	}()
-	var (
-		storedHandle string
-		commands     string
-	)
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to begin transaction.")
@@ -57,26 +62,53 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	}()
 
 	var (
-		name      string
-		commandID string
-		schedule  string
-		// Relationship manager will get all the repositories which belong to this command.
-		repositories []models.Repository
+		name         string
+		commandID    string
+		schedule     string
+		repositories []*models.Repository
 		filename     string
 		location     string
 		hash         string
 		enabled      bool
 	)
-	err = tx.QueryRow(ctx, "select name, id, schedule, filename, location, hash, enabled from commands where id = $1", id).Scan(&storedHandle, &commands)
+	err = tx.QueryRow(ctx, "select name, id, schedule, filename, location, hash, enabled from commands where id = $1", id).
+		Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
-
 			return nil, nil
 		}
+		log.Debug().Err(err).Msg("Failed to query row.")
 		return nil, err
 	}
+
+	// Select the related repositories.
+	rows, err := tx.Query(ctx, "select repository_id from rel_repositories_command where command_id = $1", id)
+	if err != nil {
+		if err.Error() == "no rows in result set" {
+			return nil, nil
+		}
+		log.Debug().Err(err).Msg("Failed to query rel_repositories_command.")
+		return nil, err
+	}
+	for rows.Next() {
+		var (
+			repoID string
+		)
+		if err := rows.Scan(&repoID); err != nil {
+			log.Debug().Err(err).Msg("Failed to scan repoID.")
+			return nil, err
+		}
+		// Fetch the repository details.
+		repo, err := s.RepositoryStore.Get(ctx, id)
+		if err != nil {
+			log.Debug().Err(err).Msg("Failed to get repository details.")
+			return nil, err
+		}
+		repositories = append(repositories, repo)
+	}
+
 	if err := tx.Commit(ctx); err != nil {
-		log.Debug().Err(err).Msg("Failed to commit transaction.")
+		log.Error().Err(err).Msg("Failed to commit transaction.")
 		return nil, err
 	}
 
