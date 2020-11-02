@@ -12,4 +12,5 @@ require (
 	github.com/rs/zerolog v1.20.0
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
+	golang.org/x/sync v0.0.0-20190423024810-112230192c58
 )

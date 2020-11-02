@@ -5,19 +5,19 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"errors"
-	"hash"
 	"io"
 	"os"
 	"path/filepath"
 	"plugin"
-
-	"github.com/krok-o/krok/pkg/models"
+	"time"
 
 	"github.com/fsnotify/fsnotify"
 	"github.com/rs/zerolog"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/models"
 )
 
 // Config has the configuration options for the plugins.
@@ -52,10 +52,26 @@ func NewGoPluginsProvider(ctx context.Context, cfg Config, deps Dependencies) (*
 
 // run start the watcher and run until context is done.
 func (p *GoPlugins) run(ctx context.Context) {
-	// start an error group waiter... if there was an error from the watcher, it was
-	// fatal and we should try again after a little while to start it.
-
-	<-ctx.Done()
+	failureTry := time.Second * 15
+	for {
+		g, ctx := errgroup.WithContext(ctx)
+		g.Go(func() error {
+			return p.Watch(ctx)
+		})
+		if err := g.Wait(); err != nil {
+			p.Logger.
+				Error().
+				Err(err).
+				Msgf("Failed to start the watcher or watcher encountered an error. Try again in %s.",
+					failureTry.String())
+		}
+		select {
+		case <-time.After(failureTry):
+			// try starting the watcher again
+		case <-ctx.Done():
+			return
+		}
+	}
 }
 
 // Watch a folder for new plugins/commands to load.
@@ -83,28 +99,8 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 				log.Debug().Err(err).Msg("Events channel closed.")
 				return errors.New("events channel closed")
 			}
-			if event.Op&fsnotify.Create != fsnotify.Create {
-				// We only care about the create action.
-				break
-			}
-			file := event.Name
-			log.Debug().Str("file", file).Msg("New file added.")
-			hasher, err := p.generateHash(file, log)
-			id, err := krok.GenerateUUID()
-			if err != nil {
-				log.Debug().Err(err).Str("file", file).Msg("Failed to generate new ID for resource.")
-				break
-			}
-			if _, err := p.Store.Create(ctx, &models.Command{
-				Name:     filepath.Base(file),
-				ID:       id,
-				Filename: file,
-				Location: p.Location,
-				Hash:     ,
-				Enabled:  true,
-			}); err != nil {
-				// Log the error but move on.
-				log.Error().Err(err).Msg("Failed to add new command.")
+			if err := p.handleCreateEvent(ctx, event, log); err != nil {
+				log.Error().Err(err).Msg("Failed to handle create event.")
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -115,6 +111,40 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 	}
 }
 
+// handleCreateEvent will handle a create event from the file system. Generally
+// these are non-blocking events and can be re-tried by doing the same steps again.
+func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
+	if event.Op&fsnotify.Create != fsnotify.Create {
+		// We only care about the create action.
+		return nil
+	}
+	file := event.Name
+	log = log.With().Str("file", file).Logger()
+
+	log.Debug().Msg("New file added.")
+	hash, err := p.generateHash(file)
+	if err != nil || hash == "" {
+		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
+		return err
+	}
+	id, err := krok.GenerateResourceID()
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to generate new ID for resource.")
+		return err
+	}
+	if _, err := p.Store.Create(ctx, &models.Command{
+		Name:     filepath.Base(file),
+		ID:       id,
+		Filename: file,
+		Location: p.Location,
+		Hash:     hash,
+		Enabled:  true,
+	}); err != nil {
+		log.Error().Err(err).Msg("Failed to add new command.")
+	}
+	return nil
+}
+
 // generateHash generates a hash for a file.
 func (p *GoPlugins) generateHash(file string) (string, error) {
 	log := p.Logger.With().Str("file", file).Logger()
@@ -122,12 +152,16 @@ func (p *GoPlugins) generateHash(file string) (string, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to open file.")
-		return nil, err
+		return "", err
 	}
-	defer f.Close()
+	defer func() {
+		if err := f.Close(); err != nil {
+			log.Debug().Err(err).Msg("Failed to close file descriptor.")
+		}
+	}()
 	if _, err := io.Copy(hasher, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to hash file.")
-		return nil, err
+		return "", err
 	}
 	return hex.EncodeToString(hasher.Sum(nil)), err
 }

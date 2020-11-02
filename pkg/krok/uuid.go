@@ -4,8 +4,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// GenerateUUID will generate a unique ID for a resource.
-func GenerateUUID() (string, error) {
+// GenerateResourceID will generate a unique ID for a resource.
+func GenerateResourceID() (string, error) {
 	id, err := uuid.NewRandom()
 	if err != nil {
 		return "", err
