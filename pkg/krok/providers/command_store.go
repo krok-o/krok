@@ -20,7 +20,7 @@ type CommandStorer interface {
 
 	// GetCommandsForRepository retrieves all commands using the relationship table entries for the given repository ID.
 	GetCommandsForRepository(ctx context.Context, repoID string) ([]*models.Command, error)
-	// AddCommandRelForRepository adds an entry for this repository id to the given commandID.
+	// AddCommandRelForRepository adds an entry for this command id to the given repositoryID.
 	AddCommandRelForRepository(ctx context.Context, commandID string, repositoryID string) error
 	// DeleteAllCommandRelForRepository deletes all relationship entries for this repository.
 	// I.e.: The repository was deleted and now the relationship is gone.
