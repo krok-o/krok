@@ -99,8 +99,15 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 				log.Debug().Err(err).Msg("Events channel closed.")
 				return errors.New("events channel closed")
 			}
-			if err := p.handleCreateEvent(ctx, event, log); err != nil {
-				log.Error().Err(err).Msg("Failed to handle create event.")
+			switch {
+			case event.Op&fsnotify.Create == fsnotify.Create:
+				if err := p.handleCreateEvent(ctx, event, log); err != nil {
+					log.Error().Err(err).Msg("Failed to handle create event.")
+				}
+			case event.Op&fsnotify.Remove == fsnotify.Remove:
+				if err := p.handleRemoveEvent(ctx, event, log); err != nil {
+					log.Error().Err(err).Msg("Failed to handle remove event.")
+				}
 			}
 		case err, ok := <-watcher.Errors:
 			if !ok {
@@ -114,10 +121,6 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 // handleCreateEvent will handle a create event from the file system. Generally
 // these are non-blocking events and can be re-tried by doing the same steps again.
 func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
-	if event.Op&fsnotify.Create != fsnotify.Create {
-		// We only care about the create action.
-		return nil
-	}
 	file := event.Name
 	log = log.With().Str("file", file).Logger()
 
@@ -132,6 +135,7 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		log.Debug().Err(err).Msg("Failed to generate new ID for resource.")
 		return err
 	}
+	// TODO: Check if exists and disabled. If hash==thisnewhash enable the plugin.
 	if _, err := p.Store.Create(ctx, &models.Command{
 		Name:     filepath.Base(file),
 		ID:       id,
@@ -142,6 +146,21 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 	}); err != nil {
 		log.Error().Err(err).Msg("Failed to add new command.")
 	}
+	return nil
+}
+
+// handleRemoveEvent will handle a remove event from the file system.
+func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
+	file := event.Name
+	log = log.With().Str("file", file).Logger()
+
+	log.Debug().Msg("File deleted. Disabling plugin.")
+	hash, err := p.generateHash(file)
+	if err != nil || hash == "" {
+		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
+		return err
+	}
+	// TODO: Find by name, disable if exists.
 	return nil
 }
 
