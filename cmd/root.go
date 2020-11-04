@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/krok-o/krok/pkg/krok"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -50,6 +51,7 @@ func init() {
 	flag.StringVar(&krokArgs.plugins.Location, "krok-plugin-location", "/tmp/krok/plugins", "--krok-plugin-location /tmp/krok/plugins")
 }
 
+// runKrokCmd builds up all the components and starts the krok server.
 func runKrokCmd(cmd *cobra.Command, args []string) {
 	ctx := context.Background()
 	out := zerolog.ConsoleWriter{
@@ -59,8 +61,15 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Timestamp().
 		Logger()
 
+	krokHandler := krok.NewHookHandler(krok.Config{}, krok.Dependencies{
+		Logger: log,
+	})
+
 	// Create server
-	server := server.NewKrokServer(krokArgs.server, server.Dependencies{})
+	server := server.NewKrokServer(krokArgs.server, server.Dependencies{
+		Logger: log,
+		Krok: krokHandler,
+	})
 
 	// Run service & server
 	g, ctx := errgroup.WithContext(context.Background())
