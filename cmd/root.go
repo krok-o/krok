@@ -2,8 +2,9 @@ package cmd
 
 import (
 	"context"
-	"github.com/krok-o/krok/pkg/krok"
 	"os"
+
+	"github.com/krok-o/krok/pkg/krok"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
+	"github.com/krok-o/krok/pkg/krok/providers/mailgun"
 	"github.com/krok-o/krok/pkg/krok/providers/plugins"
 	"github.com/krok-o/krok/pkg/server"
 )
@@ -28,6 +30,7 @@ var (
 		environment environment.Config
 		store       livestore.Config
 		plugins     plugins.Config
+		email       mailgun.Config
 	}
 )
 
@@ -46,6 +49,10 @@ func init() {
 	flag.StringVar(&krokArgs.store.Username, "krok-db-username", "krok", "--krok-db-username krok")
 	flag.StringVar(&krokArgs.store.Password, "krok-db-password", "krok", "--krok-db-password password123")
 	flag.StringVar(&krokArgs.store.Hostname, "krok-db-hostname", "", "--krok-db-hostname krok-db")
+
+	// Email
+	flag.StringVar(&krokArgs.email.Domain, "email-domain", "", "--email-domain krok.com")
+	flag.StringVar(&krokArgs.email.APIKey, "email-apikey", "", "--email-apikey ********")
 
 	// Plugins
 	flag.StringVar(&krokArgs.plugins.Location, "krok-plugin-location", "/tmp/krok/plugins", "--krok-plugin-location /tmp/krok/plugins")
@@ -68,7 +75,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// Create server
 	server := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger: log,
-		Krok: krokHandler,
+		Krok:   krokHandler,
 	})
 
 	// Run service & server
