@@ -74,7 +74,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	e.Use(middleware.Recover())
 
 	// Routes
-	// The route will include a UUID with which we can identify this hook.
+	// The route will include a UUID with which we can use to identify this hook.
 	e.POST("/hook/:id", s.Dependencies.Krok.HandleHooks(ctx))
 
 	// Admin related actions
