@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path"
 	"path/filepath"
 	"plugin"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
@@ -160,7 +162,21 @@ func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event,
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
 		return err
 	}
-	// TODO: Find by name, disable if exists.
+	name := path.Base(file)
+	command, err := p.Store.GetByName(ctx, name)
+	if errors.Is(err, kerr.NotFound) {
+		// no command with this name, nothing to do.
+		return nil
+	} else if err != nil {
+		log.Debug().Err(err).Msg("GetByName failed")
+		return err
+	}
+
+	command.Enabled = false
+	if _, err := p.Store.Update(ctx, command); err != nil {
+		log.Debug().Err(err).Msg("Update command failed")
+		return err
+	}
 	return nil
 }
 

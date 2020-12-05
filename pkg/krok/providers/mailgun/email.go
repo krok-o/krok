@@ -22,7 +22,7 @@ var (
 
 var (
 	welcomeTemplate = `Dear %s
-Thank you for signing up to Staple. Enjoy your queue based bookmarks!`
+Thank you for signing up!`
 	passwordResetTemplate = `Dear %s
 Your password has been successfully reset to: %s. Please change as soon as possible.`
 	confirmCodeTemplate = `Dear %s

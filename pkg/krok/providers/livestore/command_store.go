@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v4"
 
+	"github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
@@ -40,7 +41,7 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	conn, err := s.connect()
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to connect to database.")
-		return nil, err
+		return nil, fmt.Errorf("database connection error: %w", err)
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeoutForTransactions)
 	defer cancel()
@@ -53,7 +54,7 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	tx, err := conn.Begin(ctx)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to begin transaction.")
-		return nil, err
+		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
 	defer func() {
 		if err := tx.Rollback(ctx); err != nil {
@@ -74,16 +75,25 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 		Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled)
 	if err != nil {
 		if err.Error() == "no rows in result set" {
-			return nil, nil
+			return nil, &errors.QueryError{
+				Query: "select id: " + id,
+				Err:   errors.NotFound,
+			}
 		}
 		log.Debug().Err(err).Msg("Failed to query row.")
-		return nil, err
+		return nil, &errors.QueryError{
+			Query: "select id: " + id,
+			Err:   err,
+		}
 	}
 
 	repositories, err := s.RepositoryStore.GetRepositoriesForCommand(ctx, id)
 	if err != nil {
 		log.Debug().Err(err).Msg("GetRepositoriesForCommand failed")
-		return nil, err
+		return nil, &errors.QueryError{
+			Query: "select id: " + id,
+			Err:   err,
+		}
 	}
 	//// Select the related repositories.
 	//rows, err := tx.Query(ctx, "select repository_id from rel_repositories_command where command_id = $1", id)
@@ -113,7 +123,7 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 
 	if err := tx.Commit(ctx); err != nil {
 		log.Error().Err(err).Msg("Failed to commit transaction.")
-		return nil, err
+		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
 	return &models.Command{
@@ -173,13 +183,13 @@ func (s *CommandStore) connect() (*pgx.Conn, error) {
 	password := l.loadValue(s.Password)
 	if l.err != nil {
 		s.Logger.Error().Err(l.err).Msg("Failed to load database credentials.")
-		return nil, l.err
+		return nil, fmt.Errorf("failed to load database credentials: %w", l.err)
 	}
 	url := fmt.Sprintf("postgresql://%s/%s?user=%s&password=%s", hostname, database, username, password)
 	conn, err := pgx.Connect(context.Background(), url)
 	if err != nil {
 		s.Logger.Error().Err(err).Msg("Failed to connect to the database")
-		return nil, err
+		return nil, fmt.Errorf("failed to connect to database: %w", err)
 	}
 	return conn, nil
 }

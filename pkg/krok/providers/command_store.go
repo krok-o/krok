@@ -12,6 +12,7 @@ type CommandStorer interface {
 
 	Create(ctx context.Context, c *models.Command) (*models.Command, error)
 	Get(ctx context.Context, id string) (*models.Command, error)
+	GetByName(ctx context.Context, name string) (*models.Command, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, c *models.Command) (*models.Command, error)
 	List(ctx context.Context) ([]*models.Command, error)
