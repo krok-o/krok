@@ -62,3 +62,7 @@ When a repository is deleted, delete the relationship from both sides. Same for 
 
 commands -> repositories
 repositories -> commands
+
+Relationship cannot be directly updated. It will be updated when a command is created and
+assigned to a repository. It's not part of the command directly. It's stored separately.
+This means it needs its own provider which will manage the relationship.

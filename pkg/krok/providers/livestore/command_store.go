@@ -134,11 +134,20 @@ func (s *CommandStore) Delete(ctx context.Context, id string) error {
 			return fmt.Errorf("failed get command: %w", err)
 		}
 
-		if _, err := tx.Query(ctx, fmt.Sprintf("delete from %s where id = $1", commandsTable), id); err != nil {
+		if commandTags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", commandsTable), id); err != nil {
 			log.Debug().Err(err).Msg("Failed to delete command.")
 			return &kerr.QueryError{
 				Query: "delete id: " + id,
 				Err:   fmt.Errorf("failed get command: %w", err),
+			}
+		} else if commandTags.RowsAffected() > 0 {
+			// Make sure to only delete the relationship if the delete was successful.
+			if err := s.RepositoryStore.DeleteAllRepositoryRelForCommand(ctx, id); err != nil {
+				log.Debug().Err(err).Msg("Failed to delete repository relationship for command.")
+				return &kerr.QueryError{
+					Query: "delete id: " + id,
+					Err:   fmt.Errorf("failed to delete repository relationship for command: %w", err),
+				}
 			}
 		}
 		return nil
@@ -149,6 +158,32 @@ func (s *CommandStore) Delete(ctx context.Context, id string) error {
 
 // Update modifies a command record.
 func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.Command, error) {
+	var result *models.Command
+	f := func(tx pgx.Tx) error {
+		// Prevent updating the ID and the creation timestamp.
+		// construct update statement:
+		commandTags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1, enabled = $2, schedule = $3, filename = $4, location = $5, hash = $6", commandsTable),
+			c.Name, c.Enabled, c.Schedule, c.Filename, c.Location, c.Hash)
+		if err != nil {
+			return &kerr.QueryError{
+				Query: "update :" + c.Name,
+				Err:   fmt.Errorf("failed to update: %w", err),
+			}
+		}
+		if commandTags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Query: "update :" + c.Name,
+				Err:   errors.New("no rows were affected"),
+			}
+		}
+		result, err = s.Get(ctx, c.ID)
+		if err != nil {
+			return &kerr.QueryError{
+				Query: "update :" + c.Name,
+				Err:   errors.New("no rows were affected"),
+			}
+		return nil
+	}
 	return nil, nil
 }
 
