@@ -38,6 +38,8 @@ func (r *RepositoryStore) GetRepositoriesForCommand(ctx context.Context, id stri
 	result := make([]*models.Repository, 0)
 	log := r.Logger.With().Str("id", id).Logger()
 	f := func(tx pgx.Tx) error {
+		// TODO: Use inner join here on the rel table and then construct the repo object from the result
+		// and add it to the result list.
 		rows, err := tx.Query(ctx, fmt.Sprintf("select repository_id from %s where command_id = $1", repositoryRelTable), id)
 		if err != nil {
 			if err.Error() == "no rows in result set" {
