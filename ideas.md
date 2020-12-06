@@ -6,6 +6,14 @@ The hook url should be generated with an ID which will identify the hook itself.
 This should be a UUID... But this also means that I need to pay attention to brute force
 attacks. Something like, if there are enough misses, I ban the source IP for a while?
 
+### Generating the ID
+
+When a repository is added, a unique ID is generated for that repository. The hook
+will have that ID. When the repository is created, we also ask where it is located, and
+that will determine the Type of the hook. So when the hook is received through the `/hook/:id`
+URL and the `id` is checked, we check if a repository with that ID exists. If so,
+we get what the hook type is, and pass it to the appropriate provider.
+
 ## Plugins
 
 The loader will be the one which will watch for new files being dropped into the folder.
@@ -13,7 +21,7 @@ It will do that in a separate go routine and store all commands in a cache map.
 
 Need the map to be on the server?
 
-*Update*: So as to not having to update a multitude of SDKs, for the time being it is
+*Update*: As to not having to update a multitude of SDKs, for the time being it is
 decided to stick with Go plugins.
 
 ```go
