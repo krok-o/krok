@@ -2,14 +2,19 @@ package livestore
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"github.com/rs/zerolog"
 
 	"github.com/jackc/pgx/v4"
 
-	"github.com/krok-o/krok/errors"
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
+
+const commandsTable = "commands"
 
 // CommandStore is a postgres based store for commands.
 type CommandStore struct {
@@ -38,29 +43,6 @@ func (s *CommandStore) Create(ctx context.Context, c *models.Command) error {
 // Get returns a command model.
 func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, error) {
 	log := s.Logger.With().Str("id", id).Logger()
-	conn, err := s.connect()
-	if err != nil {
-		log.Debug().Err(err).Msg("Failed to connect to database.")
-		return nil, fmt.Errorf("database connection error: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(ctx, timeoutForTransactions)
-	defer cancel()
-
-	defer func() {
-		if err := conn.Close(ctx); err != nil {
-			log.Debug().Err(err).Msg("Failed to close connection.")
-		}
-	}()
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		log.Debug().Err(err).Msg("Failed to begin transaction.")
-		return nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() {
-		if err := tx.Rollback(ctx); err != nil {
-			log.Debug().Err(err).Msg("Failed to rollback transaction.")
-		}
-	}()
 
 	var (
 		name      string
@@ -71,26 +53,33 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 		hash      string
 		enabled   bool
 	)
-	err = tx.QueryRow(ctx, "select name, id, schedule, filename, location, hash, enabled from commands where id = $1", id).
-		Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled)
-	if err != nil {
-		if err.Error() == "no rows in result set" {
-			return nil, &errors.QueryError{
+	f := func(tx pgx.Tx) error {
+		if err := tx.QueryRow(ctx, fmt.Sprintf("select name, id, schedule, filename, location, hash, enabled from %s where id = $1", commandsTable), id).
+			Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled); err != nil {
+			if err.Error() == "no rows in result set" {
+				return &kerr.QueryError{
+					Query: "select id: " + id,
+					Err:   kerr.NotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query row.")
+			return &kerr.QueryError{
 				Query: "select id: " + id,
-				Err:   errors.NotFound,
+				Err:   err,
 			}
 		}
-		log.Debug().Err(err).Msg("Failed to query row.")
-		return nil, &errors.QueryError{
-			Query: "select id: " + id,
-			Err:   err,
-		}
+		return nil
+	}
+
+	if err := s.executeWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("failed to run in transactions")
+		return nil, err
 	}
 
 	repositories, err := s.RepositoryStore.GetRepositoriesForCommand(ctx, id)
 	if err != nil {
 		log.Debug().Err(err).Msg("GetRepositoriesForCommand failed")
-		return nil, &errors.QueryError{
+		return nil, &kerr.QueryError{
 			Query: "select id: " + id,
 			Err:   err,
 		}
@@ -121,11 +110,6 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 	//	repositories = append(repositories, repo)
 	//}
 
-	if err := tx.Commit(ctx); err != nil {
-		log.Error().Err(err).Msg("Failed to commit transaction.")
-		return nil, fmt.Errorf("failed to commit transaction: %w", err)
-	}
-
 	return &models.Command{
 		Name:         name,
 		ID:           commandID,
@@ -140,7 +124,27 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 
 // Delete will remove a command.
 func (s *CommandStore) Delete(ctx context.Context, id string) error {
-	return nil
+	log := s.Logger.With().Str("id", id).Logger()
+	f := func(tx pgx.Tx) error {
+		if _, err := s.Get(ctx, id); errors.Is(err, kerr.NotFound) {
+			log.Debug().Err(err).Msg("Command not found")
+			return fmt.Errorf("command to be deleted not found: %w", err)
+		} else if err != nil {
+			log.Debug().Err(err).Msg("Failed to get command.")
+			return fmt.Errorf("failed get command: %w", err)
+		}
+
+		if _, err := tx.Query(ctx, fmt.Sprintf("delete from %s where id = $1", commandsTable), id); err != nil {
+			log.Debug().Err(err).Msg("Failed to delete command.")
+			return &kerr.QueryError{
+				Query: "delete id: " + id,
+				Err:   fmt.Errorf("failed get command: %w", err),
+			}
+		}
+		return nil
+	}
+
+	return s.executeWithTransaction(ctx, log, f)
 }
 
 // Update modifies a command record.
@@ -151,6 +155,39 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 // List gets all the command records.
 func (s *CommandStore) List(ctx context.Context) (*[]models.Command, error) {
 	return nil, nil
+}
+
+// Takes a query and executes it inside a transaction.
+func (s *CommandStore) executeWithTransaction(ctx context.Context, log zerolog.Logger, f func(tx pgx.Tx) error) error {
+	conn, err := s.connect()
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to connect to database.")
+		return fmt.Errorf("database connection error: %w", err)
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeoutForTransactions)
+	defer cancel()
+
+	defer func() {
+		if err := conn.Close(ctx); err != nil {
+			log.Debug().Err(err).Msg("Failed to close connection.")
+		}
+	}()
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to begin transaction.")
+		return fmt.Errorf("failed to begin transaction: %w", err)
+	}
+
+	if err := f(tx); err != nil {
+		log.Debug().Err(err).Msg("Failed to call method for the transaction.")
+		return fmt.Errorf("failed to execute method: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		log.Error().Err(err).Msg("Failed to commit transaction.")
+		return fmt.Errorf("failed to commit transaction: %w", err)
+	}
+	return nil
 }
 
 // loader contains the error which will be shared by loadValue.
