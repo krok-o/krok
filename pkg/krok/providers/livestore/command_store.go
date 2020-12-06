@@ -5,8 +5,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/rs/zerolog"
-
 	"github.com/jackc/pgx/v4"
 
 	kerr "github.com/krok-o/krok/errors"
@@ -28,6 +26,7 @@ type CommandStore struct {
 type CommandDependencies struct {
 	Dependencies
 	RepositoryStore providers.RepositoryStorer
+	Connector       *Connector
 }
 
 // NewCommandStore creates a new CommandStore
@@ -71,7 +70,7 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 		return nil
 	}
 
-	if err := s.executeWithTransaction(ctx, log, f); err != nil {
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		log.Debug().Err(err).Msg("failed to run in transactions")
 		return nil, err
 	}
@@ -84,31 +83,6 @@ func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, err
 			Err:   err,
 		}
 	}
-	//// Select the related repositories.
-	//rows, err := tx.Query(ctx, "select repository_id from rel_repositories_command where command_id = $1", id)
-	//if err != nil {
-	//	if err.Error() == "no rows in result set" {
-	//		return nil, nil
-	//	}
-	//	log.Debug().Err(err).Msg("Failed to query rel_repositories_command.")
-	//	return nil, err
-	//}
-	//for rows.Next() {
-	//	var (
-	//		repoID string
-	//	)
-	//	if err := rows.Scan(&repoID); err != nil {
-	//		log.Debug().Err(err).Msg("Failed to scan repoID.")
-	//		return nil, err
-	//	}
-	//	// Fetch the repository details.
-	//	repo, err := s.RepositoryStore.Get(ctx, id)
-	//	if err != nil {
-	//		log.Debug().Err(err).Msg("Failed to get repository details.")
-	//		return nil, err
-	//	}
-	//	repositories = append(repositories, repo)
-	//}
 
 	return &models.Command{
 		Name:         name,
@@ -153,11 +127,12 @@ func (s *CommandStore) Delete(ctx context.Context, id string) error {
 		return nil
 	}
 
-	return s.executeWithTransaction(ctx, log, f)
+	return s.Connector.ExecuteWithTransaction(ctx, log, f)
 }
 
 // Update modifies a command record.
 func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.Command, error) {
+	log := s.Logger.With().Str("id", c.ID).Str("name", c.Name).Logger()
 	var result *models.Command
 	f := func(tx pgx.Tx) error {
 		// Prevent updating the ID and the creation timestamp.
@@ -182,86 +157,17 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 				Query: "update :" + c.Name,
 				Err:   errors.New("no rows were affected"),
 			}
+		}
 		return nil
 	}
-	return nil, nil
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to execute with transaction.")
+		return nil, fmt.Errorf("failed to execute update in transaction: %w", err)
+	}
+	return result, nil
 }
 
 // List gets all the command records.
 func (s *CommandStore) List(ctx context.Context) (*[]models.Command, error) {
 	return nil, nil
-}
-
-// Takes a query and executes it inside a transaction.
-func (s *CommandStore) executeWithTransaction(ctx context.Context, log zerolog.Logger, f func(tx pgx.Tx) error) error {
-	conn, err := s.connect()
-	if err != nil {
-		log.Debug().Err(err).Msg("Failed to connect to database.")
-		return fmt.Errorf("database connection error: %w", err)
-	}
-	ctx, cancel := context.WithTimeout(ctx, timeoutForTransactions)
-	defer cancel()
-
-	defer func() {
-		if err := conn.Close(ctx); err != nil {
-			log.Debug().Err(err).Msg("Failed to close connection.")
-		}
-	}()
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		log.Debug().Err(err).Msg("Failed to begin transaction.")
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-
-	if err := f(tx); err != nil {
-		log.Debug().Err(err).Msg("Failed to call method for the transaction.")
-		return fmt.Errorf("failed to execute method: %w", err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		log.Error().Err(err).Msg("Failed to commit transaction.")
-		return fmt.Errorf("failed to commit transaction: %w", err)
-	}
-	return nil
-}
-
-// loader contains the error which will be shared by loadValue.
-type loader struct {
-	s   *CommandStore
-	err error
-}
-
-// loadValue takes a value, tries to load its value from file and
-// returns an error. If there was an error previously, this is a no-op.
-func (l *loader) loadValue(v string) string {
-	if l.err != nil {
-		return ""
-	}
-	value, err := l.s.Converter.LoadValueFromFile(v)
-	l.err = err
-	return value
-}
-
-// connect will load all necessary values from secret and try to connect
-// to a database.
-func (s *CommandStore) connect() (*pgx.Conn, error) {
-	l := &loader{
-		s:   s,
-		err: nil,
-	}
-	hostname := l.loadValue(s.Hostname)
-	database := l.loadValue(s.Database)
-	username := l.loadValue(s.Username)
-	password := l.loadValue(s.Password)
-	if l.err != nil {
-		s.Logger.Error().Err(l.err).Msg("Failed to load database credentials.")
-		return nil, fmt.Errorf("failed to load database credentials: %w", l.err)
-	}
-	url := fmt.Sprintf("postgresql://%s/%s?user=%s&password=%s", hostname, database, username, password)
-	conn, err := pgx.Connect(context.Background(), url)
-	if err != nil {
-		s.Logger.Error().Err(err).Msg("Failed to connect to the database")
-		return nil, fmt.Errorf("failed to connect to database: %w", err)
-	}
-	return conn, nil
 }
