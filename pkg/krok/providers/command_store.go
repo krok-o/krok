@@ -29,4 +29,11 @@ type CommandStorer interface {
 	// DeleteCommandRelForRepository deletes a single entry for a command and a repository.
 	// I.e.: The command was deleted so remove its connection to a repository.
 	DeleteCommandRelForRepository(ctx context.Context, repositoryID string) error
+
+	// Lock file functionality to prevent processing multiple commands simultaneously.
+
+	// AcquireLock creates a lock entry for a name
+	AcquireLock(ctx context.Context, name string) error
+	// ReleaseLock deletes a lock entry for a name
+	ReleaseLock(ctx context.Context, name string) error
 }

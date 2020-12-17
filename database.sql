@@ -31,5 +31,7 @@ create table rel_repositories_command (
 
 create table users (
     id serial primary key,
-    username varchar(50) unique not null
+    username varchar(50) unique not null,
+    last_login date,
+    display_name varchar(50)
 );

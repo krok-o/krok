@@ -2,16 +2,16 @@ package models
 
 // Auth is authentication option for a repository.
 type Auth struct {
-	SSH      string `json:"ssh"`
-	Username string `json:"username"`
-	Password string `json:"password"`
+	SSH      string `json:"ssh,omitempty"`
+	Username string `json:"username,omitempty"`
+	Password string `json:"password,omitempty"`
 }
 
 // Repository is a repository which can be managed by Krok.
 type Repository struct {
-	Name     string    `json:"name"`
-	ID       string    `json:"id"`
-	URL      string    `json:"url"`
-	Auth     Auth      `json:"auth"`
-	Commands []Command `json:"commands"`
+	Name     string     `json:"name"`
+	ID       string     `json:"id"`
+	URL      string     `json:"url"`
+	Auth     *Auth      `json:"auth,omitempty"`
+	Commands []*Command `json:"commands,omitempty"`
 }

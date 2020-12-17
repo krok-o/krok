@@ -7,6 +7,7 @@ import (
 
 	"github.com/rs/zerolog"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 )
 
@@ -117,7 +118,7 @@ func (v *KrokVault) GetSecret(key string) ([]byte, error) {
 	defer v.RUnlock()
 	val, ok := v.data[key]
 	if !ok {
-		return []byte{}, fmt.Errorf("key '%s' not found in vault", key)
+		return nil, kerr.NotFound
 	}
 
 	return val, nil

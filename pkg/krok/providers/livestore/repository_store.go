@@ -2,11 +2,13 @@ package livestore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v4"
 
 	kerr "github.com/krok-o/krok/errors"
+	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -24,7 +26,10 @@ type RepositoryStore struct {
 // RepositoryDependencies repository specific dependencies such as, the command store.
 type RepositoryDependencies struct {
 	Dependencies
-	Connector *Connector
+	Connector    *Connector
+	CommandStore providers.CommandStorer
+	Vault        providers.Vault
+	Auth         providers.Auth
 }
 
 // NewRepositoryStore creates a new RepositoryStore
@@ -33,10 +38,15 @@ func NewRepositoryStore(cfg Config, deps RepositoryDependencies) *RepositoryStor
 }
 
 // GetRepositoriesForCommand returns a list of repositories for a command ID.
+// This, does not return Auth information.
 func (r *RepositoryStore) GetRepositoriesForCommand(ctx context.Context, id string) ([]*models.Repository, error) {
+	log := r.Logger.With().Str("id", id).Logger()
+	if id == "" {
+		return nil, fmt.Errorf("GetRepositoriesForCommand failed with %w", kerr.InvalidArgument)
+	}
+
 	// Select the related repositories.
 	result := make([]*models.Repository, 0)
-	log := r.Logger.With().Str("id", id).Logger()
 	f := func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, fmt.Sprintf("select id, name, url from %s as r inner join %s as rel"+
 			" on r.command_id = rel.command_id where r.command_id = $1", repositoriesTable, repositoryRelTable), id)
@@ -84,6 +94,48 @@ func (r *RepositoryStore) GetRepositoriesForCommand(ctx context.Context, id stri
 }
 
 // Get fetches a repository by ID.
-func (r *RepositoryStore) Get(ctx context.Context, id string) (*models.Repository, error) {
-	return nil, nil
+// Also returns Auth information for the repository.
+func (r *RepositoryStore) Get(ctx context.Context, rid string) (*models.Repository, error) {
+	log := r.Logger.With().Str("id", rid).Logger()
+	if rid == "" {
+		log.Warn().Msg("ID is empty.")
+		return nil, fmt.Errorf("Get failed with %w", kerr.InvalidArgument)
+	}
+	// Get all data from the repository table.
+	var result *models.Repository
+	f := func(tx pgx.Tx) error {
+		var (
+			id, name, url string
+		)
+		if err := tx.QueryRow(ctx, "select id, name, url from widgets where id=$1", rid).Scan(&id, &name, &url); err != nil {
+			return &kerr.QueryError{
+				Query: "select id: " + rid,
+				Err:   fmt.Errorf("failed to scan: %w", err),
+			}
+		}
+		result.ID = id
+		result.Name = name
+		result.URL = url
+		return nil
+	}
+	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		return nil, fmt.Errorf("failed to execute Get: %w", err)
+	}
+
+	// Get all commands from the rel table.
+	commands, err := r.CommandStore.GetCommandsForRepository(ctx, rid)
+	if !errors.Is(err, kerr.NotFound) {
+		log.Debug().Err(err).Msg("Get failed to get repository commands.")
+		return nil, err
+	}
+	result.Commands = commands
+
+	// Get auth info
+	auth, err := r.Auth.GetRepositoryAuth(ctx, rid)
+	if !errors.Is(err, kerr.NotFound) {
+		log.Debug().Err(err).Msg("GetRepositoryAuth failed.")
+		return nil, err
+	}
+	result.Auth = auth
+	return result, nil
 }

@@ -4,11 +4,12 @@ import (
 	"context"
 	"os"
 
-	"github.com/krok-o/krok/pkg/krok"
-
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/krok-o/krok/pkg/krok"
+	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
@@ -31,6 +32,7 @@ var (
 		store       livestore.Config
 		plugins     plugins.Config
 		email       mailgun.Config
+		fileVault   filevault.Config
 	}
 )
 
@@ -57,8 +59,8 @@ func init() {
 	// Plugins
 	flag.StringVar(&krokArgs.plugins.Location, "krok-plugin-location", "/tmp/krok/plugins", "--krok-plugin-location /tmp/krok/plugins")
 
-	// Vault config
-
+	// VaultStorer config
+	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.

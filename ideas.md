@@ -32,6 +32,9 @@ type Plugin interface {
 
 This pretty much defines a plugin which can be executed.
 
+*Update*: plugins will be uploaded as ZIP files to prevent filesystem dependency
+so Krok can be ephemeral.
+
 ## Events
 
 The hooks could follow an event system of some kind. I'm still debating on how to handle the

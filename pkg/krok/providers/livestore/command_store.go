@@ -31,11 +31,20 @@ type CommandDependencies struct {
 
 // NewCommandStore creates a new CommandStore
 func NewCommandStore(cfg Config, deps CommandDependencies) *CommandStore {
-	return &CommandStore{Config: cfg, CommandDependencies: deps}
+	cs := &CommandStore{Config: cfg, CommandDependencies: deps}
+	// launch the cleanup routine.
+	go cs.lockCleaner()
+	return cs
+}
+
+func (s *CommandStore) lockCleaner(ctx context.Context) {
+
 }
 
 // Create creates a command record.
 func (s *CommandStore) Create(ctx context.Context, c *models.Command) error {
+
+	// duplicate key value violates unique constraint
 	return nil
 }
 
