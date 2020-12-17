@@ -56,6 +56,9 @@ func init() {
 
 	// Plugins
 	flag.StringVar(&krokArgs.plugins.Location, "krok-plugin-location", "/tmp/krok/plugins", "--krok-plugin-location /tmp/krok/plugins")
+
+	// Vault config
+
 }
 
 // runKrokCmd builds up all the components and starts the krok server.

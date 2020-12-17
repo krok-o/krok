@@ -38,9 +38,8 @@ func (r *RepositoryStore) GetRepositoriesForCommand(ctx context.Context, id stri
 	result := make([]*models.Repository, 0)
 	log := r.Logger.With().Str("id", id).Logger()
 	f := func(tx pgx.Tx) error {
-		// TODO: Use inner join here on the rel table and then construct the repo object from the result
-		// and add it to the result list.
-		rows, err := tx.Query(ctx, fmt.Sprintf("select repository_id from %s where command_id = $1", repositoryRelTable), id)
+		rows, err := tx.Query(ctx, fmt.Sprintf("select id, name, url from %s as r inner join %s as rel"+
+			" on r.command_id = rel.command_id where r.command_id = $1", repositoriesTable, repositoryRelTable), id)
 		if err != nil {
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
@@ -54,23 +53,25 @@ func (r *RepositoryStore) GetRepositoriesForCommand(ctx context.Context, id stri
 				Err:   fmt.Errorf("failed to query rel table: %w", err),
 			}
 		}
+
+		// Repo data here construct, individual repos.
 		for rows.Next() {
 			var (
 				repoID string
+				name   string
+				url    string
 			)
-			if err := rows.Scan(&repoID); err != nil {
-				log.Debug().Err(err).Msg("Failed to scan repoID.")
+			if err := rows.Scan(&repoID, &name, &url); err != nil {
+				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select id: " + id,
-					Err:   fmt.Errorf("failed to scan repoID: %w", err),
+					Err:   fmt.Errorf("failed to scan: %w", err),
 				}
 			}
-			repo, err := r.Get(ctx, repoID)
-			if err != nil {
-				return &kerr.QueryError{
-					Query: "get id: " + repoID,
-					Err:   fmt.Errorf("failed to get repoID: %w", err),
-				}
+			repo := &models.Repository{
+				Name: name,
+				ID:   id,
+				URL:  url,
 			}
 			result = append(result, repo)
 		}

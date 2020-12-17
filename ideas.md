@@ -66,3 +66,14 @@ repositories -> commands
 Relationship cannot be directly updated. It will be updated when a command is created and
 assigned to a repository. It's not part of the command directly. It's stored separately.
 This means it needs its own provider which will manage the relationship.
+
+## Confidential data
+
+Things like username and password for a repository should not be stored in the DB. I created
+a Vault for that which will store confidential data for a repository with this format:
+REPOID_USERNAME
+REPOID_PASSWORD
+REPOID_SSH_KEY
+
+RepoID should be unique since it will be a uuid.
+This data should be loaded on the fly when needed, and not stored with the repository object in memory.

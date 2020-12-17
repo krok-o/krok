@@ -11,8 +11,10 @@ CREATE TABLE commands (
 CREATE TABLE repositories (
     id serial PRIMARY KEY,
     name VARCHAR ( 256 ) UNIQUE NOT NULL,
-    url VARCHAR ( 256 ),
-    ssh TEXT NULL
+    url VARCHAR ( 256 )
+--     ssh TEXT NULL,
+--     username TEXT NULL,
+--     password TEXT NULL
 );
 
 create table rel_command_repositories (
