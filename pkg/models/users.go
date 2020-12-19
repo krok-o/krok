@@ -10,4 +10,5 @@ type User struct {
 	Email       string    `json:"email"`
 	ID          string    `json:"id"`
 	LastLogin   time.Time `json:"last_login,omitempty"`
+	ApiKeys     []*ApiKey `json:"api_keys,omitempty"`
 }

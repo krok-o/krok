@@ -13,6 +13,7 @@ require (
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0 // indirect
 	github.com/mailgun/mailgun-go v2.0.0+incompatible
+	github.com/mitchellh/gox v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/gomega v1.10.3 // indirect
 	github.com/rs/zerolog v1.20.0
