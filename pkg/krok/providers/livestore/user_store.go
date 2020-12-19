@@ -104,6 +104,8 @@ func (s *UserStore) GetByEmail(ctx context.Context, email string) (*models.User,
 	return s.getByX(ctx, log, "email", email)
 }
 
+// getByX abstracts the ability to define concrete fields to retrieve users by.
+// i.e: email, id, lastLogin...
 func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string, value interface{}) (*models.User, error) {
 	log = log.With().Str("fields", field).Interface("value", value).Logger()
 	var (
@@ -148,14 +150,84 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 }
 
 // Update updates a user with a given email address.
-//func (s *UserStore) Update(ctx context.Context, email string, newUser models.User) error {
-//	if _, err = tx.Exec(ctx, "update users set email=$1, password=$2, confirm_code=$3, max_staples=$4 where email=$5",
-//		newUser.Email,
-//		newUser.Password,
-//		newUser.ConfirmCode,
-//		newUser.MaxStaples,
-//		email); err != nil {
-//		return err
-//	}
-//	return err
-//}
+func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User, error) {
+	log := s.Logger.With().Str("id", user.ID).Str("email", user.Email).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, "update users set display_name=$1 where id=$2",
+			user.DisplayName,
+			user.ID); err != nil {
+			log.Debug().Err(err).Msg("Failed to update user.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "update users",
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.NoRowsAffected,
+				Query: "update users",
+			}
+		}
+		return nil
+	}
+
+	// update, get, return
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		return nil, err
+	}
+	newUser, err := s.Get(ctx, user.ID)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to get updated user.")
+	}
+	return newUser, err
+}
+
+// List all users. This will not return api keys. For those we need an explicit get.
+func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
+	log := s.Logger.With().Str("func", "List").Logger()
+	// Select all users.
+	result := make([]*models.User, 0)
+	f := func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, "select id, email, display_name, last_login from users")
+		if err != nil {
+			if err.Error() == "no rows in result set" {
+				return &kerr.QueryError{
+					Query: "select all users",
+					Err:   kerr.NotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query users.")
+			return &kerr.QueryError{
+				Query: "select all users",
+				Err:   fmt.Errorf("failed to list all users: %w", err),
+			}
+		}
+
+		for rows.Next() {
+			var (
+				id          string
+				email       string
+				displayName string
+				lastLogin   time.Time
+			)
+			if err := rows.Scan(&id, &email, &displayName, &lastLogin); err != nil {
+				log.Debug().Err(err).Msg("Failed to scan.")
+				return &kerr.QueryError{
+					Query: "select all users",
+					Err:   fmt.Errorf("failed to scan: %w", err),
+				}
+			}
+			user := &models.User{
+				DisplayName: displayName,
+				ID:          id,
+				Email:       email,
+				LastLogin:   lastLogin,
+			}
+			result = append(result, user)
+		}
+		return nil
+	}
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		return nil, fmt.Errorf("failed to execute List all users: %w", err)
+	}
+	return result, nil
+}
