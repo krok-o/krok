@@ -124,23 +124,7 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 // these are non-blocking events and can be re-tried by doing the same steps again.
 func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
 	file := event.Name
-	lockFile := file + ".lock"
 	log = log.With().Str("file", file).Logger()
-	// Create a lock file to prevent other instances to work on the same file.
-	if _, err := os.Create(lockFile); os.IsExist(err) {
-		log.Debug().Str("lock_file", lockFile).Msg("Lock file exists for file. Not doing anything.")
-		return nil
-	} else if err != nil {
-		log.Debug().Err(err).Msg("Failed to create lock file for processing.")
-		return err
-	}
-
-	defer func(){
-		// remove the lock file in any instance
-		if _, err := os.Remove(lockFile); err 1= nil {
-
-		}
-	}()
 
 	log.Debug().Msg("New file added.")
 	hash, err := p.generateHash(file)
@@ -148,11 +132,6 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
 		return err
 	}
-	//id, err := krok.GenerateResourceID()
-	//if err != nil {
-	//	log.Debug().Err(err).Msg("Failed to generate new ID for resource.")
-	//	return err
-	//}
 	// TODO: Check if exists and disabled. If hash==thisnewhash enable the plugin.
 	if _, err := p.Store.Create(ctx, &models.Command{
 		Name:     filepath.Base(file),

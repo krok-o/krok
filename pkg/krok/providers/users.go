@@ -11,6 +11,5 @@ type UserStorer interface {
 	Create(ctx context.Context, c *models.User) (*models.User, error)
 	Get(ctx context.Context, id string) (*models.User, error)
 	Delete(ctx context.Context, id string) error
-	Update(ctx context.Context, c models.User) (*models.User, error)
 	List(ctx context.Context) ([]*models.User, error)
 }

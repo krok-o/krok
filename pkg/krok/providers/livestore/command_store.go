@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
@@ -33,12 +34,20 @@ type CommandDependencies struct {
 func NewCommandStore(cfg Config, deps CommandDependencies) *CommandStore {
 	cs := &CommandStore{Config: cfg, CommandDependencies: deps}
 	// launch the cleanup routine.
-	go cs.lockCleaner()
+	go cs.lockCleaner(context.TODO())
 	return cs
 }
 
 func (s *CommandStore) lockCleaner(ctx context.Context) {
-
+	interval := 1 * time.Minute
+	for {
+		// look for old entries.
+		select {
+		case <-time.After(interval):
+		case <-ctx.Done():
+			s.Logger.Debug().Msg("Lock Cleaner cancelled.")
+		}
+	}
 }
 
 // Create creates a command record.
