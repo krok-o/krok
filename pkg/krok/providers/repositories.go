@@ -12,9 +12,10 @@ type RepositoryStorer interface {
 
 	Create(ctx context.Context, c *models.Repository) (*models.Repository, error)
 	Get(ctx context.Context, id string) (*models.Repository, error)
+	GetByName(ctx context.Context, name string) (*models.Repository, error)
 	Delete(ctx context.Context, id string) error
 	Update(ctx context.Context, c models.Repository) (*models.Repository, error)
-	List(ctx context.Context) ([]*models.Repository, error)
+	List(ctx context.Context, opt *models.ListOptions) ([]*models.Repository, error)
 
 	// These functions handle operations on rel_repositories_command relationship table.
 

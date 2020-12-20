@@ -16,14 +16,14 @@ CREATE TABLE repositories (
 
 create table rel_command_repositories (
     id serial primary key,
-    command_id int unique not null,
-    repository_id int not null
+    repository_id int not null,
+    command_id int unique not null
 );
 
 create table rel_repositories_command (
     id serial primary key,
-    repository_id int unique not null,
-    command_id int not null
+    command_id int not null,
+    repository_id int unique not null
 );
 
 create table users (

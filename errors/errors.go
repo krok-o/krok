@@ -12,6 +12,9 @@ var InvalidArgument = errors.New("invalid argument")
 // rows were affected with the query.
 var NoRowsAffected = errors.New("no rows affected")
 
+// AcquireLockFailed signals that the lock for a file name is already taken.
+var AcquireLockFailed = errors.New("failed to acquire lock")
+
 // QueryError defines an error which occurs when doing database operations.
 type QueryError struct {
 	Query string
