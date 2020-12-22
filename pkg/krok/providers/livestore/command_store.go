@@ -56,7 +56,7 @@ func (s *CommandStore) lockCleaner(ctx context.Context) {
 			t := time.Now().Add(-10 * time.Minute)
 			if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where lock_start < %s", fileLockTable, t)); err != nil {
 				log.Debug().Err(err).Msg("Failed to run cleanup")
-				// just log the error, don't stop the cleaner.
+				return err
 			} else {
 				log.Debug().Int64("rows", tags.RowsAffected()).Msg("Cleaner run successfully affecting rows...")
 			}
@@ -64,6 +64,7 @@ func (s *CommandStore) lockCleaner(ctx context.Context) {
 		}
 
 		if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+			// just log the error, don't stop the cleaner.
 			log.Debug().Err(err).Msg("Failed to run cleanup with transaction.")
 		}
 		// look for old entries.
