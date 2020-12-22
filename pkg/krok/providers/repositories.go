@@ -27,8 +27,8 @@ type RepositoryStorer interface {
 	// I.e.: The command was deleted and now the relationships to all repositories this command
 	// was assigned to, must also be removed.
 	DeleteAllRepositoryRelForCommand(ctx context.Context, commandID string) error
-	// DeleteRepositoryRelForCommand deletes a single entry for a repository and a command.
-	// I.e.: The repository was deleted so remove its connection to a command.
-	// When viewing the command, that repository must not show up any longer.
-	DeleteRepositoryRelForCommand(ctx context.Context, commandID string) error
+	// DeleteRepositoryRelForCommand deletes a entries for a repository and its commands.
+	// I.e.: The repository was deleted so remove its connection to all commands.
+	// When viewing the commands, that repository must not show up any longer.
+	DeleteRepositoryRelForCommand(ctx context.Context, repositoryID string) error
 }

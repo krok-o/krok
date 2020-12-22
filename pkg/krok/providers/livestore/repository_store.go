@@ -205,15 +205,81 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 }
 
 func (r *RepositoryStore) AddRepositoryRelForCommand(ctx context.Context, commandID string, repositoryID string) error {
-	panic("implement me")
+	log := r.Logger.With().Str("func", "AddRepositoryRelForCommand").Str("command_id", commandID).Str("repository_id", repositoryID).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(command_id, repository_id) values($1, $2)", repositoryRelTable),
+			commandID, repositoryID); err != nil {
+			log.Debug().Err(err).Msg("Failed to create relationship between repository and command.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "insert into " + repositoryRelTable,
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.NoRowsAffected,
+				Query: "insert into " + repositoryRelTable,
+			}
+		}
+		return nil
+	}
+
+	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to insert into " + repositoryRelTable)
+		return err
+	}
+	return nil
 }
 
 func (r *RepositoryStore) DeleteAllRepositoryRelForCommand(ctx context.Context, commandID string) error {
-	panic("implement me")
+	log := r.Logger.With().Str("func", "DeleteAllRepositoryRelForCommand").Str("command_id", commandID).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where command_id = $1", repositoryRelTable),
+			commandID); err != nil {
+			log.Debug().Err(err).Msg("Failed to delete relationship between command and repository.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "delete from " + repositoryRelTable,
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.NoRowsAffected,
+				Query: "delete from " + repositoryRelTable,
+			}
+		}
+		return nil
+	}
+
+	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to delete from " + repositoryRelTable)
+		return err
+	}
+	return nil
 }
 
-func (r *RepositoryStore) DeleteRepositoryRelForCommand(ctx context.Context, commandID string) error {
-	panic("implement me")
+func (r *RepositoryStore) DeleteRepositoryRelForCommand(ctx context.Context, repositoryID string) error {
+	log := r.Logger.With().Str("func", "DeleteRepositoryRelForCommand").Str("repository_id", repositoryID).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where repository_id = $1", repositoryRelTable),
+			repositoryID); err != nil {
+			log.Debug().Err(err).Msg("Failed to delete relationship between command and repository.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "delete from " + repositoryRelTable,
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.NoRowsAffected,
+				Query: "delete from " + repositoryRelTable,
+			}
+		}
+		return nil
+	}
+
+	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to delete from " + repositoryRelTable)
+		return err
+	}
+	return nil
 }
 
 // GetRepositoriesForCommand returns a list of repositories for a command ID.
