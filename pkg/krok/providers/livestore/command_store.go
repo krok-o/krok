@@ -195,7 +195,7 @@ func (s *CommandStore) Delete(ctx context.Context, id string) error {
 			log.Debug().Err(err).Msg("Failed to delete command.")
 			return &kerr.QueryError{
 				Query: "delete id: " + id,
-				Err:   fmt.Errorf("failed get command: %w", err),
+				Err:   fmt.Errorf("failed delete command: %w", err),
 			}
 		} else if commandTags.RowsAffected() > 0 {
 			// Make sure to only delete the relationship if the delete was successful.
@@ -253,7 +253,7 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 // List gets all the command records.
 func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*models.Command, error) {
 	log := s.Logger.With().Str("func", "List").Logger()
-	// Select all users.
+	// Select all commands.
 	result := make([]*models.Command, 0)
 	f := func(tx pgx.Tx) error {
 		sql := fmt.Sprintf("select id, name, schedule, filename, hash, location, enabled from %s", commandsTable)

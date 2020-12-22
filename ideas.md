@@ -39,7 +39,7 @@ so Krok can be ephemeral.
 
 The hooks could follow an event system of some kind. I'm still debating on how to handle the
 cron jobs. Run some kind of reconciliation loop? Some kind of timing? The crons could be
-launched via the corn plugin. But we should be able to stop and start them?
+launched via the corn plugin. We should be able to stop and start them?
 
 This means that on each tick it needs to check the settings.
 
@@ -80,3 +80,7 @@ REPOID_SSH_KEY
 
 RepoID should be unique since it will be a uuid.
 This data should be loaded on the fly when needed, and not stored with the repository object in memory.
+
+## Commands
+
+Don't forget to stream back the command's output.
