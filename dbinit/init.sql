@@ -1,17 +1,17 @@
-CREATE TABLE commands (
-    id serial PRIMARY KEY,
-    name VARCHAR ( 50 ) UNIQUE NOT NULL,
-    schedule VARCHAR ( 50 ),
-    filename VARCHAR ( 50 ) UNIQUE NOT NULL,
-    hash VARCHAR ( 50 ) UNIQUE NOT NULL,
-    location VARCHAR ( 50 ) UNIQUE NOT NULL,
-    enabled BOOLEAN NOT NULL
+create table commands (
+    id serial primary key ,
+    name varchar ( 50 ) unique not null,
+    schedule varchar ( 50 ),
+    filename varchar ( 50 ) unique not null,
+    hash varchar ( 50 ) unique not null,
+    location varchar ( 50 ) unique not null,
+    enabled boolean not null
 );
 
-CREATE TABLE repositories (
-    id serial PRIMARY KEY,
-    name VARCHAR ( 256 ) UNIQUE NOT NULL,
-    url VARCHAR ( 256 )
+create table repositories (
+    id serial primary key,
+    name varchar ( 256 ) unique not null,
+    url varchar ( 256 )
 );
 
 create table rel_command_repositories (

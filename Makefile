@@ -21,6 +21,16 @@ binaries:
 bootstrap:
 	go get github.com/mitchellh/gox
 
+.PHONY: test-db
+test-db:
+	docker run -d \
+		--rm \
+		-e POSTGRES_USER=postgres \
+		-e POSTGRES_PASSWORD=password123 \
+		-v dbinit:/docker-entrypoint-initdb.d/ \
+		postgres:13.1-alpine
+
+# Check if we are in circleci. If yes, start a postgres docker instance.
 .PHONY: test
 test:
 	go test ./...
