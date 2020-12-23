@@ -2,18 +2,15 @@ package errors
 
 import "errors"
 
-// NotFound is returned is a resource cannot be found.
-var NotFound = errors.New("not found")
+// ErrNotFound is returned is a resource cannot be found.
+var ErrNotFound = errors.New("not found")
 
-// InvalidArgument is sent whenever we encounter an invalid argument.
-var InvalidArgument = errors.New("invalid argument")
-
-// NoRowsAffected is sent whenever there is a successful query, but no
+// ErrNoRowsAffected is sent whenever there is a successful query, but no
 // rows were affected with the query.
-var NoRowsAffected = errors.New("no rows affected")
+var ErrNoRowsAffected = errors.New("no rows affected")
 
-// AcquireLockFailed signals that the lock for a file name is already taken.
-var AcquireLockFailed = errors.New("failed to acquire lock")
+// ErrAcquireLockFailed signals that the lock for a file name is already taken.
+var ErrAcquireLockFailed = errors.New("failed to acquire lock")
 
 // QueryError defines an error which occurs when doing database operations.
 type QueryError struct {

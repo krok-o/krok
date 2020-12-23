@@ -58,7 +58,7 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "insert into repository",
 			}
 		}
@@ -84,6 +84,7 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 	return result, nil
 }
 
+// Delete removes a repository and all of its connections to commands.
 func (r *RepositoryStore) Delete(ctx context.Context, id int) error {
 	log := r.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
@@ -95,6 +96,7 @@ func (r *RepositoryStore) Delete(ctx context.Context, id int) error {
 			}
 		} else if commandTags.RowsAffected() > 0 {
 			// Make sure to only delete the relationship if the delete was successful.
+			// Todo remove the dependency on command store.
 			if err := r.CommandStore.DeleteAllCommandRelForRepository(ctx, id); err != nil {
 				log.Debug().Err(err).Msg("Failed to delete repository relationship for repository.")
 				return &kerr.QueryError{
@@ -128,7 +130,7 @@ func (r *RepositoryStore) Update(ctx context.Context, c models.Repository) (*mod
 		if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
 				Query: "update :" + c.Name,
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 			}
 		}
 		result, err = r.Get(ctx, c.ID)
@@ -169,7 +171,7 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
 					Query: "select all repositories",
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query repositories.")
@@ -203,6 +205,7 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 	return result, nil
 }
 
+// AddRepositoryRelForCommand adds an entry for this command id to the given repositoryID.
 func (r *RepositoryStore) AddRepositoryRelForCommand(ctx context.Context, commandID int, repositoryID int) error {
 	log := r.Logger.With().Str("func", "AddRepositoryRelForCommand").Int("command_id", commandID).Int("repository_id", repositoryID).Logger()
 	f := func(tx pgx.Tx) error {
@@ -215,7 +218,7 @@ func (r *RepositoryStore) AddRepositoryRelForCommand(ctx context.Context, comman
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "insert into " + repositoryRelTable,
 			}
 		}
@@ -229,6 +232,9 @@ func (r *RepositoryStore) AddRepositoryRelForCommand(ctx context.Context, comman
 	return nil
 }
 
+// DeleteRepositoryRelForCommand deletes a entries for a repository and its commands.
+// I.e.: The repository was deleted so remove its connection to all commands.
+// When viewing the commands, that repository must not show up any longer.
 func (r *RepositoryStore) DeleteRepositoryRelForCommand(ctx context.Context, repositoryID int) error {
 	log := r.Logger.With().Str("func", "DeleteRepositoryRelForCommand").Int("repository_id", repositoryID).Logger()
 	f := func(tx pgx.Tx) error {
@@ -241,7 +247,7 @@ func (r *RepositoryStore) DeleteRepositoryRelForCommand(ctx context.Context, rep
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "delete from " + repositoryRelTable,
 			}
 		}
@@ -255,11 +261,13 @@ func (r *RepositoryStore) DeleteRepositoryRelForCommand(ctx context.Context, rep
 	return nil
 }
 
+// Get retrieves a single repository using its ID.
 func (r *RepositoryStore) Get(ctx context.Context, id int) (*models.Repository, error) {
 	log := r.Logger.With().Str("func", "Get").Logger()
 	return r.getByX(ctx, log, "id", id)
 }
 
+// GetByName retrieves a single repository using its name.
 func (r *RepositoryStore) GetByName(ctx context.Context, name string) (*models.Repository, error) {
 	log := r.Logger.With().Str("func", "GetByName").Logger()
 	return r.getByX(ctx, log, "name", name)
@@ -293,7 +301,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 
 	// Get all commands from the rel table.
 	commands, err := r.CommandStore.GetCommandsForRepository(ctx, result.ID)
-	if !errors.Is(err, kerr.NotFound) {
+	if !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("Get failed to get repository commands.")
 		return nil, err
 	}
@@ -301,7 +309,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 
 	// Get auth info
 	auth, err := r.Auth.GetRepositoryAuth(ctx, result.ID)
-	if !errors.Is(err, kerr.NotFound) {
+	if !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetRepositoryAuth failed.")
 		return nil, err
 	}

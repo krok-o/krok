@@ -28,6 +28,7 @@ type Dependencies struct {
 	Converter providers.EnvironmentConverter
 }
 
+// Connector defines the connector's structure.
 type Connector struct {
 	Config
 	Dependencies
@@ -42,7 +43,7 @@ func NewDatabaseConnector(cfg Config, deps Dependencies) *Connector {
 	}
 }
 
-// Takes a query and executes it inside a transaction.
+// ExecuteWithTransaction takes a query and executes it inside a transaction.
 func (s *Connector) ExecuteWithTransaction(ctx context.Context, log zerolog.Logger, f func(tx pgx.Tx) error) error {
 	conn, err := s.connect()
 	if err != nil {

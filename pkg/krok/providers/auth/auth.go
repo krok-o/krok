@@ -72,7 +72,7 @@ func (a *KrokAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, i
 	return nil
 }
 
-// GetRepositoryAuth returns auth data for a repository. Returns NotFound if there is no
+// GetRepositoryAuth returns auth data for a repository. Returns ErrNotFound if there is no
 // auth info for a repository.
 func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth, error) {
 	log := a.Logger.With().Int("id", id).Logger()
@@ -81,19 +81,19 @@ func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth,
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 	username, err := a.Vault.GetSecret(fmt.Sprintf(usernameFormat, id))
-	if !errors.Is(err, kerr.NotFound) {
+	if !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetSecret failed for username")
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 
 	password, err := a.Vault.GetSecret(fmt.Sprintf(passwordFormat, id))
-	if !errors.Is(err, kerr.NotFound) {
+	if !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetSecret failed for password")
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 
 	sshKey, err := a.Vault.GetSecret(fmt.Sprintf(sshKeyFormat, id))
-	if !errors.Is(err, kerr.NotFound) {
+	if !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetSecret failed sshKey")
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}

@@ -46,7 +46,7 @@ type FileStorer struct {
 	lock       sync.RWMutex
 }
 
-// NewVault creates a vault which contains secrets.
+// NewFileStorer creates a vault which contains secrets.
 // The format is:
 // KEY=VALUE
 // KEY2=VALUE2

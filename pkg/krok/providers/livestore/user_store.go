@@ -24,7 +24,7 @@ type UserStore struct {
 type UserDependencies struct {
 	Dependencies
 	Connector *Connector
-	ApiKeys   providers.ApiKeys
+	APIKeys   providers.APIKeys
 }
 
 // NewUserStore creates a new UserStore
@@ -48,7 +48,7 @@ func (s *UserStore) Create(ctx context.Context, user *models.User) (*models.User
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "insert into users",
 			}
 		}
@@ -82,7 +82,7 @@ func (s *UserStore) Delete(ctx context.Context, id int) error {
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "delete from users",
 			}
 		}
@@ -121,7 +121,7 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		if err != nil {
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 					Query: "select user",
 				}
 			}
@@ -134,9 +134,9 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		return nil, err
 	}
 
-	apiKeys, err := s.ApiKeys.List(ctx, storedID)
+	apiKeys, err := s.APIKeys.List(ctx, storedID)
 	// if we didn't find any, that's fine.
-	if !errors.Is(err, kerr.NotFound) {
+	if !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("Failed to get api keys for user.")
 		return nil, fmt.Errorf("failed to get api keys for user: %w", err)
 	}
@@ -145,7 +145,7 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		Email:       storedEmail,
 		DisplayName: storedDisplayName,
 		ID:          storedID,
-		ApiKeys:     apiKeys,
+		APIKeys:     apiKeys,
 		LastLogin:   storedLastLogin}, nil
 }
 
@@ -163,7 +163,7 @@ func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "update users",
 			}
 		}
@@ -192,7 +192,7 @@ func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
 					Query: "select all users",
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query users.")

@@ -118,7 +118,7 @@ func (v *KrokVault) GetSecret(key string) ([]byte, error) {
 	defer v.RUnlock()
 	val, ok := v.data[key]
 	if !ok {
-		return nil, kerr.NotFound
+		return nil, kerr.ErrNotFound
 	}
 
 	return val, nil

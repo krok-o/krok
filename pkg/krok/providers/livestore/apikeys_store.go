@@ -16,34 +16,34 @@ const (
 	apiKeysTable = "apikeys"
 )
 
-// ApiKeysStore is a postgres based store for ApiKeys.
-type ApiKeysStore struct {
-	ApiKeysDependencies
+// APIKeysStore is a postgres based store for APIKeys.
+type APIKeysStore struct {
+	APIKeysDependencies
 	Config
 }
 
-// ApiKeysDependencies ApiKeys specific dependencies.
-type ApiKeysDependencies struct {
+// APIKeysDependencies APIKeys specific dependencies.
+type APIKeysDependencies struct {
 	Dependencies
 	Connector *Connector
 }
 
-// NewApiKeysStore creates a new ApiKeysStore
-func NewApiKeysStore(cfg Config, deps ApiKeysDependencies) *ApiKeysStore {
-	return &ApiKeysStore{Config: cfg, ApiKeysDependencies: deps}
+// NewAPIKeysStore creates a new APIKeysStore
+func NewAPIKeysStore(cfg Config, deps APIKeysDependencies) *APIKeysStore {
+	return &APIKeysStore{Config: cfg, APIKeysDependencies: deps}
 }
 
-var _ providers.ApiKeys = &ApiKeysStore{}
+var _ providers.APIKeys = &APIKeysStore{}
 
 // Create an apikey.
-func (a *ApiKeysStore) Create(ctx context.Context, key *models.ApiKey) (*models.ApiKey, error) {
-	log := a.Logger.With().Str("name", key.Name).Str("id", key.ApiKeyID).Logger()
-	var returnId int
+func (a *APIKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.APIKey, error) {
+	log := a.Logger.With().Str("name", key.Name).Str("id", key.APIKeyID).Logger()
+	var returnID int
 	f := func(tx pgx.Tx) error {
 		if row, err := tx.Query(ctx, fmt.Sprintf("insert into %s(name, api_key_id, api_key_secret, user_id, ttl) values($1, $2, $3, $4, $5) returning id", apiKeysTable),
 			key.Name,
-			key.ApiKeyID,
-			key.ApiKeySecret,
+			key.APIKeyID,
+			key.APIKeySecret,
 			key.UserID,
 			key.TTL); err != nil {
 			log.Debug().Err(err).Msg("Failed to create api key.")
@@ -53,11 +53,11 @@ func (a *ApiKeysStore) Create(ctx context.Context, key *models.ApiKey) (*models.
 			}
 		} else if row.CommandTag().RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "insert into apikeys",
 			}
 		} else {
-			if err := row.Scan(&returnId); err != nil {
+			if err := row.Scan(&returnID); err != nil {
 				return &kerr.QueryError{
 					Err:   err,
 					Query: "scanning row",
@@ -71,7 +71,7 @@ func (a *ApiKeysStore) Create(ctx context.Context, key *models.ApiKey) (*models.
 		log.Debug().Err(err).Msg("Failed to execute with transaction.")
 		return nil, err
 	}
-	result, err := a.Get(ctx, returnId)
+	result, err := a.Get(ctx, returnID)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to get created api key")
 		return nil, err
@@ -80,7 +80,7 @@ func (a *ApiKeysStore) Create(ctx context.Context, key *models.ApiKey) (*models.
 }
 
 // Delete an apikey.
-func (a *ApiKeysStore) Delete(ctx context.Context, id int) error {
+func (a *APIKeysStore) Delete(ctx context.Context, id int) error {
 	log := a.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", apiKeysTable),
@@ -91,7 +91,7 @@ func (a *ApiKeysStore) Delete(ctx context.Context, id int) error {
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "delete from apikeys",
 			}
 		}
@@ -102,10 +102,10 @@ func (a *ApiKeysStore) Delete(ctx context.Context, id int) error {
 }
 
 // List will list all apikeys for a user.
-func (a *ApiKeysStore) List(ctx context.Context, userID int) ([]*models.ApiKey, error) {
+func (a *APIKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, error) {
 	log := a.Logger.With().Str("func", "ListApiKeys").Logger()
 	// Select all users.
-	result := make([]*models.ApiKey, 0)
+	result := make([]*models.APIKey, 0)
 	f := func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, fmt.Sprintf("select id, name, api_key_id, ttl from %s "+
 			"where user_id = $1", apiKeysTable), userID)
@@ -113,7 +113,7 @@ func (a *ApiKeysStore) List(ctx context.Context, userID int) ([]*models.ApiKey, 
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
 					Query: "select all apikeys",
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query apikeys.")
@@ -127,21 +127,21 @@ func (a *ApiKeysStore) List(ctx context.Context, userID int) ([]*models.ApiKey, 
 			var (
 				id       int
 				name     string
-				apiKeyId string
+				apiKeyID string
 				ttl      time.Time
 			)
-			if err := rows.Scan(&id, &name, &apiKeyId, &ttl); err != nil {
+			if err := rows.Scan(&id, &name, &apiKeyID, &ttl); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select all users",
 					Err:   fmt.Errorf("failed to scan: %w", err),
 				}
 			}
-			key := &models.ApiKey{
+			key := &models.APIKey{
 				ID:       id,
 				Name:     name,
 				TTL:      ttl,
-				ApiKeyID: apiKeyId,
+				APIKeyID: apiKeyID,
 			}
 			result = append(result, key)
 		}
@@ -154,22 +154,22 @@ func (a *ApiKeysStore) List(ctx context.Context, userID int) ([]*models.ApiKey, 
 }
 
 // Get an apikey.
-func (a *ApiKeysStore) Get(ctx context.Context, id int) (*models.ApiKey, error) {
+func (a *APIKeysStore) Get(ctx context.Context, id int) (*models.APIKey, error) {
 	log := a.Logger.With().Int("id", id).Logger()
 	var (
 		storedID       int
 		storedName     string
-		storedApiKeyID string
+		storedAPIKeyID string
 		storedUserID   string
 		storedTTL      time.Time
 	)
 	f := func(tx pgx.Tx) error {
 		err := tx.QueryRow(ctx, "select id, name, api_key_id, user_id, ttl from %s where id = $1", id).
-			Scan(&storedID, &storedName, &storedApiKeyID, &storedUserID, &storedTTL)
+			Scan(&storedID, &storedName, &storedAPIKeyID, &storedUserID, &storedTTL)
 		if err != nil {
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 					Query: "select apikey",
 				}
 			}
@@ -182,11 +182,11 @@ func (a *ApiKeysStore) Get(ctx context.Context, id int) (*models.ApiKey, error) 
 		return nil, err
 	}
 
-	return &models.ApiKey{
+	return &models.APIKey{
 		ID:       storedID,
 		Name:     storedName,
 		UserID:   storedUserID,
-		ApiKeyID: storedApiKeyID,
+		APIKeyID: storedAPIKeyID,
 		TTL:      storedTTL,
 	}, nil
 }

@@ -96,7 +96,7 @@ func (s *CommandStore) Create(ctx context.Context, c *models.Command) (*models.C
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "insert into commands",
 			}
 		}
@@ -147,7 +147,7 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
 					Query: "select ",
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query row.")
@@ -197,7 +197,7 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
 					Query: "select id",
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query rel_repositories_command.")
@@ -274,7 +274,7 @@ func (s *CommandStore) deleteAllRepositoryRelForCommand(ctx context.Context, id 
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "delete from " + repositoryRelTable,
 			}
 		}
@@ -306,7 +306,7 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 		if commandTags.RowsAffected() == 0 {
 			return &kerr.QueryError{
 				Query: "update :" + c.Name,
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 			}
 		}
 		result, err = s.Get(ctx, c.ID)
@@ -346,7 +346,7 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
 					Query: "select all commands",
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query commands.")
@@ -392,12 +392,12 @@ func (s *CommandStore) AcquireLock(ctx context.Context, name string) error {
 			name, time.Now()); err != nil {
 			log.Debug().Err(err).Msg("Failed to acquire lock on file.")
 			return &kerr.QueryError{
-				Err:   err,
-				Query: "insert into file_lock",
+				Err:   fmt.Errorf("failed to acquire lock: %w", err),
+				Query: err.Error(),
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "insert into file_lock",
 			}
 		}
@@ -424,7 +424,7 @@ func (s *CommandStore) ReleaseLock(ctx context.Context, name string) error {
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "delete from file_lock",
 			}
 		}
@@ -451,7 +451,7 @@ func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id int) ([]
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
 					Query: "select id",
-					Err:   kerr.NotFound,
+					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query relationship.")
@@ -463,7 +463,7 @@ func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id int) ([]
 
 		for rows.Next() {
 			var (
-				storedId string
+				storedID string
 				name     string
 				schedule string
 				fileName string
@@ -471,7 +471,7 @@ func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id int) ([]
 				location string
 				enabled  bool
 			)
-			if err := rows.Scan(&storedId, &name, &schedule, &fileName, &hash, &location, &enabled); err != nil {
+			if err := rows.Scan(&storedID, &name, &schedule, &fileName, &hash, &location, &enabled); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select id",
@@ -510,7 +510,7 @@ func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "insert into " + commandsRelTable,
 			}
 		}
@@ -538,7 +538,7 @@ func (s *CommandStore) DeleteCommandRelForRepository(ctx context.Context, comman
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "delete from " + commandsRelTable,
 			}
 		}
@@ -566,7 +566,7 @@ func (s *CommandStore) DeleteAllCommandRelForRepository(ctx context.Context, rep
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
-				Err:   kerr.NoRowsAffected,
+				Err:   kerr.ErrNoRowsAffected,
 				Query: "delete from " + commandsRelTable,
 			}
 		}

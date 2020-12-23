@@ -41,7 +41,7 @@ clean:
 	go clean -i
 
 lint:
-	golint -set_exit_status ./...
+	golint ./...
 
 .PHONY: run
 run:

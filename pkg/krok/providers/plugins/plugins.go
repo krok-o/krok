@@ -158,7 +158,7 @@ func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event,
 	}
 	name := path.Base(file)
 	command, err := p.Store.GetByName(ctx, name)
-	if errors.Is(err, kerr.NotFound) {
+	if errors.Is(err, kerr.ErrNotFound) {
 		// no command with this name, nothing to do.
 		return nil
 	} else if err != nil {
