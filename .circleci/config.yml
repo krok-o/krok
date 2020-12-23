@@ -1,0 +1,62 @@
+version: 2
+
+jobs:
+  linter:
+    working_directory: /go/src/github.com/staple-org/staple
+    docker:
+      - image: circleci/golang:1.15.6
+        environment:
+          GO111MODULE: "on"
+    steps:
+      - checkout
+      - run:
+          name: Install linter
+          command: |
+            go get -u golang.org/x/lint/golint
+      - run:
+          name: Run linter
+          command: |
+            make lint
+  test_and_coverage:
+    working_directory: /go/src/github.com/krok-o/krok
+    docker:
+      - image: circleci/golang:1.15.6
+        environment:
+          GO111MODULE: "on"
+    steps:
+      - checkout
+      - run:
+          name: Run integration tests
+          command: |
+            set -e
+            echo "" > coverage.txt
+            for d in $(go list ./... | grep -v vendor | grep -v /testacc); do
+              go test -v -timeout 50s -race -coverprofile=profile.out -covermode=atomic $d
+              if [ -f profile.out ]; then
+                cat profile.out >> coverage.txt
+                rm profile.out
+              fi
+            done
+      - run:
+          name: Upload test report to codecov.io
+          command: bash <(curl -s https://codecov.io/bash)
+  compile:
+    working_directory: /go/src/github.com/krok-o/krok
+    docker:
+      - image: circleci/golang:1.15.6
+        environment:
+          GO111MODULE: "on"
+    steps:
+      - checkout
+      - run:
+          name: Make binaries
+          command: |
+            make bootstrap
+            make binaries
+workflows:
+  version: 2
+  test_and_compile:
+    jobs:
+      - linter
+      - test_and_coverage
+      - compile
