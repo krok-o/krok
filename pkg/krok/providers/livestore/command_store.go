@@ -23,7 +23,6 @@ const (
 
 // CommandStore is a postgres based store for commands.
 type CommandStore struct {
-	Config
 	CommandDependencies
 }
 
@@ -32,13 +31,12 @@ type CommandStore struct {
 // store and the repository store will require the command store.
 type CommandDependencies struct {
 	Dependencies
-	RepositoryStore providers.RepositoryStorer
-	Connector       *Connector
+	Connector *Connector
 }
 
 // NewCommandStore creates a new CommandStore
-func NewCommandStore(cfg Config, deps CommandDependencies) *CommandStore {
-	cs := &CommandStore{Config: cfg, CommandDependencies: deps}
+func NewCommandStore(deps CommandDependencies) *CommandStore {
+	cs := &CommandStore{CommandDependencies: deps}
 	// launch the cleanup routine.
 	go cs.lockCleaner(context.TODO())
 	return cs
@@ -119,8 +117,8 @@ func (s *CommandStore) Create(ctx context.Context, c *models.Command) (*models.C
 }
 
 // Get returns a command model.
-func (s *CommandStore) Get(ctx context.Context, id string) (*models.Command, error) {
-	log := s.Logger.With().Str("id", id).Str("func", "GetByID").Logger()
+func (s *CommandStore) Get(ctx context.Context, id int) (*models.Command, error) {
+	log := s.Logger.With().Int("id", id).Str("func", "GetByID").Logger()
 	return s.getByX(ctx, log, "id", id)
 }
 
@@ -136,7 +134,7 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 
 	var (
 		name      string
-		commandID string
+		commandID int
 		schedule  string
 		filename  string
 		location  string
@@ -166,11 +164,11 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		return nil, err
 	}
 
-	repositories, err := s.RepositoryStore.GetRepositoriesForCommand(ctx, commandID)
+	repositories, err := s.getRepositoriesForCommand(ctx, commandID)
 	if err != nil {
 		log.Debug().Err(err).Msg("GetRepositoriesForCommand failed")
 		return nil, &kerr.QueryError{
-			Query: "select id: " + commandID,
+			Query: "select id",
 			Err:   err,
 		}
 	}
@@ -187,22 +185,73 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 	}, nil
 }
 
+func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([]*models.Repository, error) {
+	log := s.Logger.With().Int("id", id).Logger()
+
+	// Select the related repositories.
+	result := make([]*models.Repository, 0)
+	f := func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, fmt.Sprintf("select (r.id, name, url) from %s r inner join %s rel"+
+			" on r.id = rel.command_id where r.id = $1", repositoriesTable, repositoryRelTable), id)
+		if err != nil {
+			if err.Error() == "no rows in result set" {
+				return &kerr.QueryError{
+					Query: "select id",
+					Err:   kerr.NotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query rel_repositories_command.")
+			return &kerr.QueryError{
+				Query: "select id",
+				Err:   fmt.Errorf("failed to query rel table: %w", err),
+			}
+		}
+
+		// Repo data here construct, individual repos.
+		for rows.Next() {
+			var (
+				repoID int
+				name   string
+				url    string
+			)
+			if err := rows.Scan(&repoID, &name, &url); err != nil {
+				log.Debug().Err(err).Msg("Failed to scan.")
+				return &kerr.QueryError{
+					Query: "select id",
+					Err:   fmt.Errorf("failed to scan: %w", err),
+				}
+			}
+			repo := &models.Repository{
+				Name: name,
+				ID:   id,
+				URL:  url,
+			}
+			result = append(result, repo)
+		}
+		return nil
+	}
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		return nil, fmt.Errorf("failed to execute GetRepositoriesForCommand: %w", err)
+	}
+	return result, nil
+}
+
 // Delete will remove a command.
-func (s *CommandStore) Delete(ctx context.Context, id string) error {
-	log := s.Logger.With().Str("id", id).Logger()
+func (s *CommandStore) Delete(ctx context.Context, id int) error {
+	log := s.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
 		if commandTags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", commandsTable), id); err != nil {
 			log.Debug().Err(err).Msg("Failed to delete command.")
 			return &kerr.QueryError{
-				Query: "delete id: " + id,
+				Query: "delete id",
 				Err:   fmt.Errorf("failed delete command: %w", err),
 			}
 		} else if commandTags.RowsAffected() > 0 {
 			// Make sure to only delete the relationship if the delete was successful.
-			if err := s.RepositoryStore.DeleteAllRepositoryRelForCommand(ctx, id); err != nil {
+			if err := s.deleteAllRepositoryRelForCommand(ctx, id); err != nil {
 				log.Debug().Err(err).Msg("Failed to delete repository relationship for command.")
 				return &kerr.QueryError{
-					Query: "delete id: " + id,
+					Query: "delete id",
 					Err:   fmt.Errorf("failed to delete repository relationship for command: %w", err),
 				}
 			}
@@ -213,15 +262,41 @@ func (s *CommandStore) Delete(ctx context.Context, id string) error {
 	return s.Connector.ExecuteWithTransaction(ctx, log, f)
 }
 
+func (s *CommandStore) deleteAllRepositoryRelForCommand(ctx context.Context, id int) error {
+	log := s.Logger.With().Str("func", "DeleteAllRepositoryRelForCommand").Int("command_id", id).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where command_id = $1", repositoryRelTable),
+			id); err != nil {
+			log.Debug().Err(err).Msg("Failed to delete relationship between command and repository.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "delete from " + repositoryRelTable,
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.NoRowsAffected,
+				Query: "delete from " + repositoryRelTable,
+			}
+		}
+		return nil
+	}
+
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to delete from " + repositoryRelTable)
+		return err
+	}
+	return nil
+}
+
 // Update modifies a command record.
 func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.Command, error) {
-	log := s.Logger.With().Str("id", c.ID).Str("name", c.Name).Logger()
+	log := s.Logger.With().Int("id", c.ID).Str("name", c.Name).Logger()
 	var result *models.Command
 	f := func(tx pgx.Tx) error {
 		// Prevent updating the ID and the creation timestamp.
 		// construct update statement:
-		commandTags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1, enabled = $2, schedule = $3, filename = $4, location = $5, hash = $6", commandsTable),
-			c.Name, c.Enabled, c.Schedule, c.Filename, c.Location, c.Hash)
+		commandTags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1, enabled = $2, schedule = $3, filename = $4, location = $5, hash = $6 where id = $7", commandsTable),
+			c.Name, c.Enabled, c.Schedule, c.Filename, c.Location, c.Hash, c.ID)
 		if err != nil {
 			return &kerr.QueryError{
 				Query: "update :" + c.Name,
@@ -283,7 +358,7 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 
 		for rows.Next() {
 			var (
-				id       string
+				id       int
 				name     string
 				schedule string
 				filename string
@@ -364,11 +439,8 @@ func (s *CommandStore) ReleaseLock(ctx context.Context, name string) error {
 }
 
 // GetCommandsForRepository returns a list of commands for a repository ID.
-func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id string) ([]*models.Command, error) {
-	log := s.Logger.With().Str("id", id).Logger()
-	if id == "" {
-		return nil, fmt.Errorf("GetCommandsForRepository failed with %w", kerr.InvalidArgument)
-	}
+func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id int) ([]*models.Command, error) {
+	log := s.Logger.With().Int("id", id).Logger()
 
 	// Select the related commands.
 	result := make([]*models.Command, 0)
@@ -378,13 +450,13 @@ func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id string) 
 		if err != nil {
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
-					Query: "select id: " + id,
+					Query: "select id",
 					Err:   kerr.NotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query relationship.")
 			return &kerr.QueryError{
-				Query: "select commands for repository: " + id,
+				Query: "select commands for repository",
 				Err:   fmt.Errorf("failed to query rel table: %w", err),
 			}
 		}
@@ -402,7 +474,7 @@ func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id string) 
 			if err := rows.Scan(&storedId, &name, &schedule, &fileName, &hash, &location, &enabled); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
-					Query: "select id: " + id,
+					Query: "select id",
 					Err:   fmt.Errorf("failed to scan: %w", err),
 				}
 			}
@@ -426,8 +498,8 @@ func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id string) 
 }
 
 // AddCommandRelForRepository add an assignment for a command to a repository.
-func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID string, repositoryID string) error {
-	log := s.Logger.With().Str("func", "AddCommandRelForRepository").Str("command_id", commandID).Str("repository_id", repositoryID).Logger()
+func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error {
+	log := s.Logger.With().Str("func", "AddCommandRelForRepository").Int("command_id", commandID).Int("repository_id", repositoryID).Logger()
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(command_id, repository_id) values($1, $2)", commandsRelTable),
 			commandID, repositoryID); err != nil {
@@ -454,8 +526,8 @@ func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID
 
 // DeleteCommandRelForRepository deletes entries for a command.
 // I.e.: The command was deleted so remove its connection to any repository which had this command.
-func (s *CommandStore) DeleteCommandRelForRepository(ctx context.Context, commandID string) error {
-	log := s.Logger.With().Str("func", "DeleteCommandRelForRepository").Str("command_id", commandID).Logger()
+func (s *CommandStore) DeleteCommandRelForRepository(ctx context.Context, commandID int) error {
+	log := s.Logger.With().Str("func", "DeleteCommandRelForRepository").Int("command_id", commandID).Logger()
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where command_id = $1", commandsRelTable),
 			commandID); err != nil {
@@ -482,8 +554,8 @@ func (s *CommandStore) DeleteCommandRelForRepository(ctx context.Context, comman
 
 // DeleteAllCommandRelForRepository deletes all relationship entries for this repository.
 // I.e.: The repository was deleted and now the relationships are gone to all commands.
-func (s *CommandStore) DeleteAllCommandRelForRepository(ctx context.Context, repositoryID string) error {
-	log := s.Logger.With().Str("func", "DeleteAllCommandRelForRepository").Str("repository_id", repositoryID).Logger()
+func (s *CommandStore) DeleteAllCommandRelForRepository(ctx context.Context, repositoryID int) error {
+	log := s.Logger.With().Str("func", "DeleteAllCommandRelForRepository").Int("repository_id", repositoryID).Logger()
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where repositroy_id = $1", commandsRelTable),
 			repositoryID); err != nil {

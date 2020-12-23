@@ -11,9 +11,9 @@ type ApiKeys interface {
 	// Create an apikey.
 	Create(ctx context.Context, key *models.ApiKey) (*models.ApiKey, error)
 	// Delete an apikey.
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, id int) error
 	// List will list all apikeys for a user.
-	List(ctx context.Context, userID string) ([]*models.ApiKey, error)
+	List(ctx context.Context, userID int) ([]*models.ApiKey, error)
 	// Get an apikey.
-	Get(ctx context.Context, id string) (*models.ApiKey, error)
+	Get(ctx context.Context, id int) (*models.ApiKey, error)
 }

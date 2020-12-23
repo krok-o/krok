@@ -10,9 +10,9 @@ import (
 type UserStorer interface {
 	// User CRUD commands
 	Create(ctx context.Context, c *models.User) (*models.User, error)
-	Delete(ctx context.Context, id string) error
+	Delete(ctx context.Context, id int) error
 	List(ctx context.Context) ([]*models.User, error)
-	Get(ctx context.Context, id string) (*models.User, error)
+	Get(ctx context.Context, id int) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	Update(ctx context.Context, user *models.User) (*models.User, error)
 }

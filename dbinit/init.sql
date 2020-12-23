@@ -1,10 +1,10 @@
 create table commands (
     id serial primary key ,
-    name varchar ( 50 ) unique not null,
-    schedule varchar ( 50 ),
-    filename varchar ( 50 ) unique not null,
-    hash varchar ( 50 ) unique not null,
-    location varchar ( 50 ) unique not null,
+    name varchar unique not null,
+    schedule varchar,
+    filename varchar unique not null,
+    hash varchar unique not null,
+    location varchar unique not null,
     enabled boolean not null
 );
 

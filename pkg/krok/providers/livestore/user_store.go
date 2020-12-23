@@ -71,8 +71,8 @@ func (s *UserStore) Create(ctx context.Context, user *models.User) (*models.User
 }
 
 // Delete deletes a user from the db.
-func (s *UserStore) Delete(ctx context.Context, id string) error {
-	log := s.Logger.With().Str("id", id).Logger()
+func (s *UserStore) Delete(ctx context.Context, id int) error {
+	log := s.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, "delete from users where id = $1",
 			id); err != nil {
@@ -93,7 +93,7 @@ func (s *UserStore) Delete(ctx context.Context, id string) error {
 }
 
 // Get retrieves a user.
-func (s *UserStore) Get(ctx context.Context, id string) (*models.User, error) {
+func (s *UserStore) Get(ctx context.Context, id int) (*models.User, error) {
 	log := s.Logger.With().Str("func", "GetByID").Logger()
 	return s.getByX(ctx, log, "id", id)
 }
@@ -111,7 +111,7 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 	var (
 		storedEmail       string
 		storedDisplayName string
-		storedID          string
+		storedID          int
 		storedLastLogin   time.Time
 	)
 	f := func(tx pgx.Tx) error {
@@ -151,7 +151,7 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 
 // Update updates a user with a given email address.
 func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User, error) {
-	log := s.Logger.With().Str("id", user.ID).Str("email", user.Email).Logger()
+	log := s.Logger.With().Int("id", user.ID).Str("email", user.Email).Logger()
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, "update users set display_name=$1 where id=$2",
 			user.DisplayName,
@@ -204,7 +204,7 @@ func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
 
 		for rows.Next() {
 			var (
-				id          string
+				id          int
 				email       string
 				displayName string
 				lastLogin   time.Time

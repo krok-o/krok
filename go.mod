@@ -12,12 +12,14 @@ require (
 	github.com/jackc/pgx/v4 v4.9.2
 	github.com/labstack/echo v3.3.10+incompatible
 	github.com/labstack/gommon v0.3.0 // indirect
+	github.com/magiconair/properties v1.8.1
 	github.com/mailgun/mailgun-go v2.0.0+incompatible
 	github.com/mitchellh/gox v1.0.1 // indirect
 	github.com/onsi/ginkgo v1.14.2 // indirect
 	github.com/onsi/gomega v1.10.3 // indirect
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/cobra v1.1.1
+	github.com/stretchr/testify v1.5.1
 	github.com/valyala/fasttemplate v1.2.1 // indirect
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9

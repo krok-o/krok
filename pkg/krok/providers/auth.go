@@ -8,7 +8,7 @@ import (
 
 type Auth interface {
 	// GetRepositoryAuth returns auth data for a repository.
-	GetRepositoryAuth(ctx context.Context, id string) (*models.Auth, error)
+	GetRepositoryAuth(ctx context.Context, id int) (*models.Auth, error)
 	// CreateRepositoryAuth creates auth data for a repository in vault.
-	CreateRepositoryAuth(ctx context.Context, repositoryID string, info *models.Auth) error
+	CreateRepositoryAuth(ctx context.Context, repositoryID int, info *models.Auth) error
 }

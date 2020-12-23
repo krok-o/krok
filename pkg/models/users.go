@@ -8,7 +8,7 @@ import (
 type User struct {
 	DisplayName string    `json:"display_name,omitempty"`
 	Email       string    `json:"email"`
-	ID          string    `json:"id"`
+	ID          int       `json:"id"`
 	LastLogin   time.Time `json:"last_login,omitempty"`
 	ApiKeys     []*ApiKey `json:"api_keys,omitempty"`
 }

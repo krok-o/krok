@@ -38,7 +38,7 @@ var _ providers.ApiKeys = &ApiKeysStore{}
 // Create an apikey.
 func (a *ApiKeysStore) Create(ctx context.Context, key *models.ApiKey) (*models.ApiKey, error) {
 	log := a.Logger.With().Str("name", key.Name).Str("id", key.ApiKeyID).Logger()
-	var returnId string
+	var returnId int
 	f := func(tx pgx.Tx) error {
 		if row, err := tx.Query(ctx, fmt.Sprintf("insert into %s(name, api_key_id, api_key_secret, user_id, ttl) values($1, $2, $3, $4, $5) returning id", apiKeysTable),
 			key.Name,
@@ -80,8 +80,8 @@ func (a *ApiKeysStore) Create(ctx context.Context, key *models.ApiKey) (*models.
 }
 
 // Delete an apikey.
-func (a *ApiKeysStore) Delete(ctx context.Context, id string) error {
-	log := a.Logger.With().Str("id", id).Logger()
+func (a *ApiKeysStore) Delete(ctx context.Context, id int) error {
+	log := a.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", apiKeysTable),
 			id); err != nil {
@@ -102,7 +102,7 @@ func (a *ApiKeysStore) Delete(ctx context.Context, id string) error {
 }
 
 // List will list all apikeys for a user.
-func (a *ApiKeysStore) List(ctx context.Context, userID string) ([]*models.ApiKey, error) {
+func (a *ApiKeysStore) List(ctx context.Context, userID int) ([]*models.ApiKey, error) {
 	log := a.Logger.With().Str("func", "ListApiKeys").Logger()
 	// Select all users.
 	result := make([]*models.ApiKey, 0)
@@ -125,7 +125,7 @@ func (a *ApiKeysStore) List(ctx context.Context, userID string) ([]*models.ApiKe
 
 		for rows.Next() {
 			var (
-				id       string
+				id       int
 				name     string
 				apiKeyId string
 				ttl      time.Time
@@ -154,10 +154,10 @@ func (a *ApiKeysStore) List(ctx context.Context, userID string) ([]*models.ApiKe
 }
 
 // Get an apikey.
-func (a *ApiKeysStore) Get(ctx context.Context, id string) (*models.ApiKey, error) {
-	log := a.Logger.With().Str("id", id).Logger()
+func (a *ApiKeysStore) Get(ctx context.Context, id int) (*models.ApiKey, error) {
+	log := a.Logger.With().Int("id", id).Logger()
 	var (
-		storedID       string
+		storedID       int
 		storedName     string
 		storedApiKeyID string
 		storedUserID   string

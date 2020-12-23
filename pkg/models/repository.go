@@ -10,7 +10,7 @@ type Auth struct {
 // Repository is a repository which can be managed by Krok.
 type Repository struct {
 	Name     string     `json:"name"`
-	ID       string     `json:"id"`
+	ID       int        `json:"id"`
 	URL      string     `json:"url"`
 	Auth     *Auth      `json:"auth,omitempty"`
 	Commands []*Command `json:"commands,omitempty"`

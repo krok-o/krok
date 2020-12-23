@@ -84,3 +84,8 @@ This data should be loaded on the fly when needed, and not stored with the repos
 ## Commands
 
 Don't forget to stream back the command's output.
+
+## Connection
+
+Remove the connection between repository and command. Figure out a better way to track the relationship. Maybe use the
+same table?
