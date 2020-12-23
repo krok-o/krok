@@ -26,6 +26,10 @@ jobs:
     steps:
       - checkout
       - run:
+          name: Create test db
+          command: |
+            make test-db
+      - run:
           name: Run integration tests
           command: |
             set -e
