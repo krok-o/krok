@@ -23,12 +23,22 @@ jobs:
       - image: circleci/golang:1.15.6
         environment:
           GO111MODULE: "on"
+      - image: postgres:13.1-alpine
+        environment:
+          POSTGRES_USER: "postgres"
+          POSTGRES_PASSWORD: "password123"
     steps:
       - checkout
       - run:
-          name: Create test db
+          name: Install psql
           command: |
-            make test-db
+            set -e
+            apk add --no-cache psql
+      - run:
+          name: Create sample database
+          command: |
+            set -e
+            psql -Upostgres -f dbinit/init.sql
       - run:
           name: Run integration tests
           command: |
