@@ -29,7 +29,12 @@ test-db:
 		-e POSTGRES_PASSWORD=password123 \
 		-v `pwd`/dbinit:/docker-entrypoint-initdb.d \
 		-p 5432:5432 \
+		--name krok-test-db \
 		postgres:13.1-alpine
+
+.PHONY: rm-test-db
+rm-test-db:
+	docker rm -f krok-test-db
 
 # Check if we are in circleci. If yes, start a postgres docker instance.
 .PHONY: test
