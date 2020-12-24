@@ -34,7 +34,7 @@ jobs:
           name: Create sample database
           command: |
             set -e
-            psql -Upostgres -f dbinit/init.sql
+            psql -U postgres -h localhost -p 5432 -f dbinit/init.sql
       - run:
           name: Run integration tests
           command: |
