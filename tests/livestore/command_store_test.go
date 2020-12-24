@@ -6,8 +6,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/magiconair/properties/assert"
 	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
@@ -83,5 +83,5 @@ func TestCommandStore_Create_NameIsUnique(t *testing.T) {
 		Hash:         "hash",
 		Enabled:      false,
 	})
-	require.Error(t, err)
+	assert.Error(t, err)
 }
