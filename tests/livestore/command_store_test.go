@@ -38,7 +38,7 @@ func TestCommandStore_Create(t *testing.T) {
 		Repositories: nil,
 		Filename:     "test-filename-create",
 		Location:     location,
-		Hash:         "hash",
+		Hash:         "hash1",
 		Enabled:      false,
 	})
 	require.NoError(t, err)
@@ -67,11 +67,11 @@ func TestCommandStore_Create_NameIsUnique(t *testing.T) {
 		Repositories: nil,
 		Filename:     "test-filename-create-error",
 		Location:     location,
-		Hash:         "hash",
+		Hash:         "hash2",
 		Enabled:      false,
 	})
 	require.NoError(t, err)
-	assert.Equal(t, 1, c.ID)
+	assert.Equal(t, 2, c.ID)
 
 	// Create the second command with the same name.
 	_, err = cp.Create(context.Background(), &models.Command{
@@ -80,7 +80,7 @@ func TestCommandStore_Create_NameIsUnique(t *testing.T) {
 		Repositories: nil,
 		Filename:     "test-filename-create-error-2",
 		Location:     location,
-		Hash:         "hash",
+		Hash:         "hash3",
 		Enabled:      false,
 	})
 	assert.Error(t, err)
