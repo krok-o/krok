@@ -248,7 +248,7 @@ func (s *CommandStore) Delete(ctx context.Context, id int) error {
 			}
 		} else if commandTags.RowsAffected() > 0 {
 			// Make sure to only delete the relationship if the delete was successful.
-			if err := s.deleteAllRepositoryRelForCommand(ctx, id); err != nil {
+			if err := s.deleteAllRepositoryRelForCommand(ctx, id); err != nil && !errors.Is(err, kerr.ErrNoRowsAffected) {
 				log.Debug().Err(err).Msg("Failed to delete repository relationship for command.")
 				return &kerr.QueryError{
 					Query: "delete id",
