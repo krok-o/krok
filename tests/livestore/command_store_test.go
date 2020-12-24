@@ -2,6 +2,7 @@ package livestore
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -15,6 +16,8 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/tests/dbaccess"
 )
+
+var testID = 0
 
 func TestCommandStore_Create(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
@@ -33,7 +36,7 @@ func TestCommandStore_Create(t *testing.T) {
 	})
 	// Create the first command.
 	c, err := cp.Create(context.Background(), &models.Command{
-		Name:         "Test",
+		Name:         fmt.Sprintf("Test%d", testID),
 		Schedule:     "test-schedule",
 		Repositories: nil,
 		Filename:     "test-filename",
@@ -43,9 +46,12 @@ func TestCommandStore_Create(t *testing.T) {
 	})
 	require.NoError(t, err)
 	assert.Equal(t, 1, c.ID)
+	testID++
 }
 
 func TestCommandStore_Create_NameIsUnique(t *testing.T) {
+	// increment the test id at least once
+	defer func() { testID++ }()
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_Create_NameIsUnique")
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
@@ -61,8 +67,9 @@ func TestCommandStore_Create_NameIsUnique(t *testing.T) {
 		}),
 	})
 	// Create the first command.
+	name := fmt.Sprintf("Test%d", testID)
 	c, err := cp.Create(context.Background(), &models.Command{
-		Name:         "Test",
+		Name:         name,
 		Schedule:     "test-schedule",
 		Repositories: nil,
 		Filename:     "test-filename",
@@ -75,7 +82,7 @@ func TestCommandStore_Create_NameIsUnique(t *testing.T) {
 
 	// Create the second command with the same name.
 	_, err = cp.Create(context.Background(), &models.Command{
-		Name:         "Test",
+		Name:         name,
 		Schedule:     "test-schedule",
 		Repositories: nil,
 		Filename:     "test-filename",
