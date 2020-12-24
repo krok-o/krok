@@ -33,7 +33,8 @@ jobs:
           name: Install psql
           command: |
             set -e
-            apk add --no-cache psql
+            apt-get update
+            apt-get install psql -y
       - run:
           name: Create sample database
           command: |
