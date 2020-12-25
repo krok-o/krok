@@ -133,18 +133,18 @@ func (r *RepositoryStore) Update(ctx context.Context, c models.Repository) (*mod
 				Err:   kerr.ErrNoRowsAffected,
 			}
 		}
-		result, err = r.Get(ctx, c.ID)
-		if err != nil {
-			return &kerr.QueryError{
-				Query: "update :" + c.Name,
-				Err:   errors.New("failed to get updated repository"),
-			}
-		}
 		return nil
 	}
 	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to execute with transaction.")
 		return nil, fmt.Errorf("failed to execute update in transaction: %w", err)
+	}
+	result, err := r.Get(ctx, c.ID)
+	if err != nil {
+		return nil, &kerr.QueryError{
+			Query: "update :" + c.Name,
+			Err:   errors.New("failed to get updated repository"),
+		}
 	}
 	return result, nil
 }

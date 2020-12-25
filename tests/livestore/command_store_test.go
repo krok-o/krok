@@ -67,6 +67,12 @@ func TestCommandStore_Flow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, len(commands) > 0)
 
+	// Update command
+	cGet.Name = "UpdatedName"
+	updatedC, err := cp.Update(ctx, cGet)
+	assert.NoError(t, err)
+	assert.Equal(t, "UpdatedName", updatedC.Name)
+
 	// Delete commands
 	err = cp.Delete(ctx, c.ID)
 	assert.NoError(t, err)
@@ -74,6 +80,71 @@ func TestCommandStore_Flow(t *testing.T) {
 	// Try getting the deleted command should result in NotFound
 	_, err = cp.Get(ctx, c.ID)
 	assert.True(t, errors.Is(err, kerr.ErrNotFound))
+}
+
+func TestCommandStore_RelationshipFlow(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandStore_RelationshipFlow")
+	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	cp := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: livestore.NewDatabaseConnector(livestore.Config{
+			Hostname: dbaccess.Hostname,
+			Database: dbaccess.Db,
+			Username: dbaccess.Username,
+			Password: dbaccess.Password,
+		}, livestore.Dependencies{
+			Logger:    logger,
+			Converter: env,
+		}),
+	})
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_Relationship_Flow",
+		Schedule:     "Test_Relationship_Flow-test-schedule",
+		Repositories: nil,
+		Filename:     "Test_Relationship_Flow-test-filename-create",
+		Location:     location,
+		Hash:         "Test_Relationship_Flow-hash1",
+		Enabled:      false,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+
+	// Add repository relation
+
+}
+
+func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	cp := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: livestore.NewDatabaseConnector(livestore.Config{
+			Hostname: dbaccess.Hostname,
+			Database: dbaccess.Db,
+			Username: dbaccess.Username,
+			Password: dbaccess.Password,
+		}, livestore.Dependencies{
+			Logger:    logger,
+			Converter: env,
+		}),
+	})
+	ctx := context.Background()
+	// Acquire lock
+	err := cp.AcquireLock(ctx, "lock-test")
+	assert.NoError(t, err)
+	// Release lock
+	err = cp.ReleaseLock(ctx, "lock-test")
+	assert.NoError(t, err)
+	// Can acquire again after release
+	err = cp.AcquireLock(ctx, "lock-test")
+	assert.NoError(t, err)
+	// Can't acquire lock again for the same name
+	err = cp.AcquireLock(ctx, "lock-test")
+	assert.True(t, errors.Is(err, kerr.ErrAcquireLockFailed))
+	// Release a none existing lock
+	err = cp.ReleaseLock(ctx, "invalid")
+	assert.True(t, errors.Is(err, kerr.ErrNoRowsAffected))
 }
 
 func TestCommandStore_Create_Unique(t *testing.T) {

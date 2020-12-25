@@ -291,7 +291,6 @@ func (s *CommandStore) deleteAllRepositoryRelForCommand(ctx context.Context, id 
 // Update modifies a command record.
 func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.Command, error) {
 	log := s.Logger.With().Int("id", c.ID).Str("name", c.Name).Logger()
-	var result *models.Command
 	f := func(tx pgx.Tx) error {
 		// Prevent updating the ID and the creation timestamp.
 		// construct update statement:
@@ -309,18 +308,15 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 				Err:   kerr.ErrNoRowsAffected,
 			}
 		}
-		result, err = s.Get(ctx, c.ID)
-		if err != nil {
-			return &kerr.QueryError{
-				Query: "update :" + c.Name,
-				Err:   errors.New("failed to get updated command"),
-			}
-		}
 		return nil
 	}
 	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to execute with transaction.")
 		return nil, fmt.Errorf("failed to execute update in transaction: %w", err)
+	}
+	result, err := s.Get(ctx, c.ID)
+	if err != nil {
+		return nil, err
 	}
 	return result, nil
 }
@@ -391,8 +387,14 @@ func (s *CommandStore) AcquireLock(ctx context.Context, name string) error {
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, lock_start) values($1, $2)", fileLockTable),
 			name, time.Now()); err != nil {
 			log.Debug().Err(err).Msg("Failed to acquire lock on file.")
+			if strings.Contains(err.Error(), "duplicate key value violates unique constraint \"file_lock_name_key\"") {
+				return &kerr.QueryError{
+					Err:   kerr.ErrAcquireLockFailed,
+					Query: err.Error(),
+				}
+			}
 			return &kerr.QueryError{
-				Err:   fmt.Errorf("failed to acquire lock: %w", err),
+				Err:   fmt.Errorf("failed to acquire lock for different reason then unique constraint violation: %w", err),
 				Query: err.Error(),
 			}
 		} else if tags.RowsAffected() == 0 {
