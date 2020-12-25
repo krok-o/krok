@@ -142,17 +142,18 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		enabled   bool
 	)
 	f := func(tx pgx.Tx) error {
-		if err := tx.QueryRow(ctx, fmt.Sprintf("select name, id, schedule, filename, location, hash, enabled from %s where %s = $1", commandsTable, field), value).
+		query := fmt.Sprintf("select name, id, schedule, filename, location, hash, enabled from %s where %s = $1", commandsTable, field)
+		if err := tx.QueryRow(ctx, query, value).
 			Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled); err != nil {
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{
-					Query: "select ",
+					Query: query,
 					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query row.")
 			return &kerr.QueryError{
-				Query: "select by X",
+				Query: query,
 				Err:   err,
 			}
 		}
@@ -165,7 +166,7 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 	}
 
 	repositories, err := s.getRepositoriesForCommand(ctx, commandID)
-	if err != nil {
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetRepositoriesForCommand failed")
 		return nil, &kerr.QueryError{
 			Query: "select id",
@@ -191,18 +192,20 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 	// Select the related repositories.
 	result := make([]*models.Repository, 0)
 	f := func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, fmt.Sprintf("select r.id, name, url from %s r inner join %s rel"+
-			" on r.id = rel.command_id where r.id = $1", repositoriesTable, repositoryRelTable), id)
+		query := fmt.Sprintf("select r.id, name, url from %s r inner join %s rel"+
+			" on r.id = rel.repository_id where rel.command_id = $1", repositoriesTable, repositoryRelTable)
+		rows, err := tx.Query(ctx, query, id)
 		if err != nil {
 			if err.Error() == "no rows in result set" {
+				log.Debug().Err(err).Str("query", query).Msg("no repositories found for command.")
 				return &kerr.QueryError{
-					Query: "select id",
+					Query: query,
 					Err:   kerr.ErrNotFound,
 				}
 			}
 			log.Debug().Err(err).Msg("Failed to query rel_repositories_command.")
 			return &kerr.QueryError{
-				Query: "select id",
+				Query: query,
 				Err:   fmt.Errorf("failed to query rel table: %w", err),
 			}
 		}

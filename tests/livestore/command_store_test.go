@@ -157,10 +157,10 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	err = cp.AddCommandRelForRepository(ctx, c.ID, repo.ID)
 	assert.NoError(t, err)
 
-	c, err = cp.Get(ctx, c.ID)
+	cget, err := cp.Get(ctx, c.ID)
 	assert.NoError(t, err)
-	assert.NotNil(t, c.Repositories)
-	assert.Len(t, c.Repositories, 1)
+	assert.NotEmpty(t, cget.Repositories)
+	assert.Len(t, cget.Repositories, 1)
 }
 
 func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
