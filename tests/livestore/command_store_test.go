@@ -122,10 +122,9 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 			Converter: env,
 			Logger:    logger,
 		},
-		Connector:    connector,
-		CommandStore: cp,
-		Vault:        v,
-		Auth:         a,
+		Connector: connector,
+		Vault:     v,
+		Auth:      a,
 	})
 	ctx := context.Background()
 	// Create the first command.
@@ -161,6 +160,21 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, cget.Repositories)
 	assert.Len(t, cget.Repositories, 1)
+
+	repositories := cget.Repositories
+	assert.NotEmpty(t, repositories)
+	assert.Len(t, repositories, 1)
+
+	// deleting a command removes the relationship from the repository
+	err = cp.Delete(ctx, cget.ID)
+	assert.NoError(t, err)
+	// get again to retrieve repository information
+	repo, err = rp.Get(ctx, repo.ID)
+	assert.NoError(t, err)
+	commands := repo.Commands
+	assert.Empty(t, commands)
+
+	// deleting the repository removes the relationship from the command
 }
 
 func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {

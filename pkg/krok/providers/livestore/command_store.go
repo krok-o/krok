@@ -443,65 +443,6 @@ func (s *CommandStore) ReleaseLock(ctx context.Context, name string) error {
 	return nil
 }
 
-// GetCommandsForRepository returns a list of commands for a repository ID.
-func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id int) ([]*models.Command, error) {
-	log := s.Logger.With().Int("id", id).Logger()
-
-	// Select the related commands.
-	result := make([]*models.Command, 0)
-	f := func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, fmt.Sprintf("select c.id, name, schedule, filename, hash, location, enabled from %s as c inner join %s as relc"+
-			" on c.id = relc.command_id where relc.repository_id = $1", commandsTable, commandsRelTable), id)
-		if err != nil {
-			if err.Error() == "no rows in result set" {
-				return &kerr.QueryError{
-					Query: "select id",
-					Err:   kerr.ErrNotFound,
-				}
-			}
-			log.Debug().Err(err).Msg("Failed to query relationship.")
-			return &kerr.QueryError{
-				Query: "select commands for repository",
-				Err:   fmt.Errorf("failed to query rel table: %w", err),
-			}
-		}
-
-		for rows.Next() {
-			var (
-				storedID string
-				name     string
-				schedule string
-				fileName string
-				hash     string
-				location string
-				enabled  bool
-			)
-			if err := rows.Scan(&storedID, &name, &schedule, &fileName, &hash, &location, &enabled); err != nil {
-				log.Debug().Err(err).Msg("Failed to scan.")
-				return &kerr.QueryError{
-					Query: "select id",
-					Err:   fmt.Errorf("failed to scan: %w", err),
-				}
-			}
-			command := &models.Command{
-				Name:     name,
-				ID:       id,
-				Schedule: schedule,
-				Filename: fileName,
-				Location: location,
-				Hash:     hash,
-				Enabled:  enabled,
-			}
-			result = append(result, command)
-		}
-		return nil
-	}
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		return nil, fmt.Errorf("failed to execute GetCommandsForRepository: %w", err)
-	}
-	return result, nil
-}
-
 // AddCommandRelForRepository add an assignment for a command to a repository.
 func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error {
 	log := s.Logger.With().Str("func", "AddCommandRelForRepository").Int("command_id", commandID).Int("repository_id", repositoryID).Logger()
@@ -524,62 +465,6 @@ func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID
 
 	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to insert into " + commandsRelTable)
-		return err
-	}
-	return nil
-}
-
-// DeleteCommandRelForRepository deletes entries for a command.
-// I.e.: The command was deleted so remove its connection to any repository which had this command.
-func (s *CommandStore) DeleteCommandRelForRepository(ctx context.Context, commandID int) error {
-	log := s.Logger.With().Str("func", "DeleteCommandRelForRepository").Int("command_id", commandID).Logger()
-	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where command_id = $1", commandsRelTable),
-			commandID); err != nil {
-			log.Debug().Err(err).Msg("Failed to delete relationship between command and repository.")
-			return &kerr.QueryError{
-				Err:   err,
-				Query: "delete from " + commandsRelTable,
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "delete from " + commandsRelTable,
-			}
-		}
-		return nil
-	}
-
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to delete from " + commandsRelTable)
-		return err
-	}
-	return nil
-}
-
-// DeleteAllCommandRelForRepository deletes all relationship entries for this repository.
-// I.e.: The repository was deleted and now the relationships are gone to all commands.
-func (s *CommandStore) DeleteAllCommandRelForRepository(ctx context.Context, repositoryID int) error {
-	log := s.Logger.With().Str("func", "DeleteAllCommandRelForRepository").Int("repository_id", repositoryID).Logger()
-	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where repositroy_id = $1", commandsRelTable),
-			repositoryID); err != nil {
-			log.Debug().Err(err).Msg("Failed to delete relationship between command and repository.")
-			return &kerr.QueryError{
-				Err:   err,
-				Query: "delete from " + commandsRelTable,
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "delete from " + commandsRelTable,
-			}
-		}
-		return nil
-	}
-
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to delete from " + commandsRelTable)
 		return err
 	}
 	return nil

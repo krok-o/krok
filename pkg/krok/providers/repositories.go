@@ -21,8 +21,4 @@ type RepositoryStorer interface {
 
 	// AddRepositoryRelForCommand adds an entry for this command id to the given repositoryID.
 	AddRepositoryRelForCommand(ctx context.Context, commandID int, repositoryID int) error
-	// DeleteRepositoryRelForCommand deletes a entries for a repository and its commands.
-	// I.e.: The repository was deleted so remove its connection to all commands.
-	// When viewing the commands, that repository must not show up any longer.
-	DeleteRepositoryRelForCommand(ctx context.Context, repositoryID int) error
 }
