@@ -151,7 +151,6 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NotNil(t, repo)
-	err = rp.AddRepositoryRelForCommand(ctx, c.ID, repo.ID)
 	assert.NoError(t, err)
 	err = cp.AddCommandRelForRepository(ctx, c.ID, repo.ID)
 	assert.NoError(t, err)

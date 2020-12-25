@@ -16,9 +16,8 @@ import (
 )
 
 const (
-	commandsTable    = "commands"
-	commandsRelTable = "rel_command_repositories"
-	fileLockTable    = "file_lock"
+	commandsTable = "commands"
+	fileLockTable = "file_lock"
 )
 
 // CommandStore is a postgres based store for commands.
@@ -193,7 +192,7 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 	result := make([]*models.Repository, 0)
 	f := func(tx pgx.Tx) error {
 		query := fmt.Sprintf("select r.id, name, url from %s r inner join %s rel"+
-			" on r.id = rel.repository_id where rel.command_id = $1", repositoriesTable, repositoryRelTable)
+			" on r.id = rel.repository_id where rel.command_id = $1", repositoriesTable, commandsRepositoriesRelTable)
 		rows, err := tx.Query(ctx, query, id)
 		if err != nil {
 			if err.Error() == "no rows in result set" {
@@ -243,52 +242,17 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 func (s *CommandStore) Delete(ctx context.Context, id int) error {
 	log := s.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
-		if commandTags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", commandsTable), id); err != nil {
+		if _, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", commandsTable), id); err != nil {
 			log.Debug().Err(err).Msg("Failed to delete command.")
 			return &kerr.QueryError{
 				Query: "delete id",
 				Err:   fmt.Errorf("failed delete command: %w", err),
-			}
-		} else if commandTags.RowsAffected() > 0 {
-			// Make sure to only delete the relationship if the delete was successful.
-			if err := s.deleteAllRepositoryRelForCommand(ctx, id); err != nil && !errors.Is(err, kerr.ErrNoRowsAffected) {
-				log.Debug().Err(err).Msg("Failed to delete repository relationship for command.")
-				return &kerr.QueryError{
-					Query: "delete id",
-					Err:   fmt.Errorf("failed to delete repository relationship for command: %w", err),
-				}
 			}
 		}
 		return nil
 	}
 
 	return s.Connector.ExecuteWithTransaction(ctx, log, f)
-}
-
-func (s *CommandStore) deleteAllRepositoryRelForCommand(ctx context.Context, id int) error {
-	log := s.Logger.With().Str("func", "DeleteAllRepositoryRelForCommand").Int("command_id", id).Logger()
-	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where command_id = $1", repositoryRelTable),
-			id); err != nil {
-			log.Debug().Err(err).Msg("Failed to delete relationship between command and repository.")
-			return &kerr.QueryError{
-				Err:   err,
-				Query: "delete from " + repositoryRelTable,
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "delete from " + repositoryRelTable,
-			}
-		}
-		return nil
-	}
-
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to delete from " + repositoryRelTable)
-		return err
-	}
-	return nil
 }
 
 // Update modifies a command record.
@@ -447,24 +411,24 @@ func (s *CommandStore) ReleaseLock(ctx context.Context, name string) error {
 func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error {
 	log := s.Logger.With().Str("func", "AddCommandRelForRepository").Int("command_id", commandID).Int("repository_id", repositoryID).Logger()
 	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(command_id, repository_id) values($1, $2)", commandsRelTable),
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(command_id, repository_id) values($1, $2)", commandsRepositoriesRelTable),
 			commandID, repositoryID); err != nil {
 			log.Debug().Err(err).Msg("Failed to create relationship between command and repository.")
 			return &kerr.QueryError{
 				Err:   err,
-				Query: "insert into " + commandsRelTable,
+				Query: "insert into " + commandsRepositoriesRelTable,
 			}
 		} else if tags.RowsAffected() == 0 {
 			return &kerr.QueryError{
 				Err:   kerr.ErrNoRowsAffected,
-				Query: "insert into " + commandsRelTable,
+				Query: "insert into " + commandsRepositoriesRelTable,
 			}
 		}
 		return nil
 	}
 
 	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to insert into " + commandsRelTable)
+		log.Debug().Err(err).Msg("Failed to insert into " + commandsRepositoriesRelTable)
 		return err
 	}
 	return nil

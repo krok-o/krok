@@ -16,9 +16,4 @@ type RepositoryStorer interface {
 	Delete(ctx context.Context, id int) error
 	Update(ctx context.Context, c models.Repository) (*models.Repository, error)
 	List(ctx context.Context, opt *models.ListOptions) ([]*models.Repository, error)
-
-	// These functions handle operations on rel_repositories_command relationship table.
-
-	// AddRepositoryRelForCommand adds an entry for this command id to the given repositoryID.
-	AddRepositoryRelForCommand(ctx context.Context, commandID int, repositoryID int) error
 }

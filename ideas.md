@@ -89,3 +89,8 @@ Don't forget to stream back the command's output.
 
 Remove the connection between repository and command. Figure out a better way to track the relationship. Maybe use the
 same table?
+
+Use proper foreign key definitions and cascading delete on the intermediary table which connects commands with repos.
+
+Only a command can be assigned to a repository and not the other way around. So it makes sense to only have an
+AddCommandToRepository because the other way around doesn't make sense.

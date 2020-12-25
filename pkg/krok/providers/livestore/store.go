@@ -12,7 +12,10 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 )
 
-const timeoutForTransactions = 1 * time.Minute
+const (
+	timeoutForTransactions       = 1 * time.Minute
+	commandsRepositoriesRelTable = "rel_commands_repositories"
+)
 
 // Config has the configuration options for the store
 type Config struct {

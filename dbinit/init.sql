@@ -14,16 +14,18 @@ create table repositories (
     url varchar ( 256 )
 );
 
-create table rel_command_repositories (
+create table rel_commands_repositories (
     id serial primary key,
-    repository_id int not null,
-    command_id int unique not null
-);
-
-create table rel_repositories_command (
-    id serial primary key,
-    command_id int not null,
-    repository_id int unique not null
+    repository_id int,
+    command_id int,
+    constraint fk_repository_id
+        foreign key (repository_id)
+            references repositories(id)
+            on delete cascade,
+    constraint fk_command_id
+        foreign key (command_id)
+            references commands(id)
+            on delete cascade
 );
 
 create table users (
