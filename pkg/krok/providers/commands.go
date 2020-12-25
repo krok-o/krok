@@ -9,6 +9,7 @@ import (
 // CommandStorer handles CRUD operations for commands.
 type CommandStorer interface {
 	// These are basic CRUD operations for command entries.
+
 	Create(ctx context.Context, c *models.Command) (*models.Command, error)
 	Get(ctx context.Context, id int) (*models.Command, error)
 	GetByName(ctx context.Context, name string) (*models.Command, error)

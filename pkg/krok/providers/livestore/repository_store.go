@@ -115,7 +115,6 @@ func (r *RepositoryStore) Delete(ctx context.Context, id int) error {
 // it has to be re-created. Since auth is stored elsewhere.
 func (r *RepositoryStore) Update(ctx context.Context, c models.Repository) (*models.Repository, error) {
 	log := r.Logger.With().Int("id", c.ID).Str("name", c.Name).Logger()
-	var result *models.Repository
 	f := func(tx pgx.Tx) error {
 		// Prevent updating the ID and the creation timestamp.
 		// construct update statement:
@@ -278,13 +277,13 @@ func (r *RepositoryStore) GetByName(ctx context.Context, name string) (*models.R
 func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field string, value interface{}) (*models.Repository, error) {
 	log = r.Logger.With().Str("field", field).Interface("value", value).Logger()
 	// Get all data from the repository table.
-	var result *models.Repository
+	result := &models.Repository{}
 	f := func(tx pgx.Tx) error {
 		var (
 			id        int
 			name, url string
 		)
-		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url from widgets where %s=$1", field), value).Scan(&id, &name, &url); err != nil {
+		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url from %s where %s=$1", repositoriesTable, field), value).Scan(&id, &name, &url); err != nil {
 			return &kerr.QueryError{
 				Query: "select id",
 				Err:   fmt.Errorf("failed to scan: %w", err),
@@ -301,7 +300,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 
 	// Get all commands from the rel table.
 	commands, err := r.CommandStore.GetCommandsForRepository(ctx, result.ID)
-	if !errors.Is(err, kerr.ErrNotFound) {
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("Get failed to get repository commands.")
 		return nil, err
 	}
@@ -309,7 +308,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 
 	// Get auth info
 	auth, err := r.Auth.GetRepositoryAuth(ctx, result.ID)
-	if !errors.Is(err, kerr.ErrNotFound) {
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetRepositoryAuth failed.")
 		return nil, err
 	}

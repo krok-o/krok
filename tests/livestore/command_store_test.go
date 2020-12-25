@@ -13,8 +13,11 @@ import (
 	"github.com/stretchr/testify/require"
 
 	kerr "github.com/krok-o/krok/errors"
+	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
+	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
+	"github.com/krok-o/krok/pkg/krok/providers/vault"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/tests/dbaccess"
 )
@@ -83,19 +86,46 @@ func TestCommandStore_Flow(t *testing.T) {
 }
 
 func TestCommandStore_RelationshipFlow(t *testing.T) {
+	// TODO This relationship definitely needs to be refactored.
+	// setup repository provider
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_RelationshipFlow")
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	fileStore, err := filevault.NewFileStorer(filevault.Config{
+		Location: location,
+		Key:      "password123",
+	}, filevault.Dependencies{Logger: logger})
+	assert.NoError(t, err)
+	err = fileStore.Init()
+	assert.NoError(t, err)
+	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
+	assert.NoError(t, err)
+	a, err := auth.NewKrokAuth(auth.Config{}, auth.Dependencies{
+		Logger: logger,
+		Vault:  v,
+	})
+	assert.NoError(t, err)
+	connector := livestore.NewDatabaseConnector(livestore.Config{
+		Hostname: dbaccess.Hostname,
+		Database: dbaccess.Db,
+		Username: dbaccess.Username,
+		Password: dbaccess.Password,
+	}, livestore.Dependencies{
+		Logger:    logger,
+		Converter: env,
+	})
 	cp := livestore.NewCommandStore(livestore.CommandDependencies{
-		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
-			Database: dbaccess.Db,
-			Username: dbaccess.Username,
-			Password: dbaccess.Password,
-		}, livestore.Dependencies{
-			Logger:    logger,
+		Connector: connector,
+	})
+	rp := livestore.NewRepositoryStore(livestore.RepositoryDependencies{
+		Dependencies: livestore.Dependencies{
 			Converter: env,
-		}),
+			Logger:    logger,
+		},
+		Connector:    connector,
+		CommandStore: cp,
+		Vault:        v,
+		Auth:         a,
 	})
 	ctx := context.Background()
 	// Create the first command.
@@ -110,9 +140,27 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
-
 	// Add repository relation
+	repo, err := rp.Create(ctx, &models.Repository{
+		Name: "TestRepo1",
+		URL:  "https://github.com/Skarlso/test",
+		Auth: &models.Auth{
+			SSH:      "testSSH",
+			Username: "testUsername",
+			Password: "testPassword",
+		},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, repo)
+	err = rp.AddRepositoryRelForCommand(ctx, c.ID, repo.ID)
+	assert.NoError(t, err)
+	err = cp.AddCommandRelForRepository(ctx, c.ID, repo.ID)
+	assert.NoError(t, err)
 
+	c, err = cp.Get(ctx, c.ID)
+	assert.NoError(t, err)
+	assert.NotNil(t, c.Repositories)
+	assert.Len(t, c.Repositories, 1)
 }
 
 func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {

@@ -35,10 +35,12 @@ type KrokVault struct {
 // KEY=VALUE
 // KEY2=VALUE2
 func NewKrokVault(cfg Config, deps Dependencies) (*KrokVault, error) {
-	return &KrokVault{
+	kv := &KrokVault{
 		Config:       cfg,
 		Dependencies: deps,
-	}, nil
+	}
+	kv.data = make(map[string][]byte)
+	return kv, nil
 }
 
 // ParseToMap will update the Vault data map with values from

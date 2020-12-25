@@ -191,7 +191,7 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 	// Select the related repositories.
 	result := make([]*models.Repository, 0)
 	f := func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, fmt.Sprintf("select (r.id, name, url) from %s r inner join %s rel"+
+		rows, err := tx.Query(ctx, fmt.Sprintf("select r.id, name, url from %s r inner join %s rel"+
 			" on r.id = rel.command_id where r.id = $1", repositoriesTable, repositoryRelTable), id)
 		if err != nil {
 			if err.Error() == "no rows in result set" {
@@ -447,8 +447,8 @@ func (s *CommandStore) GetCommandsForRepository(ctx context.Context, id int) ([]
 	// Select the related commands.
 	result := make([]*models.Command, 0)
 	f := func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, fmt.Sprintf("select id, name, schedule, filename, hash, location, enabled from %s as c inner join %s as relc"+
-			" on c.repository_id = relc.repository_id where c.repository_id = $1", commandsTable, commandsRelTable), id)
+		rows, err := tx.Query(ctx, fmt.Sprintf("select c.id, name, schedule, filename, hash, location, enabled from %s as c inner join %s as relc"+
+			" on c.id = relc.command_id where relc.repository_id = $1", commandsTable, commandsRelTable), id)
 		if err != nil {
 			if err.Error() == "no rows in result set" {
 				return &kerr.QueryError{

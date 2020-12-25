@@ -81,19 +81,19 @@ func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth,
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 	username, err := a.Vault.GetSecret(fmt.Sprintf(usernameFormat, id))
-	if !errors.Is(err, kerr.ErrNotFound) {
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetSecret failed for username")
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 
 	password, err := a.Vault.GetSecret(fmt.Sprintf(passwordFormat, id))
-	if !errors.Is(err, kerr.ErrNotFound) {
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetSecret failed for password")
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 
 	sshKey, err := a.Vault.GetSecret(fmt.Sprintf(sshKeyFormat, id))
-	if !errors.Is(err, kerr.ErrNotFound) {
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("GetSecret failed sshKey")
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}

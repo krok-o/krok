@@ -136,7 +136,7 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 
 	apiKeys, err := s.APIKeys.List(ctx, storedID)
 	// if we didn't find any, that's fine.
-	if !errors.Is(err, kerr.ErrNotFound) {
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("Failed to get api keys for user.")
 		return nil, fmt.Errorf("failed to get api keys for user: %w", err)
 	}
