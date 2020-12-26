@@ -9,9 +9,12 @@ type Auth struct {
 
 // Repository is a repository which can be managed by Krok.
 type Repository struct {
-	Name     string     `json:"name"`
-	ID       int        `json:"id"`
-	URL      string     `json:"url"`
+	Name string `json:"name"`
+	ID   int    `json:"id"`
+	URL  string `json:"url"`
+	// Defines which handler will be used. For values, see handlers.go.
+	VCS int `json:"vcs"`
+	// Auth an command are all dynamically generated.
 	Auth     *Auth      `json:"auth,omitempty"`
 	Commands []*Command `json:"commands,omitempty"`
 }

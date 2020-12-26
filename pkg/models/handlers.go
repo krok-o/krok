@@ -4,7 +4,7 @@ const (
 	// All the different types of hooks.
 
 	// GITHUB based hooks
-	GITHUB = iota
+	GITHUB = iota + 1
 	// GITLAB based hooks
 	GITLAB
 	// GITEA based hooks

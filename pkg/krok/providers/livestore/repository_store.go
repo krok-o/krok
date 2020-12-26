@@ -46,9 +46,10 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 	// id will be generated.
 
 	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, url) values($1, $2)", repositoriesTable),
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, url, vcs) values($1, $2, $3)", repositoriesTable),
 			c.Name,
-			c.URL); err != nil {
+			c.URL,
+			c.VCS); err != nil {
 			log.Debug().Err(err).Msg("Failed to create repository.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -143,11 +144,14 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 	// Select all repositories.
 	result := make([]*models.Repository, 0)
 	f := func(tx pgx.Tx) error {
-		sql := fmt.Sprintf("select id, name, url from %s", repositoriesTable)
+		sql := fmt.Sprintf("select id, name, url, vcs from %s", repositoriesTable)
 		where := " where "
 		filters := make([]string, 0)
 		if opts.Name != "" {
-			filters = append(filters, "name = %"+opts.Name+"%")
+			filters = append(filters, "name LIKE '%"+opts.Name+"%'")
+		}
+		if opts.VCS != 0 {
+			filters = append(filters, fmt.Sprintf("vcs = %d", opts.VCS))
 		}
 		filter := strings.Join(filters, " AND ")
 		if filter != "" {
@@ -173,15 +177,21 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 				id   int
 				name string
 				url  string
+				vcs  int
 			)
-			if err := rows.Scan(&id, &name, &url); err != nil {
+			if err := rows.Scan(&id, &name, &url, &vcs); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select all repositories",
 					Err:   fmt.Errorf("failed to scan: %w", err),
 				}
 			}
-			repository := &models.Repository{}
+			repository := &models.Repository{
+				Name: name,
+				ID:   id,
+				URL:  url,
+				VCS:  vcs,
+			}
 			result = append(result, repository)
 		}
 		return nil
@@ -212,10 +222,10 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 	result := &models.Repository{}
 	f := func(tx pgx.Tx) error {
 		var (
-			id        int
+			id, vcs   int
 			name, url string
 		)
-		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url from %s where %s=$1", repositoriesTable, field), value).Scan(&id, &name, &url); err != nil {
+		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url, vcs from %s where %s=$1", repositoriesTable, field), value).Scan(&id, &name, &url, &vcs); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select id",
@@ -230,6 +240,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 		result.ID = id
 		result.Name = name
 		result.URL = url
+		result.VCS = vcs
 		return nil
 	}
 	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {

@@ -336,7 +336,15 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 					Err:   fmt.Errorf("failed to scan: %w", err),
 				}
 			}
-			command := &models.Command{}
+			command := &models.Command{
+				Name:     name,
+				ID:       id,
+				Schedule: schedule,
+				Filename: filename,
+				Location: location,
+				Hash:     hash,
+				Enabled:  enabled,
+			}
 			result = append(result, command)
 		}
 		return nil
