@@ -17,7 +17,6 @@ import (
 // UserStore is a postgres based store for users.
 type UserStore struct {
 	UserDependencies
-	Config
 }
 
 // UserDependencies user specific dependencies.
@@ -28,8 +27,8 @@ type UserDependencies struct {
 }
 
 // NewUserStore creates a new UserStore
-func NewUserStore(cfg Config, deps UserDependencies) *UserStore {
-	return &UserStore{Config: cfg, UserDependencies: deps}
+func NewUserStore(deps UserDependencies) *UserStore {
+	return &UserStore{UserDependencies: deps}
 }
 
 // Create saves a user in the db.
@@ -43,7 +42,7 @@ func (s *UserStore) Create(ctx context.Context, user *models.User) (*models.User
 			user.DisplayName); err != nil {
 			log.Debug().Err(err).Msg("Failed to create user.")
 			return &kerr.QueryError{
-				Err:   err,
+				Err:   fmt.Errorf("failed create user: %w", err),
 				Query: "insert into users",
 			}
 		} else if tags.RowsAffected() == 0 {
@@ -115,23 +114,24 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		storedLastLogin   time.Time
 	)
 	f := func(tx pgx.Tx) error {
-		withWhere := fmt.Sprintf("select id, email, display_name last_login from users where %s = $1", field)
+		withWhere := fmt.Sprintf("select id, email, display_name, last_login from users where %s = $1", field)
 		err := tx.QueryRow(ctx, withWhere, value).
 			Scan(&storedID, &storedEmail, &storedDisplayName, &storedLastLogin)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Err:   kerr.ErrNotFound,
-					Query: "select user",
+					Query: withWhere,
 				}
 			}
+			log.Debug().Err(err).Msg("Failed to run select for users.")
 			return err
 		}
 		return nil
 	}
 	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to run transaction for GetByField.")
-		return nil, err
+		return nil, fmt.Errorf("failed to run user transaction: %w", err)
 	}
 
 	apiKeys, err := s.APIKeys.List(ctx, storedID)

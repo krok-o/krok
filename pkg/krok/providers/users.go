@@ -9,6 +9,7 @@ import (
 // UserStorer handles CRUD operations for users.
 type UserStorer interface {
 	// User CRUD commands
+
 	Create(ctx context.Context, c *models.User) (*models.User, error)
 	Delete(ctx context.Context, id int) error
 	List(ctx context.Context) ([]*models.User, error)

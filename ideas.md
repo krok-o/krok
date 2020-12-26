@@ -94,3 +94,10 @@ Use proper foreign key definitions and cascading delete on the intermediary tabl
 
 Only a command can be assigned to a repository and not the other way around. So it makes sense to only have an
 AddCommandToRepository because the other way around doesn't make sense.
+
+## Users
+
+Users will be done by logging in / registering via Google and OpenID. The platform will not provide registration and such.
+The backend will use JWT to authenticate. The pure API login will be handled by API keys. The normal frontend will generate
+the JWT using openid and google log in. The api will generate the JWT using the api key matching. Api Keys will be encrypted
+and stored encrypted and matched encrypted.

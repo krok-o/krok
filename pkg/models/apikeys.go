@@ -8,7 +8,7 @@ import (
 type APIKey struct {
 	ID           int       `json:"id"`
 	Name         string    `json:"name,omitempty"`
-	UserID       string    `json:"user_id"`
+	UserID       int       `json:"user_id"`
 	APIKeyID     string    `json:"api_key_id"`
 	APIKeySecret []byte    `json:"api_key_secret"`
 	TTL          time.Time `json:"ttl"`

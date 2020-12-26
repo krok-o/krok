@@ -20,7 +20,6 @@ const (
 // APIKeysStore is a postgres based store for APIKeys.
 type APIKeysStore struct {
 	APIKeysDependencies
-	Config
 }
 
 // APIKeysDependencies APIKeys specific dependencies.
@@ -30,8 +29,8 @@ type APIKeysDependencies struct {
 }
 
 // NewAPIKeysStore creates a new APIKeysStore
-func NewAPIKeysStore(cfg Config, deps APIKeysDependencies) *APIKeysStore {
-	return &APIKeysStore{Config: cfg, APIKeysDependencies: deps}
+func NewAPIKeysStore(deps APIKeysDependencies) *APIKeysStore {
+	return &APIKeysStore{APIKeysDependencies: deps}
 }
 
 var _ providers.APIKeys = &APIKeysStore{}
@@ -41,28 +40,19 @@ func (a *APIKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.
 	log := a.Logger.With().Str("name", key.Name).Str("id", key.APIKeyID).Logger()
 	var returnID int
 	f := func(tx pgx.Tx) error {
-		if row, err := tx.Query(ctx, fmt.Sprintf("insert into %s(name, api_key_id, api_key_secret, user_id, ttl) values($1, $2, $3, $4, $5) returning id", apiKeysTable),
+		query := fmt.Sprintf("insert into %s(name, api_key_id, api_key_secret, user_id, ttl) values($1, $2, $3, $4, $5) returning id", apiKeysTable)
+		row := tx.QueryRow(ctx, query,
 			key.Name,
 			key.APIKeyID,
 			key.APIKeySecret,
 			key.UserID,
-			key.TTL); err != nil {
-			log.Debug().Err(err).Msg("Failed to create api key.")
+			key.TTL)
+
+		if err := row.Scan(&returnID); err != nil {
+			log.Debug().Err(err).Str("query", query).Msg("Failed to scan row.")
 			return &kerr.QueryError{
 				Err:   err,
-				Query: "insert into apikeys",
-			}
-		} else if row.CommandTag().RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "insert into apikeys",
-			}
-		} else {
-			if err := row.Scan(&returnID); err != nil {
-				return &kerr.QueryError{
-					Err:   err,
-					Query: "scanning row",
-				}
+				Query: query,
 			}
 		}
 		return nil
@@ -161,11 +151,11 @@ func (a *APIKeysStore) Get(ctx context.Context, id int) (*models.APIKey, error) 
 		storedID       int
 		storedName     string
 		storedAPIKeyID string
-		storedUserID   string
+		storedUserID   int
 		storedTTL      time.Time
 	)
 	f := func(tx pgx.Tx) error {
-		err := tx.QueryRow(ctx, "select id, name, api_key_id, user_id, ttl from %s where id = $1", id).
+		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, user_id, ttl from %s where id = $1", apiKeysTable), id).
 			Scan(&storedID, &storedName, &storedAPIKeyID, &storedUserID, &storedTTL)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
