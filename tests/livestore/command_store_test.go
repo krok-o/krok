@@ -86,8 +86,6 @@ func TestCommandStore_Flow(t *testing.T) {
 }
 
 func TestCommandStore_RelationshipFlow(t *testing.T) {
-	// TODO This relationship definitely needs to be refactored.
-	// setup repository provider
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_RelationshipFlow")
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
@@ -174,6 +172,35 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	assert.Empty(t, commands)
 
 	// deleting the repository removes the relationship from the command
+	// Create the second command.
+	c2, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_Relationship_Flow-2",
+		Schedule:     "Test_Relationship_Flow-test-schedule-2",
+		Repositories: nil,
+		Filename:     "Test_Relationship_Flow-test-filename-create-2",
+		Location:     location,
+		Hash:         "Test_Relationship_Flow-hash1-2",
+		Enabled:      false,
+	})
+	assert.NoError(t, err)
+
+	// add repository relationship
+	err = cp.AddCommandRelForRepository(ctx, c2.ID, repo.ID)
+	assert.NoError(t, err)
+
+	// Get and check the repository connection
+	c2, err = cp.Get(ctx, c2.ID)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, c2.Repositories)
+
+	// Remove the repository
+	err = rp.Delete(ctx, repo.ID)
+	assert.NoError(t, err)
+
+	// get again to get repositories
+	c2, err = cp.Get(ctx, c2.ID)
+	assert.NoError(t, err)
+	assert.Empty(t, c2.Repositories)
 }
 
 func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
