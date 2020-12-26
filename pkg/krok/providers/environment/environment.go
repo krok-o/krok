@@ -24,18 +24,25 @@ type Dependencies struct {
 type DockerConverter struct {
 	Config
 	Dependencies
+
+	prefix string
 }
 
 // NewDockerConverter creates a new DockerConverter.
 func NewDockerConverter(cfg Config, deps Dependencies) *DockerConverter {
-	return &DockerConverter{Config: cfg, Dependencies: deps}
+	d := &DockerConverter{
+		Config:       cfg,
+		Dependencies: deps,
+		prefix:       dockerSecretPrefix,
+	}
+	return d
 }
 
 // LoadValueFromFile provides the ability to load a secret from a docker
 // mounted secret file if the value contains `/run/secret`.
 func (d *DockerConverter) LoadValueFromFile(f string) (string, error) {
 	// if we don't have that prefix, simply return the content.
-	if !strings.HasPrefix(f, dockerSecretPrefix) {
+	if !strings.HasPrefix(f, d.prefix) {
 		return f, nil
 	}
 	// Load the content from file

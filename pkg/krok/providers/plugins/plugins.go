@@ -126,6 +126,18 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 	file := event.Name
 	log = log.With().Str("file", file).Logger()
 
+	if err := p.Store.AcquireLock(ctx, file); err != nil {
+		if errors.Is(err, kerr.ErrAcquireLockFailed) {
+			log.Debug().Msg("Some other process is already handling this file's create event.")
+			return nil
+		}
+	}
+	defer func() {
+		if err := p.Store.ReleaseLock(ctx, file); err != nil {
+			log.Debug().Err(err).Msg("Failed to release lock...")
+		}
+	}()
+
 	log.Debug().Msg("New file added.")
 	hash, err := p.generateHash(file)
 	if err != nil || hash == "" {
@@ -149,6 +161,17 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
 	file := event.Name
 	log = log.With().Str("file", file).Logger()
+	if err := p.Store.AcquireLock(ctx, file); err != nil {
+		if errors.Is(err, kerr.ErrAcquireLockFailed) {
+			log.Debug().Msg("Some other process is already handling this file's delete event.")
+			return nil
+		}
+	}
+	defer func() {
+		if err := p.Store.ReleaseLock(ctx, file); err != nil {
+			log.Debug().Err(err).Msg("Failed to release lock...")
+		}
+	}()
 
 	log.Debug().Msg("File deleted. Disabling plugin.")
 	hash, err := p.generateHash(file)
