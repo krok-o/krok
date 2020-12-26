@@ -14,6 +14,6 @@ type RepositoryStorer interface {
 	Get(ctx context.Context, id int) (*models.Repository, error)
 	GetByName(ctx context.Context, name string) (*models.Repository, error)
 	Delete(ctx context.Context, id int) error
-	Update(ctx context.Context, c models.Repository) (*models.Repository, error)
+	Update(ctx context.Context, c *models.Repository) (*models.Repository, error)
 	List(ctx context.Context, opt *models.ListOptions) ([]*models.Repository, error)
 }

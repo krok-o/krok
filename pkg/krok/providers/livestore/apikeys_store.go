@@ -2,6 +2,7 @@ package livestore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -110,7 +111,7 @@ func (a *APIKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, 
 		rows, err := tx.Query(ctx, fmt.Sprintf("select id, name, api_key_id, ttl from %s "+
 			"where user_id = $1", apiKeysTable), userID)
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select all apikeys",
 					Err:   kerr.ErrNotFound,
@@ -167,7 +168,7 @@ func (a *APIKeysStore) Get(ctx context.Context, id int) (*models.APIKey, error) 
 		err := tx.QueryRow(ctx, "select id, name, api_key_id, user_id, ttl from %s where id = $1", id).
 			Scan(&storedID, &storedName, &storedAPIKeyID, &storedUserID, &storedTTL)
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Err:   kerr.ErrNotFound,
 					Query: "select apikey",

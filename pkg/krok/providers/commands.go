@@ -21,6 +21,8 @@ type CommandStorer interface {
 
 	// AddCommandRelForRepository adds an entry for this command id to the given repositoryID.
 	AddCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error
+	// RemoveCommandRelForRepository remove a relation to a repository for a command.
+	RemoveCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error
 
 	// Lock file functionality to prevent processing multiple commands simultaneously.
 

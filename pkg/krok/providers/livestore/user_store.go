@@ -119,7 +119,7 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		err := tx.QueryRow(ctx, withWhere, value).
 			Scan(&storedID, &storedEmail, &storedDisplayName, &storedLastLogin)
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Err:   kerr.ErrNotFound,
 					Query: "select user",
@@ -189,7 +189,7 @@ func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
 	f := func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, "select id, email, display_name, last_login from users")
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select all users",
 					Err:   kerr.ErrNotFound,

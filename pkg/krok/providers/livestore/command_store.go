@@ -144,7 +144,7 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		query := fmt.Sprintf("select name, id, schedule, filename, location, hash, enabled from %s where %s = $1", commandsTable, field)
 		if err := tx.QueryRow(ctx, query, value).
 			Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled); err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: query,
 					Err:   kerr.ErrNotFound,
@@ -195,7 +195,7 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 			" on r.id = rel.repository_id where rel.command_id = $1", repositoriesTable, commandsRepositoriesRelTable)
 		rows, err := tx.Query(ctx, query, id)
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				log.Debug().Err(err).Str("query", query).Msg("no repositories found for command.")
 				return &kerr.QueryError{
 					Query: query,
@@ -306,7 +306,7 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 		}
 		rows, err := tx.Query(ctx, sql)
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select all commands",
 					Err:   kerr.ErrNotFound,
@@ -429,6 +429,33 @@ func (s *CommandStore) AddCommandRelForRepository(ctx context.Context, commandID
 
 	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to insert into " + commandsRepositoriesRelTable)
+		return err
+	}
+	return nil
+}
+
+// RemoveCommandRelForRepository remove a relation to a repository for a command.
+func (s *CommandStore) RemoveCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error {
+	log := s.Logger.With().Str("func", "RemoveCommandRelForRepository").Int("command_id", commandID).Int("repository_id", repositoryID).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where command_id = $1 and repository_id = $2", commandsRepositoriesRelTable),
+			commandID, repositoryID); err != nil {
+			log.Debug().Err(err).Msg("Failed to remove relationship for command and repository.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "delete from " + commandsRepositoriesRelTable,
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.ErrNoRowsAffected,
+				Query: "delete from " + commandsRepositoriesRelTable,
+			}
+		}
+		return nil
+	}
+
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to delete from " + commandsRepositoriesRelTable)
 		return err
 	}
 	return nil

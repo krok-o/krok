@@ -101,12 +101,12 @@ func (r *RepositoryStore) Delete(ctx context.Context, id int) error {
 
 // Update can only update the name of the repository. If auth information is updated for the repository,
 // it has to be re-created. Since auth is stored elsewhere.
-func (r *RepositoryStore) Update(ctx context.Context, c models.Repository) (*models.Repository, error) {
+func (r *RepositoryStore) Update(ctx context.Context, c *models.Repository) (*models.Repository, error) {
 	log := r.Logger.With().Int("id", c.ID).Str("name", c.Name).Logger()
 	f := func(tx pgx.Tx) error {
 		// Prevent updating the ID and the creation timestamp.
 		// construct update statement:
-		tags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1", commandsTable),
+		tags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1", repositoriesTable),
 			c.Name)
 		if err != nil {
 			return &kerr.QueryError{
@@ -155,7 +155,7 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 		}
 		rows, err := tx.Query(ctx, sql)
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select all repositories",
 					Err:   kerr.ErrNotFound,
@@ -170,7 +170,7 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 
 		for rows.Next() {
 			var (
-				id   string
+				id   int
 				name string
 				url  string
 			)
@@ -216,6 +216,12 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 			name, url string
 		)
 		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url from %s where %s=$1", repositoriesTable, field), value).Scan(&id, &name, &url); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: "select id",
+					Err:   kerr.ErrNotFound,
+				}
+			}
 			return &kerr.QueryError{
 				Query: "select id",
 				Err:   fmt.Errorf("failed to scan: %w", err),
@@ -258,7 +264,7 @@ func (r *RepositoryStore) getCommandsForRepository(ctx context.Context, id int) 
 		rows, err := tx.Query(ctx, fmt.Sprintf("select c.id, name, schedule, filename, hash, location, enabled from %s as c inner join %s as relc"+
 			" on c.id = relc.command_id where relc.repository_id = $1", commandsTable, commandsRepositoriesRelTable), id)
 		if err != nil {
-			if err.Error() == "no rows in result set" {
+			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select id",
 					Err:   kerr.ErrNotFound,
