@@ -82,7 +82,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// Admin related actions
 	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
 	auth.POST("/repository", s.Dependencies.RepositoryHandler.Create())
-	auth.GET("/repository", s.Dependencies.RepositoryHandler.Get())
+	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.Get())
 	auth.DELETE("/repository", s.Dependencies.RepositoryHandler.Delete())
 	auth.GET("/repositories", s.Dependencies.RepositoryHandler.List())
 
