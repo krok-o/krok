@@ -7,19 +7,20 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/labstack/echo"
-	"github.com/labstack/echo/middleware"
+	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/acme/autocert"
 
 	"github.com/krok-o/krok/pkg/krok"
+	"github.com/krok-o/krok/pkg/krok/providers"
 )
 
 const (
 	api = "/rest/api/1"
 )
 
-// Config is the configuration of the bot's main cycle.
+// Config is the configuration of the server
 type Config struct {
 	Port           string
 	Hostname       string
@@ -36,10 +37,11 @@ type KrokServer struct {
 	Dependencies
 }
 
-// Dependencies defines needed dependencies for this bot.
+// Dependencies defines needed dependencies for the krok server.
 type Dependencies struct {
-	Logger zerolog.Logger
-	Krok   krok.Handler
+	Logger            zerolog.Logger
+	Krok              krok.Handler
+	RepositoryHandler providers.RepositoriesHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -78,8 +80,11 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	e.POST("/hook/:id", s.Dependencies.Krok.HandleHooks(ctx))
 
 	// Admin related actions
-	//auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
-	//auth.GET("/hooks")
+	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
+	auth.POST("/repository", s.Dependencies.RepositoryHandler.Create())
+	auth.GET("/repository", s.Dependencies.RepositoryHandler.Get())
+	auth.DELETE("/repository", s.Dependencies.RepositoryHandler.Delete())
+	auth.GET("/repositories", s.Dependencies.RepositoryHandler.List())
 
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 
