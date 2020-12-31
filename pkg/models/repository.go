@@ -19,5 +19,5 @@ type Repository struct {
 	Commands []*Command `json:"commands,omitempty"`
 	// This field is not saved in the DB but generated every time the repository
 	// details needs to be displayed.
-	UniqueURL string `json:"unique_url"`
+	UniqueURL string `json:"unique_url,omitempty"`
 }

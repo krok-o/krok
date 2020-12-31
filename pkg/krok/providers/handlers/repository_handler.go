@@ -40,7 +40,25 @@ func NewRepositoryHandler(cfg Config, deps RepoHandlerDependencies) (*RepoHandle
 
 // Create handles the Create rest event.
 func (r *RepoHandler) Create() echo.HandlerFunc {
-	panic("implement me")
+	return func(c echo.Context) error {
+		_, err := r.TokenProvider.GetToken(c)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to get token", http.StatusBadRequest, err))
+		}
+		repo := &models.Repository{}
+		err = c.Bind(repo)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
+		}
+
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		defer cancel()
+		created, err := r.RepositoryStorer.Create(ctx, repo)
+		if err != nil {
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository", http.StatusBadRequest, err))
+		}
+		return c.JSON(http.StatusOK, created)
+	}
 }
 
 // Delete handles the Delete rest event.
