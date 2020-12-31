@@ -19,27 +19,27 @@ const (
 	sshKeyFormat   = prefixFormat + "_REPO_SSH_KEY"
 )
 
-// Config has the configuration options for the vault.
-type Config struct {
+// AuthConfig has the configuration options for the vault.
+type AuthConfig struct {
 }
 
-// Dependencies defines the dependencies for the plugin provider.
-type Dependencies struct {
+// AuthDependencies defines the dependencies for the auth provider.
+type AuthDependencies struct {
 	Logger zerolog.Logger
 	Vault  providers.Vault
 }
 
 // KrokAuth is the authentication provider for Krok.
 type KrokAuth struct {
-	Config
-	Dependencies
+	AuthConfig
+	AuthDependencies
 }
 
 // NewKrokAuth creates a new Krok authentication provider.
-func NewKrokAuth(cfg Config, deps Dependencies) (*KrokAuth, error) {
+func NewKrokAuth(cfg AuthConfig, deps AuthDependencies) (*KrokAuth, error) {
 	return &KrokAuth{
-		Config:       cfg,
-		Dependencies: deps,
+		AuthConfig:       cfg,
+		AuthDependencies: deps,
 	}, nil
 }
 

@@ -12,6 +12,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
@@ -24,9 +25,9 @@ type Config struct {
 
 // Dependencies defines the dependencies for the repository handler provider.
 type Dependencies struct {
-	Logger       zerolog.Logger
-	UserStore    providers.UserStorer
-	ApiKeysStore providers.APIKeys
+	Logger     zerolog.Logger
+	UserStore  providers.UserStorer
+	ApiKeyAuth providers.ApiKeysAuthenticator
 }
 
 // TokenProvider is a token provider for the handlers.
@@ -40,27 +41,39 @@ func NewTokenProvider(cfg Config, deps Dependencies) (*TokenProvider, error) {
 	return &TokenProvider{Config: cfg, Dependencies: deps}, nil
 }
 
-// TokenHandler creates a JWT token for a given user.
+// ApiKeyAuthRequest contains a user email and their api key.
+type ApiKeyAuthRequest struct {
+	Email        string `json:"email"`
+	APIKeyID     string `json:"api_key_id"`
+	APIKeySecret string `json:"api_key_secret"`
+}
+
+// TokenHandler creates a JWT token for a given api key pair.
 func (p *TokenProvider) TokenHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 
-		// TODO: This either needs to get an email in the body to generate a token for,
-		// or check if there is an API key and secret provided and generate the token
-		// based on that.
-
-		user := &models.User{}
-		err := c.Bind(user)
+		request := &ApiKeyAuthRequest{}
+		err := c.Bind(request)
 		if err != nil {
-			p.Logger.Error().Err(err).Msg("Failed to bind user")
+			p.Logger.Error().Err(err).Msg("Failed to bind request")
 			return err
 		}
-		log := p.Logger.With().Str("email", user.Email).Logger()
+		log := p.Logger.With().Str("email", request.Email).Logger()
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
 		defer cancel()
 
-		u, err := p.UserStore.Get(ctx, user.ID)
+		// Assert Api Key, then Get the request if the api key has matched successfully.
+		if err := p.ApiKeyAuth.Match(ctx, &models.APIKey{
+			APIKeyID:     request.APIKeyID,
+			APIKeySecret: []byte(request.APIKeySecret),
+		}); err != nil {
+			log.Debug().Err(err).Msg("Failed to match api keys.")
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("Failed to match api keys", http.StatusInternalServerError, err))
+		}
+
+		u, err := p.UserStore.GetByEmail(ctx, request.Email)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("Failed to get user", http.StatusInternalServerError, err))
 		}
 
 		// Create token
@@ -76,7 +89,7 @@ func (p *TokenProvider) TokenHandler() echo.HandlerFunc {
 		t, err := token.SignedString([]byte(p.Config.GlobalTokenKey))
 		if err != nil {
 			log.Error().Err(err).Msg("Failed to generate token.")
-			return err
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("Failed to generate token", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusOK, map[string]string{
