@@ -71,7 +71,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		ApiKeyAuth: maka,
 	}
 	cfg := Config{
-		Hostname:       "testHost",
+		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
 	tp, err := NewTokenProvider(cfg, deps)
@@ -88,7 +88,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 	assert.NoError(t, err)
 
 	repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1}`
-	repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1}
+	repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://testHost/0/1/callback"}
 `
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))

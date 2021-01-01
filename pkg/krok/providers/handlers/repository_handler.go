@@ -60,6 +60,12 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository", http.StatusBadRequest, err))
 		}
+		uurl, err := r.generateUniqueCallBackURL(created)
+		if err != nil {
+			r.Logger.Debug().Err(err).Msg("Failed to generate unique url.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to generate unique call back url", http.StatusBadRequest, err))
+		}
+		created.UniqueURL = uurl
 		return c.JSON(http.StatusCreated, created)
 	}
 }
