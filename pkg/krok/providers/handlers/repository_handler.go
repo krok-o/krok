@@ -19,7 +19,7 @@ import (
 type RepoHandlerDependencies struct {
 	Dependencies
 	RepositoryStorer providers.RepositoryStorer
-	TokenProvider    TokenProvider
+	TokenProvider    *TokenProvider
 }
 
 // RepoHandler is a handler taking care of repository related api calls.
@@ -60,7 +60,7 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository", http.StatusBadRequest, err))
 		}
-		return c.JSON(http.StatusOK, created)
+		return c.JSON(http.StatusCreated, created)
 	}
 }
 

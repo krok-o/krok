@@ -51,7 +51,6 @@ type ApiKeyAuthRequest struct {
 // TokenHandler creates a JWT token for a given api key pair.
 func (p *TokenProvider) TokenHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
-
 		request := &ApiKeyAuthRequest{}
 		err := c.Bind(request)
 		if err != nil {
