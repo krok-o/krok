@@ -41,7 +41,7 @@ type KrokServer struct {
 type Dependencies struct {
 	Logger            zerolog.Logger
 	Krok              krok.Handler
-	RepositoryHandler providers.RepositoriesHandler
+	RepositoryHandler providers.RepositoryHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -81,10 +81,11 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// Admin related actions
 	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
-	auth.POST("/repository", s.Dependencies.RepositoryHandler.Create())
-	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.Get())
-	auth.DELETE("/repository", s.Dependencies.RepositoryHandler.Delete())
-	auth.GET("/repositories", s.Dependencies.RepositoryHandler.List())
+	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
+	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
+	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())
+	auth.POST("/repositories", s.Dependencies.RepositoryHandler.ListRepositories())
+	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.UpdateRepository())
 
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 
