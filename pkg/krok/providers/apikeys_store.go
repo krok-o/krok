@@ -16,4 +16,6 @@ type APIKeys interface {
 	List(ctx context.Context, userID int) ([]*models.APIKey, error)
 	// Get an apikey.
 	Get(ctx context.Context, id int) (*models.APIKey, error)
+	// GetByApiKeyID an apikey by apikeyid.
+	GetByApiKeyID(ctx context.Context, id string) (*models.APIKey, error)
 }

@@ -181,3 +181,41 @@ func (a *APIKeysStore) Get(ctx context.Context, id int) (*models.APIKey, error) 
 		TTL:      storedTTL,
 	}, nil
 }
+
+// GetByApiKeyID an apikey by it's generated id.
+func (a *APIKeysStore) GetByApiKeyID(ctx context.Context, id string) (*models.APIKey, error) {
+	log := a.Logger.With().Str("id", id).Logger()
+	var (
+		storedID       int
+		storedName     string
+		storedAPIKeyID string
+		storedUserID   int
+		storedTTL      time.Time
+	)
+	f := func(tx pgx.Tx) error {
+		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, user_id, ttl from %s where api_key_id = $1", apiKeysTable), id).
+			Scan(&storedID, &storedName, &storedAPIKeyID, &storedUserID, &storedTTL)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Err:   kerr.ErrNotFound,
+					Query: "select apikey",
+				}
+			}
+			return err
+		}
+		return nil
+	}
+	if err := a.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to run transaction for get api key.")
+		return nil, err
+	}
+
+	return &models.APIKey{
+		ID:       storedID,
+		Name:     storedName,
+		UserID:   storedUserID,
+		APIKeyID: storedAPIKeyID,
+		TTL:      storedTTL,
+	}, nil
+}

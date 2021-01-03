@@ -20,3 +20,22 @@ type QueryError struct {
 
 func (e *QueryError) Error() string { return e.Query + ": " + e.Err.Error() }
 func (e *QueryError) Unwrap() error { return e.Err }
+
+// Message represents an error message.
+type Message struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Error   string `json:"error"`
+}
+
+// APIError wraps a message and a code into a struct for JSON parsing.
+func APIError(m string, code int, err error) Message {
+	if err == nil {
+		err = errors.New("unexpected error")
+	}
+	return Message{
+		Code:    code,
+		Message: m,
+		Error:   err.Error(),
+	}
+}
