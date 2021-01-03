@@ -122,6 +122,22 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
 	})
 
+	t.Run("invalid post data", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		repositoryPost := `<xml>`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = rh.CreateRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
 	t.Run("no token", func(tt *testing.T) {
 		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1}`
 		e := echo.New()
@@ -176,6 +192,23 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
 	})
+
+	t.Run("update invalid syntax on body", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		repositoryPost := `<xml>`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/repository/update", strings.NewReader(repositoryPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = rh.UpdateRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
 	t.Run("update with no token", func(tt *testing.T) {
 		repositoryPost := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1}`
 		e := echo.New()
@@ -262,6 +295,20 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		c.SetPath("/repository/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("invalid")
+		err = rh.GetRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+	t.Run("empty id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/repository/:id")
 		err = rh.GetRepository()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
@@ -400,6 +447,20 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		c.SetPath("/repository/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("invalid")
+		err = rh.DeleteRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("delete empty id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodDelete, "/", nil)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/repository/:id")
 		err = rh.DeleteRepository()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
