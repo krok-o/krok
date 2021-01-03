@@ -48,6 +48,11 @@ func TestApiKeys_Flow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, apiKey, getKey)
 
+	// Get the apiKey by api key id.
+	getKey, err = ap.GetByApiKeyID(ctx, apiKey.APIKeyID)
+	assert.NoError(t, err)
+	assert.Equal(t, apiKey, getKey)
+
 	// List keys
 	keys, err := ap.List(ctx, 1)
 	assert.NoError(t, err)
