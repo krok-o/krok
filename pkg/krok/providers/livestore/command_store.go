@@ -191,7 +191,7 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 	// Select the related repositories.
 	result := make([]*models.Repository, 0)
 	f := func(tx pgx.Tx) error {
-		query := fmt.Sprintf("select r.id, name, url from %s r inner join %s rel"+
+		query := fmt.Sprintf("select r.id, name, url, vcs from %s r inner join %s rel"+
 			" on r.id = rel.repository_id where rel.command_id = $1", repositoriesTable, commandsRepositoriesRelTable)
 		rows, err := tx.Query(ctx, query, id)
 		if err != nil {
@@ -215,8 +215,9 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 				repoID int
 				name   string
 				url    string
+				vcs    int
 			)
-			if err := rows.Scan(&repoID, &name, &url); err != nil {
+			if err := rows.Scan(&repoID, &name, &url, &vcs); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select id",
@@ -227,6 +228,7 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 				Name: name,
 				ID:   id,
 				URL:  url,
+				VCS:  vcs,
 			}
 			result = append(result, repo)
 		}

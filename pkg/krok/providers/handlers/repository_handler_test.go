@@ -360,7 +360,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		repositoryExpected := `[{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1},{"name":"test-name2","id":1,"url":"https://github.com/Skarlso/test2","vcs":0}]
 `
 		e := echo.New()
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		rec := httptest.NewRecorder()
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
@@ -373,7 +373,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 
 	t.Run("list no token flow", func(tt *testing.T) {
 		e := echo.New()
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/repositories")

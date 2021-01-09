@@ -42,6 +42,7 @@ type Dependencies struct {
 	Logger            zerolog.Logger
 	Krok              krok.Handler
 	RepositoryHandler providers.RepositoryHandler
+	CommandHandler    providers.CommandHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -80,12 +81,22 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	e.POST("/hook/:id", s.Dependencies.Krok.HandleHooks(ctx))
 
 	// Admin related actions
+
+	// Repository related actions.
 	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
 	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
 	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
 	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())
 	auth.POST("/repositories", s.Dependencies.RepositoryHandler.ListRepositories())
 	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.UpdateRepository())
+
+	// command related actions.
+	auth.GET("/command/:id", s.Dependencies.CommandHandler.GetCommand())
+	auth.DELETE("/command/:id", s.Dependencies.CommandHandler.DeleteCommand())
+	auth.POST("/commands", s.Dependencies.CommandHandler.ListCommands())
+	auth.POST("/command/update", s.Dependencies.CommandHandler.UpdateCommand())
+	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
+	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
 
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 

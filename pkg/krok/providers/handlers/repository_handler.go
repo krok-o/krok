@@ -120,11 +120,13 @@ func (r *RepoHandler) GetRepository() echo.HandlerFunc {
 		defer cancel()
 		repo, err := r.RepositoryStorer.Get(ctx, n)
 		if err != nil {
-			return err
+			apiError := kerr.APIError("failed to get repository", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		uurl, err := r.generateUniqueCallBackURL(repo)
 		if err != nil {
-			return err
+			apiError := kerr.APIError("failed to generate unique callback url for repository", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		repo.UniqueURL = uurl
 		return c.JSON(http.StatusOK, repo)
