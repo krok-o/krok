@@ -417,3 +417,245 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
 	})
 }
+
+func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
+	mus := &mockUserStorer{}
+	mcs := &mockCommandStorer{
+		getCommand: &models.Command{
+			Name:     "test-command",
+			ID:       0,
+			Schedule: "* * * * *",
+			Repositories: []*models.Repository{
+				{
+					Name: "test-repo",
+					ID:   0,
+					URL:  "https://google.com",
+					VCS:  1,
+				},
+			},
+			Filename: "filename",
+			Location: "location",
+			Hash:     "hash",
+			Enabled:  true,
+		},
+	}
+	maka := &mockApiKeyAuth{}
+	logger := zerolog.New(os.Stderr)
+	deps := Dependencies{
+		Logger:     logger,
+		UserStore:  mus,
+		ApiKeyAuth: maka,
+	}
+	cfg := Config{
+		Hostname:       "https://testHost",
+		GlobalTokenKey: "secret",
+	}
+	tp, err := NewTokenProvider(cfg, deps)
+	assert.NoError(t, err)
+	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+		Dependencies:  deps,
+		CommandStorer: mcs,
+		TokenProvider: tp,
+	})
+	assert.NoError(t, err)
+
+	t.Run("add relation happy path", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("0", "0")
+		err = ch.AddCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+	})
+
+	t.Run("add relation no token", func(tt *testing.T) {
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("0", "0")
+		err = ch.AddCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("add relation invalid command id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("invalid", "0")
+		err = ch.AddCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("add relation invalid repo id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("0", "invalid")
+		err = ch.AddCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("add relation empty id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-repository/:cmdid/:repoid")
+		err = ch.AddCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
+	mus := &mockUserStorer{}
+	mcs := &mockCommandStorer{
+		getCommand: &models.Command{
+			Name:     "test-command",
+			ID:       0,
+			Schedule: "* * * * *",
+			Repositories: []*models.Repository{
+				{
+					Name: "test-repo",
+					ID:   0,
+					URL:  "https://google.com",
+					VCS:  1,
+				},
+			},
+			Filename: "filename",
+			Location: "location",
+			Hash:     "hash",
+			Enabled:  true,
+		},
+	}
+	maka := &mockApiKeyAuth{}
+	logger := zerolog.New(os.Stderr)
+	deps := Dependencies{
+		Logger:     logger,
+		UserStore:  mus,
+		ApiKeyAuth: maka,
+	}
+	cfg := Config{
+		Hostname:       "https://testHost",
+		GlobalTokenKey: "secret",
+	}
+	tp, err := NewTokenProvider(cfg, deps)
+	assert.NoError(t, err)
+	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+		Dependencies:  deps,
+		CommandStorer: mcs,
+		TokenProvider: tp,
+	})
+	assert.NoError(t, err)
+
+	t.Run("remove relation happy path", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("0", "0")
+		err = ch.RemoveCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+	})
+
+	t.Run("remove relation no token", func(tt *testing.T) {
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("0", "0")
+		err = ch.RemoveCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
+	})
+
+	t.Run("remove relation invalid command id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("invalid", "0")
+		err = ch.RemoveCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("remove relation invalid repo id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-repository/:cmdid/:repoid")
+		c.SetParamNames("cmdid", "repoid")
+		c.SetParamValues("0", "invalid")
+		err = ch.RemoveCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("remove relation empty id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-repository/:cmdid/:repoid")
+		err = ch.RemoveCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+}
