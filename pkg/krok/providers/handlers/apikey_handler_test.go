@@ -1,0 +1,79 @@
+package handlers
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"testing"
+
+	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
+
+	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/models"
+)
+
+type mockApiKeysStore struct {
+	providers.APIKeysStorer
+	getKey    *models.APIKey
+	deleteErr error
+	keyList   []*models.APIKey
+	id        int
+}
+
+func (m *mockApiKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.APIKey, error) {
+	key.ID = m.id
+	m.id++
+	return key, nil
+}
+
+func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
+	maka := &mockApiKeyAuth{}
+	mus := &mockUserStorer{}
+	aks := &mockApiKeysStore{}
+	logger := zerolog.New(os.Stderr)
+	deps := Dependencies{
+		Logger:     logger,
+		UserStore:  mus,
+		ApiKeyAuth: maka,
+	}
+	cfg := Config{
+		Hostname:       "https://testHost",
+		GlobalTokenKey: "secret",
+	}
+	tp, err := NewTokenProvider(cfg, deps)
+	assert.NoError(t, err)
+	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
+		Dependencies:  deps,
+		APIKeysStore:  aks,
+		TokenProvider: tp,
+	})
+	assert.NoError(t, err)
+
+	t.Run("create happy path", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/user/:uid/apikey/generate/:name")
+		c.SetParamNames("uid", "name")
+		c.SetParamValues("0", "test-key")
+		err = akh.CreateApiKeyPair()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+		fmt.Println(rec.Body.String())
+		var key models.APIKey
+		err = json.Unmarshal(rec.Body.Bytes(), &key)
+		assert.NoError(tt, err)
+		// TODO insert more asserts.
+		fmt.Println(key)
+	})
+}

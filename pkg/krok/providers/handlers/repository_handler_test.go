@@ -79,6 +79,10 @@ func (maka *mockApiKeyAuth) Match(ctx context.Context, key *models.APIKey) error
 	return nil
 }
 
+func (maka *mockApiKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
+	return nil, nil
+}
+
 func TestRepoHandler_CreateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}

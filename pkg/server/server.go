@@ -43,6 +43,7 @@ type Dependencies struct {
 	Krok              krok.Handler
 	RepositoryHandler providers.RepositoryHandler
 	CommandHandler    providers.CommandHandler
+	ApiKeyHandler     providers.ApiKeysHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -97,6 +98,12 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/update", s.Dependencies.CommandHandler.UpdateCommand())
 	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
+
+	// api keys related actions
+	auth.POST("/user/:uid/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
+	auth.DELETE("/user/:uid/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
+	auth.POST("/user/:uid/apikeys", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
+	auth.GET("/user/:uid/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
 
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 
