@@ -89,12 +89,18 @@ type TokenProvider struct {
 	Dependencies
 
 	// A cache to track authenticated users.
-	cache cache
+	cache *cache
 }
 
 // NewTokenProvider creates a new token provider which deals with generating and handling tokens.
 func NewTokenProvider(cfg Config, deps Dependencies) (*TokenProvider, error) {
-	tp := &TokenProvider{Config: cfg, Dependencies: deps}
+	tp := &TokenProvider{
+		Config:       cfg,
+		Dependencies: deps,
+		cache: &cache{
+			m: make(map[string]*authUser),
+		},
+	}
 	go tp.clearCache()
 	return tp, nil
 }
