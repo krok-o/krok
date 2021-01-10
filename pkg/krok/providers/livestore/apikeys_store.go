@@ -17,12 +17,12 @@ const (
 	apiKeysTable = "apikeys"
 )
 
-// APIKeysStore is a postgres based store for APIKeys.
+// APIKeysStore is a postgres based store for APIKeysStore.
 type APIKeysStore struct {
 	APIKeysDependencies
 }
 
-// APIKeysDependencies APIKeys specific dependencies.
+// APIKeysDependencies APIKeysStore specific dependencies.
 type APIKeysDependencies struct {
 	Dependencies
 	Connector *Connector
@@ -33,7 +33,7 @@ func NewAPIKeysStore(deps APIKeysDependencies) *APIKeysStore {
 	return &APIKeysStore{APIKeysDependencies: deps}
 }
 
-var _ providers.APIKeys = &APIKeysStore{}
+var _ providers.APIKeysStorer = &APIKeysStore{}
 
 // Create an apikey.
 func (a *APIKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.APIKey, error) {
