@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -15,6 +16,11 @@ import (
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
+)
+
+const (
+	// TTL is the number of minutes to wait before purging an authenticated user.
+	TTL = 10 * time.Minute
 )
 
 // Config has the configuration options for the repository handler.
@@ -30,15 +36,79 @@ type Dependencies struct {
 	ApiKeyAuth providers.ApiKeysAuthenticator
 }
 
+// authUser is a user which is authenticated and doesn't need to be checked if it exists or not
+// for the duration of TTL.
+type authUser struct {
+	// constructed by time.Now().Add(TTL).
+	ttl  time.Time
+	user *models.User
+}
+
+// cache is a cache if authenticated users.
+type cache struct {
+	m map[string]*authUser
+	sync.RWMutex
+}
+
+// Add adds a user to the cache with a TTL and locking.
+func (c *cache) Add(u *models.User) {
+	c.Lock()
+	defer c.Unlock()
+
+	au := &authUser{
+		ttl:  time.Now().Add(TTL),
+		user: u,
+	}
+	c.m[u.Email] = au
+}
+
+// Remove removes a user from the cache.
+func (c *cache) Remove(u *models.User) {
+	c.Lock()
+	defer c.Unlock()
+
+	delete(c.m, u.Email)
+}
+
+// ClearTTL removes old users.
+func (c *cache) ClearTTL() {
+	c.Lock()
+	defer c.Unlock()
+
+	for k, u := range c.m {
+		// times up, delete the user. which means the user's information will have to be re-fetched from the db.
+		if time.Now().After(u.ttl) {
+			delete(c.m, k)
+		}
+	}
+}
+
 // TokenProvider is a token provider for the handlers.
 type TokenProvider struct {
 	Config
 	Dependencies
+
+	// A cache to track authenticated users.
+	cache cache
 }
 
 // NewTokenProvider creates a new token provider which deals with generating and handling tokens.
 func NewTokenProvider(cfg Config, deps Dependencies) (*TokenProvider, error) {
-	return &TokenProvider{Config: cfg, Dependencies: deps}, nil
+	tp := &TokenProvider{Config: cfg, Dependencies: deps}
+	go tp.clearCache()
+	return tp, nil
+}
+
+func (p *TokenProvider) clearCache() {
+	interval := 1 * time.Minute
+	for {
+		p.cache.ClearTTL()
+
+		select {
+		case <-time.After(interval):
+			p.Logger.Debug().Msg("Running user cache cleanup...")
+		}
+	}
 }
 
 // ApiKeyAuthRequest contains a user email and their api key.
@@ -120,6 +190,24 @@ func (p *TokenProvider) GetToken(c echo.Context) (*jwt.Token, error) {
 		p.Logger.Error().Err(err).Msg("Failed to get token")
 		return nil, err
 	}
+
+	// Check and auth the user here. If the user doesn't exist, throw an error.
+	// This error can be then used to say that the user needs to register.
+	claims := token.Claims.(jwt.MapClaims)
+	email, ok := claims["email"]
+	if !ok {
+		p.Logger.Error().Msg("No email found in token claim.")
+		return nil, errors.New("invalid token signature")
+	}
+
+	if _, err := p.UserStore.GetByEmail(context.Background(), email.(string)); err != nil {
+		p.Logger.Err(err).Msg("Failed to get user by email.")
+		return nil, err
+	}
+
+	// cache user.
+	// if the email happens to already exist, the cache will be refreshed.
+	p.cache.Add(&models.User{Email: email.(string)})
 
 	return token, nil
 }
