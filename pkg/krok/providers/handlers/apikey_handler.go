@@ -113,17 +113,110 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 
 // DeleteApiKeyPair deletes a set of api keys for a given user with a given id.
 func (a *ApiKeysHandler) DeleteApiKeyPair() echo.HandlerFunc {
-	panic("implement me")
+	return func(c echo.Context) error {
+		// TODO: make sure other users, can't brute force delete other user's keys.
+		_, err := a.TokenProvider.GetToken(c)
+		if err != nil {
+			a.Logger.Debug().Err(err).Msg("Failed to get Token.")
+			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
+		}
+		uid := c.Param("uid")
+		if uid == "" {
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		un, err := strconv.Atoi(uid)
+		if err != nil {
+			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		kid := c.Param("keyid")
+		if kid == "" {
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		kn, err := strconv.Atoi(kid)
+		if err != nil {
+			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		defer cancel()
+		if err := a.APIKeysStore.Delete(ctx, kn, un); err != nil {
+			a.Logger.Debug().Err(err).Msg("ApiKey Delete failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete api key", http.StatusBadRequest, err))
+		}
+		return c.NoContent(http.StatusOK)
+	}
 }
 
 // ListApiKeyPairs lists all api keys for a given user.
 func (a *ApiKeysHandler) ListApiKeyPairs() echo.HandlerFunc {
-	panic("implement me")
+	return func(c echo.Context) error {
+		// TODO: Consider getting the user from the token. But that would require a call to the cache or the DB.
+		_, err := a.TokenProvider.GetToken(c)
+		if err != nil {
+			a.Logger.Debug().Err(err).Msg("Failed to get Token.")
+			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
+		}
+		uid := c.Param("uid")
+		if uid == "" {
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		un, err := strconv.Atoi(uid)
+		if err != nil {
+			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		defer cancel()
+		list, err := a.APIKeysStore.List(ctx, un)
+		if err != nil {
+			a.Logger.Debug().Err(err).Msg("ApiKeys List failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list api keys", http.StatusBadRequest, err))
+		}
+		return c.JSON(http.StatusOK, list)
+	}
 }
 
 // GetApiKeyPair returns a given api key.
 func (a *ApiKeysHandler) GetApiKeyPair() echo.HandlerFunc {
-	panic("implement me")
+	return func(c echo.Context) error {
+		_, err := a.TokenProvider.GetToken(c)
+		if err != nil {
+			a.Logger.Debug().Err(err).Msg("Failed to get Token.")
+			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
+		}
+		uid := c.Param("uid")
+		if uid == "" {
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		un, err := strconv.Atoi(uid)
+		if err != nil {
+			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		kid := c.Param("keyid")
+		if kid == "" {
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		kn, err := strconv.Atoi(kid)
+		if err != nil {
+			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		defer cancel()
+		key, err := a.APIKeysStore.Get(ctx, kn, un)
+		if err != nil {
+			apiError := kerr.APIError("failed to get api key", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		return c.JSON(http.StatusOK, key)
+	}
 }
 
 // Generate a unique api key for a user.

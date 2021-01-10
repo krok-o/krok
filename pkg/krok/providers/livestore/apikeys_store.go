@@ -62,7 +62,7 @@ func (a *APIKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.
 		log.Debug().Err(err).Msg("Failed to execute with transaction.")
 		return nil, err
 	}
-	result, err := a.Get(ctx, returnID)
+	result, err := a.Get(ctx, returnID, key.UserID)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to get created api key")
 		return nil, err
@@ -71,11 +71,11 @@ func (a *APIKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.
 }
 
 // Delete an apikey.
-func (a *APIKeysStore) Delete(ctx context.Context, id int) error {
+func (a *APIKeysStore) Delete(ctx context.Context, id int, userID int) error {
 	log := a.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", apiKeysTable),
-			id); err != nil {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1 and user_id = $2", apiKeysTable),
+			id, userID); err != nil {
 			return &kerr.QueryError{
 				Err:   err,
 				Query: "delete from apikeys",
@@ -145,7 +145,7 @@ func (a *APIKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, 
 }
 
 // Get an apikey.
-func (a *APIKeysStore) Get(ctx context.Context, id int) (*models.APIKey, error) {
+func (a *APIKeysStore) Get(ctx context.Context, id int, userID int) (*models.APIKey, error) {
 	log := a.Logger.With().Int("id", id).Logger()
 	var (
 		storedID       int
@@ -155,7 +155,7 @@ func (a *APIKeysStore) Get(ctx context.Context, id int) (*models.APIKey, error) 
 		storedTTL      time.Time
 	)
 	f := func(tx pgx.Tx) error {
-		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, user_id, ttl from %s where id = $1", apiKeysTable), id).
+		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, user_id, ttl from %s where id = $1 and user_id = $2", apiKeysTable), id, userID).
 			Scan(&storedID, &storedName, &storedAPIKeyID, &storedUserID, &storedTTL)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
