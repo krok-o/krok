@@ -44,6 +44,11 @@ type authUser struct {
 	user *models.User
 }
 
+// Expired returns if a user's TTL has expired.
+func (a *authUser) Expired() bool {
+	return time.Now().After(a.ttl)
+}
+
 // cache is a cache if authenticated users.
 type cache struct {
 	m map[string]*authUser
@@ -51,23 +56,32 @@ type cache struct {
 }
 
 // Add adds a user to the cache with a TTL and locking.
-func (c *cache) Add(u *models.User) {
+func (c *cache) Add(email string) {
 	c.Lock()
 	defer c.Unlock()
 
 	au := &authUser{
 		ttl:  time.Now().Add(TTL),
-		user: u,
+		user: &models.User{Email: email},
 	}
-	c.m[u.Email] = au
+	c.m[email] = au
 }
 
 // Remove removes a user from the cache.
-func (c *cache) Remove(u *models.User) {
+func (c *cache) Remove(email string) {
 	c.Lock()
 	defer c.Unlock()
 
-	delete(c.m, u.Email)
+	delete(c.m, email)
+}
+
+// Has returns whether we already saved the current user or not.
+func (c *cache) Has(email string) (*authUser, bool) {
+	c.RLock()
+	defer c.RUnlock()
+
+	v, ok := c.m[email]
+	return v, ok
 }
 
 // ClearTTL removes old users.
@@ -75,9 +89,10 @@ func (c *cache) ClearTTL() {
 	c.Lock()
 	defer c.Unlock()
 
+	// I don't expect more than say, a 1000 users online at a given time.
 	for k, u := range c.m {
 		// times up, delete the user. which means the user's information will have to be re-fetched from the db.
-		if time.Now().After(u.ttl) {
+		if u.Expired() {
 			delete(c.m, k)
 		}
 	}
@@ -200,20 +215,23 @@ func (p *TokenProvider) GetToken(c echo.Context) (*jwt.Token, error) {
 	// Check and auth the user here. If the user doesn't exist, throw an error.
 	// This error can be then used to say that the user needs to register.
 	claims := token.Claims.(jwt.MapClaims)
-	email, ok := claims["email"]
+	iEmail, ok := claims["email"]
 	if !ok {
 		p.Logger.Error().Msg("No email found in token claim.")
 		return nil, errors.New("invalid token signature")
 	}
-
-	if _, err := p.UserStore.GetByEmail(context.Background(), email.(string)); err != nil {
+	email := iEmail.(string)
+	if v, ok := p.cache.Has(email); ok && !v.Expired() {
+		return token, nil
+	}
+	if _, err := p.UserStore.GetByEmail(context.Background(), email); err != nil {
 		p.Logger.Err(err).Msg("Failed to get user by email.")
 		return nil, err
 	}
 
 	// cache user.
 	// if the email happens to already exist, the cache will be refreshed.
-	p.cache.Add(&models.User{Email: email.(string)})
+	p.cache.Add(email)
 
 	return token, nil
 }
