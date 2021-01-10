@@ -49,7 +49,7 @@ func (a *authUser) Expired() bool {
 	return time.Now().After(a.ttl)
 }
 
-// cache is a cache if authenticated users.
+// cache is a cache for authenticated users.
 type cache struct {
 	m map[string]*authUser
 	sync.RWMutex
