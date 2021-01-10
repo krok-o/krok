@@ -125,6 +125,7 @@ func (p *TokenProvider) clearCache() {
 	for {
 		p.cache.ClearTTL()
 
+		// nolint:gosimple
 		select {
 		case <-time.After(interval):
 			p.Logger.Debug().Msg("Running user cache cleanup...")
