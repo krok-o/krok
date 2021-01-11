@@ -200,7 +200,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.SetPath("/user/:uid/apikey/:keyid")
 		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("0", "0")
+		c.SetParamValues("invalid", "0")
 		err = akh.DeleteApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
