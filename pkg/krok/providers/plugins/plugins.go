@@ -126,14 +126,16 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 	file := event.Name
 	log = log.With().Str("file", file).Logger()
 
-	if err := p.Store.AcquireLock(ctx, file); err != nil {
+	l, err := p.Store.AcquireLock(ctx, file)
+	if err != nil {
 		if errors.Is(err, kerr.ErrAcquireLockFailed) {
 			log.Debug().Msg("Some other process is already handling this file's create event.")
 			return nil
 		}
+		return err
 	}
 	defer func() {
-		if err := p.Store.ReleaseLock(ctx, file); err != nil {
+		if err := l.Close(); err != nil {
 			log.Debug().Err(err).Msg("Failed to release lock...")
 		}
 	}()
@@ -161,14 +163,16 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
 	file := event.Name
 	log = log.With().Str("file", file).Logger()
-	if err := p.Store.AcquireLock(ctx, file); err != nil {
+	l, err := p.Store.AcquireLock(ctx, file)
+	if err != nil {
 		if errors.Is(err, kerr.ErrAcquireLockFailed) {
 			log.Debug().Msg("Some other process is already handling this file's delete event.")
 			return nil
 		}
+		return err
 	}
 	defer func() {
-		if err := p.Store.ReleaseLock(ctx, file); err != nil {
+		if err := l.Close(); err != nil {
 			log.Debug().Err(err).Msg("Failed to release lock...")
 		}
 	}()

@@ -2,6 +2,7 @@ package livestore
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 const (
 	timeoutForTransactions       = 1 * time.Minute
 	commandsRepositoriesRelTable = "rel_commands_repositories"
+	databaseType                 = "postgres"
 )
 
 // Config has the configuration options for the store
@@ -44,6 +46,16 @@ func NewDatabaseConnector(cfg Config, deps Dependencies) *Connector {
 		Config:       cfg,
 		Dependencies: deps,
 	}
+}
+
+// GetDB returns the db for the locking mechanism.
+func (s *Connector) GetDB() (*sql.DB, error) {
+	dsn, err := s.getDSN()
+	if err != nil {
+		s.Logger.Debug().Err(err).Msg("Failed to get DSN")
+		return nil, err
+	}
+	return sql.Open(databaseType, dsn)
 }
 
 // ExecuteWithTransaction takes a query and executes it inside a transaction.
@@ -96,9 +108,7 @@ func (l *loader) loadValue(v string) string {
 	return value
 }
 
-// connect will load all necessary values from secret and try to connect
-// to a database.
-func (s *Connector) connect() (*pgx.Conn, error) {
+func (s *Connector) getDSN() (string, error) {
 	l := &loader{
 		s:   s,
 		err: nil,
@@ -109,10 +119,21 @@ func (s *Connector) connect() (*pgx.Conn, error) {
 	password := l.loadValue(s.Password)
 	if l.err != nil {
 		s.Logger.Error().Err(l.err).Msg("Failed to load database credentials.")
-		return nil, fmt.Errorf("failed to load database credentials: %w", l.err)
+		return "", fmt.Errorf("failed to load database credentials: %w", l.err)
 	}
 	url := fmt.Sprintf("postgresql://%s/%s?user=%s&password=%s", hostname, database, username, password)
-	conn, err := pgx.Connect(context.Background(), url)
+	return url, nil
+}
+
+// connect will load all necessary values from secret and try to connect
+// to a database.
+func (s *Connector) connect() (*pgx.Conn, error) {
+	dsn, err := s.getDSN()
+	if err != nil {
+		s.Logger.Debug().Err(err).Msg("Failed to get DSN.")
+		return nil, err
+	}
+	conn, err := pgx.Connect(context.Background(), dsn)
 	if err != nil {
 		s.Logger.Error().Err(err).Msg("Failed to connect to the database")
 		return nil, fmt.Errorf("failed to connect to database: %w", err)

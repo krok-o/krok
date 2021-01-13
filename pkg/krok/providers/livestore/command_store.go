@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"cirello.io/pglock"
 	"github.com/jackc/pgx/v4"
 	"github.com/rs/zerolog"
 
@@ -358,63 +359,27 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 }
 
 // AcquireLock acquires a lock on a file so no other process deals with the same file.
-func (s *CommandStore) AcquireLock(ctx context.Context, name string) error {
+func (s *CommandStore) AcquireLock(ctx context.Context, name string) (*pglock.Lock, error) {
 	log := s.Logger.With().Str("func", "AcquireLock").Str("name", name).Logger()
-	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, lock_start) values($1, $2)", fileLockTable),
-			name, time.Now()); err != nil {
-			log.Debug().Err(err).Msg("Failed to acquire lock on file.")
-			if strings.Contains(err.Error(), "duplicate key value violates unique constraint \"file_lock_name_key\"") {
-				return &kerr.QueryError{
-					Err:   kerr.ErrAcquireLockFailed,
-					Query: err.Error(),
-				}
-			}
-			return &kerr.QueryError{
-				Err:   fmt.Errorf("failed to acquire lock for different reason then unique constraint violation: %w", err),
-				Query: err.Error(),
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "insert into file_lock",
-			}
-		}
-		return nil
+	db, err := s.Connector.GetDB()
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to get DB for locking.")
+		return nil, err
 	}
-
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to acquire lock")
-		return err
+	c, err := pglock.New(db,
+		pglock.WithLeaseDuration(3*time.Second),
+		pglock.WithHeartbeatFrequency(1*time.Second),
+	)
+	if err != nil {
+		log.Debug().Err(err).Msg("Cannot create lock client.")
+		return nil, err
 	}
-	return nil
-}
-
-// ReleaseLock releases a lock.
-func (s *CommandStore) ReleaseLock(ctx context.Context, name string) error {
-	log := s.Logger.With().Str("func", "ReleaseLock").Str("name", name).Logger()
-	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where name = $1", fileLockTable),
-			name); err != nil {
-			log.Debug().Err(err).Msg("Failed to release lock on file.")
-			return &kerr.QueryError{
-				Err:   err,
-				Query: "delete from file_lock",
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "delete from file_lock",
-			}
-		}
-		return nil
+	l, err := c.Acquire(name)
+	if err != nil {
+		log.Debug().Err(err).Msg("unexpected error while acquiring 1st lock")
+		return nil, err
 	}
-
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to release lock")
-		return err
-	}
-	return nil
+	return l, nil
 }
 
 // AddCommandRelForRepository add an assignment for a command to a repository.
