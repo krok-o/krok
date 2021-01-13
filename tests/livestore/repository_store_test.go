@@ -195,9 +195,10 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 		Vault:     v,
 		Auth:      a,
 	})
-	cp := livestore.NewCommandStore(livestore.CommandDependencies{
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: connector,
 	})
+	assert.NoError(t, err)
 	ctx := context.Background()
 	c, err := cp.Create(ctx, &models.Command{
 		Name:     "CommandConnectionName",

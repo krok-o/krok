@@ -18,7 +18,6 @@ import (
 
 const (
 	commandsTable = "commands"
-	fileLockTable = "file_lock"
 )
 
 // CommandStore is a postgres based store for commands.
@@ -35,44 +34,29 @@ type CommandDependencies struct {
 }
 
 // NewCommandStore creates a new CommandStore
-func NewCommandStore(deps CommandDependencies) *CommandStore {
+func NewCommandStore(deps CommandDependencies) (*CommandStore, error) {
+	db, err := deps.Connector.GetDB()
+	if err != nil {
+		deps.Logger.Debug().Err(err).Msg("Failed to get DB for locking.")
+		return nil, err
+	}
+	c, err := pglock.New(db,
+		pglock.WithLeaseDuration(10*time.Second),
+		pglock.WithHeartbeatFrequency(1*time.Second),
+	)
+	if err != nil {
+		deps.Logger.Debug().Err(err).Msg("Cannot create lock client.")
+		return nil, err
+	}
+	if err := c.CreateTable(); err != nil && !strings.Contains(err.Error(), "relation \"locks\" already exists") {
+		deps.Logger.Debug().Err(err).Msg("Failed to create lock table.")
+		return nil, err
+	}
 	cs := &CommandStore{CommandDependencies: deps}
-	// launch the cleanup routine.
-	go cs.lockCleaner(context.TODO())
-	return cs
+	return cs, nil
 }
 
 var _ providers.CommandStorer = &CommandStore{}
-
-// lockCleaner will periodically delete old / stuck entries.
-func (s *CommandStore) lockCleaner(ctx context.Context) {
-	log := s.Logger.With().Str("func", "lockCleaner").Logger()
-	interval := 10 * time.Minute
-	for {
-
-		f := func(tx pgx.Tx) error {
-			t := time.Now().Add(-10 * time.Minute)
-			if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where lock_start < %s", fileLockTable, t)); err != nil {
-				log.Debug().Err(err).Msg("Failed to run cleanup")
-				return err
-			} else {
-				log.Debug().Int64("rows", tags.RowsAffected()).Msg("Cleaner run successfully affecting rows...")
-			}
-			return nil
-		}
-
-		if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-			// just log the error, don't stop the cleaner.
-			log.Debug().Err(err).Msg("Failed to run cleanup with transaction.")
-		}
-		// look for old entries.
-		select {
-		case <-time.After(interval):
-		case <-ctx.Done():
-			s.Logger.Debug().Msg("Lock Cleaner cancelled.")
-		}
-	}
-}
 
 // Create creates a command record.
 func (s *CommandStore) Create(ctx context.Context, c *models.Command) (*models.Command, error) {
@@ -374,7 +358,9 @@ func (s *CommandStore) AcquireLock(ctx context.Context, name string) (*pglock.Lo
 		log.Debug().Err(err).Msg("Cannot create lock client.")
 		return nil, err
 	}
-	l, err := c.Acquire(name)
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	l, err := c.AcquireContext(ctx, name)
 	if err != nil {
 		log.Debug().Err(err).Msg("unexpected error while acquiring 1st lock")
 		return nil, err

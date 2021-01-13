@@ -12,6 +12,7 @@ import (
 	"plugin"
 	"time"
 
+	"cirello.io/pglock"
 	"github.com/fsnotify/fsnotify"
 	"github.com/rs/zerolog"
 	"golang.org/x/sync/errgroup"
@@ -128,7 +129,7 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 
 	l, err := p.Store.AcquireLock(ctx, file)
 	if err != nil {
-		if errors.Is(err, kerr.ErrAcquireLockFailed) {
+		if errors.Is(err, pglock.ErrNotAcquired) {
 			log.Debug().Msg("Some other process is already handling this file's create event.")
 			return nil
 		}
@@ -165,7 +166,7 @@ func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event,
 	log = log.With().Str("file", file).Logger()
 	l, err := p.Store.AcquireLock(ctx, file)
 	if err != nil {
-		if errors.Is(err, kerr.ErrAcquireLockFailed) {
+		if errors.Is(err, pglock.ErrNotAcquired) {
 			log.Debug().Msg("Some other process is already handling this file's delete event.")
 			return nil
 		}

@@ -121,7 +121,7 @@ func (s *Connector) getDSN() (string, error) {
 		s.Logger.Error().Err(l.err).Msg("Failed to load database credentials.")
 		return "", fmt.Errorf("failed to load database credentials: %w", l.err)
 	}
-	url := fmt.Sprintf("postgresql://%s/%s?user=%s&password=%s", hostname, database, username, password)
+	url := fmt.Sprintf("postgresql://%s/%s?user=%s&password=%s&sslmode=disable", hostname, database, username, password)
 	return url, nil
 }
 
