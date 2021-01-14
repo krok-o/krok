@@ -36,6 +36,14 @@ func (m *mockApiKeysStore) Delete(ctx context.Context, id int, uid int) error {
 	return m.deleteErr
 }
 
+func (m *mockApiKeysStore) Get(ctx context.Context, id int, userID int) (*models.APIKey, error) {
+	return m.getKey, nil
+}
+
+func (m *mockApiKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, error) {
+	return m.keyList, nil
+}
+
 func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 	maka := &mockApiKeyAuth{}
 	mus := &mockUserStorer{}
@@ -219,4 +227,191 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
+}
+
+func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
+	maka := &mockApiKeyAuth{}
+	mus := &mockUserStorer{}
+	aks := &mockApiKeysStore{
+		getKey: &models.APIKey{
+			ID:           0,
+			Name:         "test-key",
+			UserID:       0,
+			APIKeyID:     "api-key-id",
+			APIKeySecret: []byte("secret"),
+			TTL:          time.Now().Add(10 * time.Minute),
+		},
+	}
+	logger := zerolog.New(os.Stderr)
+	deps := Dependencies{
+		Logger:     logger,
+		UserStore:  mus,
+		ApiKeyAuth: maka,
+	}
+	cfg := Config{
+		Hostname:       "https://testHost",
+		GlobalTokenKey: "secret",
+	}
+	tp, err := NewTokenProvider(cfg, deps)
+	assert.NoError(t, err)
+	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
+		Dependencies:  deps,
+		APIKeysStore:  aks,
+		TokenProvider: tp,
+	})
+	assert.NoError(t, err)
+
+	t.Run("get apikey happy path", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		ekey := &models.APIKey{
+			ID:           0,
+			Name:         "test-key",
+			UserID:       0,
+			APIKeyID:     "api-key-id",
+			APIKeySecret: []byte("secret"),
+		}
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/user/:uid/apikey/:keyid")
+		c.SetParamNames("uid", "keyid")
+		c.SetParamValues("0", "0")
+		err = akh.GetApiKeyPair()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+		var gotKey models.APIKey
+		err = json.Unmarshal(rec.Body.Bytes(), &gotKey)
+		assert.NoError(tt, err)
+		assert.Equal(tt, ekey.UserID, gotKey.UserID)
+		assert.Equal(tt, ekey.APIKeyID, gotKey.APIKeyID)
+		assert.Equal(tt, ekey.APIKeySecret, gotKey.APIKeySecret)
+		assert.Equal(tt, ekey.Name, gotKey.Name)
+		assert.Equal(tt, ekey.ID, gotKey.ID)
+	})
+
+	t.Run("no token", func(tt *testing.T) {
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/user/:uid/apikey/:keyid")
+		c.SetParamNames("uid", "keyid")
+		c.SetParamValues("0", "0")
+		err = akh.GetApiKeyPair()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
+	})
+	t.Run("get invalid id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/user/:uid/apikey/:keyid")
+		c.SetParamNames("uid", "keyid")
+		c.SetParamValues("invalid", "0")
+		err = akh.GetApiKeyPair()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+	t.Run("get invalid user id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/user/:uid/apikey/:keyid")
+		c.SetParamNames("uid", "keyid")
+		c.SetParamValues("0", "invalid")
+		err = akh.GetApiKeyPair()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("get empty id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		c.SetPath("/user/:uid/apikey/:keyid")
+		err = akh.GetApiKeyPair()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
+	maka := &mockApiKeyAuth{}
+	mus := &mockUserStorer{}
+	aks := &mockApiKeysStore{
+		keyList: []*models.APIKey{
+			{
+				ID:           0,
+				Name:         "test-key-1",
+				UserID:       0,
+				APIKeyID:     "test-key-id-1",
+				APIKeySecret: []byte("secret1"),
+				TTL:          time.Now().Add(10 * time.Minute),
+			},
+			{
+				ID:           1,
+				Name:         "test-key-2",
+				UserID:       1,
+				APIKeyID:     "test-key-id-2",
+				APIKeySecret: []byte("secret2"),
+				TTL:          time.Now().Add(10 * time.Minute),
+			},
+		},
+	}
+	logger := zerolog.New(os.Stderr)
+	deps := Dependencies{
+		Logger:     logger,
+		UserStore:  mus,
+		ApiKeyAuth: maka,
+	}
+	cfg := Config{
+		Hostname:       "https://testHost",
+		GlobalTokenKey: "secret",
+	}
+	tp, err := NewTokenProvider(cfg, deps)
+	assert.NoError(t, err)
+	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
+		Dependencies:  deps,
+		APIKeysStore:  aks,
+		TokenProvider: tp,
+	})
+	assert.NoError(t, err)
+
+	t.Run("list apikey happy path", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/user/:uid/apikeys")
+		c.SetParamNames("uid")
+		c.SetParamValues("0")
+		err = akh.ListApiKeyPairs()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+		var gotKey []*models.APIKey
+		err = json.Unmarshal(rec.Body.Bytes(), &gotKey)
+		assert.NoError(tt, err)
+		assert.Len(tt, gotKey, 2)
+	})
+
 }
