@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"cirello.io/pglock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ func TestCommandStore_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_Create")
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	cp := livestore.NewCommandStore(livestore.CommandDependencies{
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: dbaccess.Hostname,
 			Database: dbaccess.Db,
@@ -37,6 +38,7 @@ func TestCommandStore_Flow(t *testing.T) {
 			Converter: env,
 		}),
 	})
+	assert.NoError(t, err)
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
@@ -112,9 +114,10 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 		Logger:    logger,
 		Converter: env,
 	})
-	cp := livestore.NewCommandStore(livestore.CommandDependencies{
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: connector,
 	})
+	assert.NoError(t, err)
 	rp := livestore.NewRepositoryStore(livestore.RepositoryDependencies{
 		Dependencies: livestore.Dependencies{
 			Converter: env,
@@ -206,7 +209,7 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	cp := livestore.NewCommandStore(livestore.CommandDependencies{
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: dbaccess.Hostname,
 			Database: dbaccess.Db,
@@ -217,29 +220,29 @@ func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
 			Converter: env,
 		}),
 	})
+	assert.NoError(t, err)
 	ctx := context.Background()
 	// Acquire lock
-	err := cp.AcquireLock(ctx, "lock-test")
+	l, err := cp.AcquireLock(ctx, "lock-test")
 	assert.NoError(t, err)
 	// Release lock
-	err = cp.ReleaseLock(ctx, "lock-test")
+	err = l.Close()
 	assert.NoError(t, err)
 	// Can acquire again after release
-	err = cp.AcquireLock(ctx, "lock-test")
+	l, err = cp.AcquireLock(ctx, "lock-test")
 	assert.NoError(t, err)
 	// Can't acquire lock again for the same name
-	err = cp.AcquireLock(ctx, "lock-test")
-	assert.True(t, errors.Is(err, kerr.ErrAcquireLockFailed))
-	// Release a none existing lock
-	err = cp.ReleaseLock(ctx, "invalid")
-	assert.True(t, errors.Is(err, kerr.ErrNoRowsAffected))
+	_, err = cp.AcquireLock(ctx, "lock-test")
+	assert.True(t, errors.Is(err, pglock.ErrNotAcquired))
+	err = l.Close()
+	assert.NoError(t, err)
 }
 
 func TestCommandStore_Create_Unique(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_Create_Unique")
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	cp := livestore.NewCommandStore(livestore.CommandDependencies{
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: dbaccess.Hostname,
 			Database: dbaccess.Db,
@@ -250,6 +253,7 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 			Converter: env,
 		}),
 	})
+	assert.NoError(t, err)
 	// Create the first command.
 	c, err := cp.Create(context.Background(), &models.Command{
 		Name:         "Test_Create_Error",

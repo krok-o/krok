@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"cirello.io/pglock"
 	"github.com/jackc/pgx/v4"
 	"github.com/rs/zerolog"
 
@@ -17,7 +18,6 @@ import (
 
 const (
 	commandsTable = "commands"
-	fileLockTable = "file_lock"
 )
 
 // CommandStore is a postgres based store for commands.
@@ -34,44 +34,29 @@ type CommandDependencies struct {
 }
 
 // NewCommandStore creates a new CommandStore
-func NewCommandStore(deps CommandDependencies) *CommandStore {
+func NewCommandStore(deps CommandDependencies) (*CommandStore, error) {
+	db, err := deps.Connector.GetDB()
+	if err != nil {
+		deps.Logger.Debug().Err(err).Msg("Failed to get DB for locking.")
+		return nil, err
+	}
+	c, err := pglock.New(db,
+		pglock.WithLeaseDuration(10*time.Second),
+		pglock.WithHeartbeatFrequency(1*time.Second),
+	)
+	if err != nil {
+		deps.Logger.Debug().Err(err).Msg("Cannot create lock client.")
+		return nil, err
+	}
+	if err := c.CreateTable(); err != nil && !strings.Contains(err.Error(), "relation \"locks\" already exists") {
+		deps.Logger.Debug().Err(err).Msg("Failed to create lock table.")
+		return nil, err
+	}
 	cs := &CommandStore{CommandDependencies: deps}
-	// launch the cleanup routine.
-	go cs.lockCleaner(context.TODO())
-	return cs
+	return cs, nil
 }
 
 var _ providers.CommandStorer = &CommandStore{}
-
-// lockCleaner will periodically delete old / stuck entries.
-func (s *CommandStore) lockCleaner(ctx context.Context) {
-	log := s.Logger.With().Str("func", "lockCleaner").Logger()
-	interval := 10 * time.Minute
-	for {
-
-		f := func(tx pgx.Tx) error {
-			t := time.Now().Add(-10 * time.Minute)
-			if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where lock_start < %s", fileLockTable, t)); err != nil {
-				log.Debug().Err(err).Msg("Failed to run cleanup")
-				return err
-			} else {
-				log.Debug().Int64("rows", tags.RowsAffected()).Msg("Cleaner run successfully affecting rows...")
-			}
-			return nil
-		}
-
-		if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-			// just log the error, don't stop the cleaner.
-			log.Debug().Err(err).Msg("Failed to run cleanup with transaction.")
-		}
-		// look for old entries.
-		select {
-		case <-time.After(interval):
-		case <-ctx.Done():
-			s.Logger.Debug().Msg("Lock Cleaner cancelled.")
-		}
-	}
-}
 
 // Create creates a command record.
 func (s *CommandStore) Create(ctx context.Context, c *models.Command) (*models.Command, error) {
@@ -358,63 +343,29 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 }
 
 // AcquireLock acquires a lock on a file so no other process deals with the same file.
-func (s *CommandStore) AcquireLock(ctx context.Context, name string) error {
+func (s *CommandStore) AcquireLock(ctx context.Context, name string) (*pglock.Lock, error) {
 	log := s.Logger.With().Str("func", "AcquireLock").Str("name", name).Logger()
-	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, lock_start) values($1, $2)", fileLockTable),
-			name, time.Now()); err != nil {
-			log.Debug().Err(err).Msg("Failed to acquire lock on file.")
-			if strings.Contains(err.Error(), "duplicate key value violates unique constraint \"file_lock_name_key\"") {
-				return &kerr.QueryError{
-					Err:   kerr.ErrAcquireLockFailed,
-					Query: err.Error(),
-				}
-			}
-			return &kerr.QueryError{
-				Err:   fmt.Errorf("failed to acquire lock for different reason then unique constraint violation: %w", err),
-				Query: err.Error(),
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "insert into file_lock",
-			}
-		}
-		return nil
+	db, err := s.Connector.GetDB()
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to get DB for locking.")
+		return nil, err
 	}
-
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to acquire lock")
-		return err
+	c, err := pglock.New(db,
+		pglock.WithLeaseDuration(3*time.Second),
+		pglock.WithHeartbeatFrequency(1*time.Second),
+	)
+	if err != nil {
+		log.Debug().Err(err).Msg("Cannot create lock client.")
+		return nil, err
 	}
-	return nil
-}
-
-// ReleaseLock releases a lock.
-func (s *CommandStore) ReleaseLock(ctx context.Context, name string) error {
-	log := s.Logger.With().Str("func", "ReleaseLock").Str("name", name).Logger()
-	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where name = $1", fileLockTable),
-			name); err != nil {
-			log.Debug().Err(err).Msg("Failed to release lock on file.")
-			return &kerr.QueryError{
-				Err:   err,
-				Query: "delete from file_lock",
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "delete from file_lock",
-			}
-		}
-		return nil
+	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+	l, err := c.AcquireContext(ctx, name)
+	if err != nil {
+		log.Debug().Err(err).Msg("unexpected error while acquiring 1st lock")
+		return nil, err
 	}
-
-	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		log.Debug().Err(err).Msg("Failed to release lock")
-		return err
-	}
-	return nil
+	return l, nil
 }
 
 // AddCommandRelForRepository add an assignment for a command to a repository.

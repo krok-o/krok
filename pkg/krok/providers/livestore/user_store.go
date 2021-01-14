@@ -23,7 +23,7 @@ type UserStore struct {
 type UserDependencies struct {
 	Dependencies
 	Connector *Connector
-	APIKeys   providers.APIKeys
+	APIKeys   providers.APIKeysStorer
 }
 
 // NewUserStore creates a new UserStore

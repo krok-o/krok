@@ -9,9 +9,6 @@ var ErrNotFound = errors.New("not found")
 // rows were affected with the query.
 var ErrNoRowsAffected = errors.New("no rows affected")
 
-// ErrAcquireLockFailed signals that the lock for a file name is already taken.
-var ErrAcquireLockFailed = errors.New("failed to acquire lock")
-
 // QueryError defines an error which occurs when doing database operations.
 type QueryError struct {
 	Query string

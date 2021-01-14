@@ -44,7 +44,7 @@ func TestApiKeys_Flow(t *testing.T) {
 	assert.True(t, apiKey.ID > 0)
 
 	// Get the apiKey.
-	getKey, err := ap.Get(ctx, apiKey.ID)
+	getKey, err := ap.Get(ctx, apiKey.ID, apiKey.UserID)
 	assert.NoError(t, err)
 	assert.Equal(t, apiKey, getKey)
 
@@ -59,10 +59,10 @@ func TestApiKeys_Flow(t *testing.T) {
 	assert.True(t, len(keys) > 0)
 
 	// Delete apiKey
-	err = ap.Delete(ctx, apiKey.ID)
+	err = ap.Delete(ctx, apiKey.ID, 1)
 	assert.NoError(t, err)
 
 	// Try getting the deleted command should result in NotFound
-	_, err = ap.Get(ctx, apiKey.ID)
+	_, err = ap.Get(ctx, apiKey.ID, apiKey.UserID)
 	assert.True(t, errors.Is(err, kerr.ErrNotFound))
 }
