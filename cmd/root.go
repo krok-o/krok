@@ -12,6 +12,8 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
+	"github.com/krok-o/krok/pkg/krok/providers/repo"
+	"github.com/krok-o/krok/pkg/krok/providers/service"
 	"github.com/krok-o/krok/pkg/krok/providers/vault"
 
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
@@ -187,17 +189,29 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// Set up the server
 	// ************************
 
+	urlGenerator := repo.NewURLGenerator(krokArgs.server.Hostname)
 	server := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:            log,
 		Krok:              krokHandler,
 		RepositoryHandler: repoHandler,
 		CommandHandler:    commandHandler,
 		ApiKeyHandler:     apiKeysHandler,
+
+		// TODO: Find a better place?
+		RepositoryService: service.NewRepositoryService(repoStore, urlGenerator),
 	})
 
 	// Run service & server
 	g, ctx := errgroup.WithContext(context.Background())
-	g.Go(func() error { return server.Run(ctx) })
+
+	g.Go(func() error {
+		return server.Run(ctx)
+	})
+
+	g.Go(func() error {
+		return server.RunGRPC(ctx)
+	})
+
 	if err := g.Wait(); err != nil {
 		log.Err(err).Msg("Failed to run")
 	}

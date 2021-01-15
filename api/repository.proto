@@ -1,0 +1,36 @@
+syntax = "proto3";
+package v1;
+
+option go_package = "github.com/krok-o/krok-o/api";
+
+enum VCS {
+  GITHUB = 0;
+  GITLAB = 1;
+  GITEA = 2;
+  BITBUCKET = 3;
+}
+
+message Auth {
+  string ssh = 1;
+  string username = 2;
+  string password = 3;
+}
+
+message Repository {
+  string name = 1;
+  int32 id = 2;
+  string url = 3;
+  VCS vcs = 4;
+  Auth auth = 5;
+  // todo: commands
+  string unique_url = 7;
+}
+
+message GetRepositoryRequest {
+  string id = 1;
+}
+
+service RepositoryService {
+  rpc CreateRepository(Repository) returns (Repository) {}
+  rpc GetRepository(GetRepositoryRequest) returns (Repository) {}
+}
