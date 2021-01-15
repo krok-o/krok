@@ -90,3 +90,8 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		log.Err(err).Msg("Failed to run")
 	}
 }
+
+// Execute runs the main krok command.
+func Execute() error {
+	return krokCmd.Execute()
+}
