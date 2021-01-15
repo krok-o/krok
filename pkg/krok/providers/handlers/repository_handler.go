@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -17,9 +18,9 @@ import (
 
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
-	Dependencies
 	RepositoryStorer providers.RepositoryStorer
 	TokenProvider    *TokenProvider
+	Logger           zerolog.Logger
 }
 
 // RepoHandler is a handler taking care of repository related api calls.

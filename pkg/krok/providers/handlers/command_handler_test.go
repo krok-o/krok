@@ -77,7 +77,7 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
-		Dependencies:  deps,
+		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
@@ -179,7 +179,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
-		Dependencies:  deps,
+		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
@@ -290,7 +290,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
-		Dependencies:  deps,
+		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
@@ -364,7 +364,7 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
-		Dependencies:  deps,
+		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
@@ -453,7 +453,7 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
-		Dependencies:  deps,
+		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
@@ -574,7 +574,7 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
-		Dependencies:  deps,
+		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
