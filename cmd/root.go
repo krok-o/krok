@@ -9,7 +9,10 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok"
+	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
+	"github.com/krok-o/krok/pkg/krok/providers/handlers"
+	"github.com/krok-o/krok/pkg/krok/providers/vault"
 
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
@@ -45,6 +48,7 @@ func init() {
 	flag.StringVar(&krokArgs.server.ServerKeyPath, "server-key-path", "", "--server-key-path /home/user/.server/server.key")
 	flag.StringVar(&krokArgs.server.ServerCrtPath, "server-crt-path", "", "--server-crt-path /home/user/.server/server.crt")
 	flag.StringVar(&krokArgs.server.Port, "port", "9998", "--port 443")
+	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
 
 	// Store config
 	flag.StringVar(&krokArgs.store.Database, "krok-db-dbname", "krok", "--krok-db-dbname krok")
@@ -73,14 +77,122 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Timestamp().
 		Logger()
 
+	// ************************
+	// Set up db connection, vault and auth handlers.
+	// ************************
+
+	converter := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{
+		Logger: log,
+	})
+	connector := livestore.NewDatabaseConnector(krokArgs.store, livestore.Dependencies{
+		Logger:    log,
+		Converter: converter,
+	})
+	deps := livestore.Dependencies{
+		Logger:    log,
+		Converter: converter,
+	}
+	filevault, _ := filevault.NewFileStorer(krokArgs.fileVault, filevault.Dependencies{
+		Logger: log,
+	})
+	v, _ := vault.NewKrokVault(vault.Config{}, vault.Dependencies{
+		Logger: log,
+		Storer: filevault,
+	})
+	a, _ := auth.NewKrokAuth(auth.AuthConfig{}, auth.AuthDependencies{
+		Logger: log,
+		Vault:  v,
+	})
+
+	// ************************
+	// Set up stores
+	// ************************
+
+	repoStore := livestore.NewRepositoryStore(livestore.RepositoryDependencies{
+		Dependencies: deps,
+		Connector:    connector,
+		Vault:        v,
+		Auth:         a,
+	})
+
+	commandStore, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Dependencies: deps,
+		Connector:    connector,
+	})
+
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to set up command store.")
+	}
+
+	apiKeyStore := livestore.NewAPIKeysStore(livestore.APIKeysDependencies{
+		Dependencies: deps,
+		Connector:    connector,
+	})
+
+	userStore := livestore.NewUserStore(livestore.UserDependencies{
+		Dependencies: deps,
+		Connector:    connector,
+		APIKeys:      apiKeyStore,
+	})
+
+	// ************************
+	// Set up handlers
+	// ************************
+	authMatcher, err := auth.NewApiKeysProvider(auth.ApiKeysConfig{}, auth.ApiKeysDependencies{
+		Logger:       log,
+		ApiKeysStore: apiKeyStore,
+	})
+	handlerDeps := handlers.Dependencies{
+		Logger:     log,
+		UserStore:  userStore,
+		ApiKeyAuth: authMatcher,
+	}
+	tp, err := handlers.NewTokenProvider(handlers.Config{
+		Hostname:       krokArgs.server.Hostname,
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, handlerDeps)
+
+	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
+		Hostname:       krokArgs.server.Hostname,
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, handlers.RepoHandlerDependencies{
+		RepositoryStorer: repoStore,
+		TokenProvider:    tp,
+		Logger:           log,
+	})
+
+	commandHandler, _ := handlers.NewCommandsHandler(handlers.Config{
+		Hostname:       krokArgs.server.Hostname,
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, handlers.CommandsHandlerDependencies{
+		CommandStorer: commandStore,
+		TokenProvider: tp,
+		Logger:        log,
+	})
+
+	apiKeysHandler, _ := handlers.NewApiKeysHandler(handlers.Config{
+		Hostname:       krokArgs.server.Hostname,
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, handlers.ApiKeysHandlerDependencies{
+		APIKeysStore:  apiKeyStore,
+		TokenProvider: tp,
+		Dependencies:  handlerDeps,
+	})
+
 	krokHandler := krok.NewHookHandler(krok.Config{}, krok.Dependencies{
 		Logger: log,
 	})
 
-	// Create server
+	// ************************
+	// Set up the server
+	// ************************
+
 	server := server.NewKrokServer(krokArgs.server, server.Dependencies{
-		Logger: log,
-		Krok:   krokHandler,
+		Logger:            log,
+		Krok:              krokHandler,
+		RepositoryHandler: repoHandler,
+		CommandHandler:    commandHandler,
+		ApiKeyHandler:     apiKeysHandler,
 	})
 
 	// Run service & server

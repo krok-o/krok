@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -15,7 +16,7 @@ import (
 
 // CommandsHandlerDependencies defines the dependencies for the commands handler provider.
 type CommandsHandlerDependencies struct {
-	Dependencies
+	Logger        zerolog.Logger
 	CommandStorer providers.CommandStorer
 	TokenProvider *TokenProvider
 }

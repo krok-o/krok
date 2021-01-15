@@ -100,7 +100,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
-		Dependencies:     deps,
+		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
 	})
@@ -172,7 +172,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
-		Dependencies:     deps,
+		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
 	})
@@ -250,7 +250,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
-		Dependencies:     deps,
+		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
 	})
@@ -351,7 +351,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
-		Dependencies:     deps,
+		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
 	})
@@ -404,7 +404,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 	tp, err := NewTokenProvider(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
-		Dependencies:     deps,
+		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
 	})
