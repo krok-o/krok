@@ -25,7 +25,7 @@ jobs:
           GO111MODULE: "on"
       - image: postgres:13.1-alpine
         environment:
-          POSTGRES_USER: "postgres"
+          POSTGRES_USER: "krok"
           POSTGRES_PASSWORD: "password123"
     steps:
       - checkout
