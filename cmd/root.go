@@ -53,8 +53,8 @@ func init() {
 	// Store config
 	flag.StringVar(&krokArgs.store.Database, "krok-db-dbname", "krok", "--krok-db-dbname krok")
 	flag.StringVar(&krokArgs.store.Username, "krok-db-username", "krok", "--krok-db-username krok")
-	flag.StringVar(&krokArgs.store.Password, "krok-db-password", "krok", "--krok-db-password password123")
-	flag.StringVar(&krokArgs.store.Hostname, "krok-db-hostname", "", "--krok-db-hostname krok-db")
+	flag.StringVar(&krokArgs.store.Password, "krok-db-password", "password123", "--krok-db-password password123")
+	flag.StringVar(&krokArgs.store.Hostname, "krok-db-hostname", "", "--krok-db-hostname localhost:5432")
 
 	// Email
 	flag.StringVar(&krokArgs.email.Domain, "email-domain", "", "--email-domain krok.com")
