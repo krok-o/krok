@@ -30,4 +30,12 @@ type CommandStorer interface {
 
 	// AcquireLock creates a lock entry for a name
 	AcquireLock(ctx context.Context, name string) (*pglock.Lock, error)
+
+	// Settings
+
+	CreateSetting(ctx context.Context, setting *models.CommandSetting) error
+	DeleteSetting(ctx context.Context, id int) error
+	ListSettings(ctx context.Context, commandID int) ([]*models.CommandSetting, error)
+	GetSetting(ctx context.Context, id int) (*models.CommandSetting, error)
+	UpdateSetting(ctx context.Context, setting *models.CommandSetting) error
 }

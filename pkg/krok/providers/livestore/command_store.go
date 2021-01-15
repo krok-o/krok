@@ -421,3 +421,23 @@ func (s *CommandStore) RemoveCommandRelForRepository(ctx context.Context, comman
 	}
 	return nil
 }
+
+func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.CommandSetting) error {
+	panic("implement me")
+}
+
+func (s *CommandStore) DeleteSetting(ctx context.Context, id int) error {
+	panic("implement me")
+}
+
+func (s *CommandStore) ListSettings(ctx context.Context, commandID int) ([]*models.CommandSetting, error) {
+	panic("implement me")
+}
+
+func (s *CommandStore) GetSetting(ctx context.Context, id int) (*models.CommandSetting, error) {
+	panic("implement me")
+}
+
+func (s *CommandStore) UpdateSetting(ctx context.Context, setting *models.CommandSetting) error {
+	panic("implement me")
+}
