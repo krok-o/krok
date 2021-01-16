@@ -3,6 +3,7 @@ package livestore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
@@ -25,7 +26,7 @@ import (
 )
 
 func TestCommandStore_Flow(t *testing.T) {
-	cleanup, err := createTestContainerIfNotCI()
+	port, cleanup, err := createTestContainerIfNotCI()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -39,7 +40,7 @@ func TestCommandStore_Flow(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: fmt.Sprintf("localhost:%s", port),
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
