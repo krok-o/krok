@@ -17,9 +17,10 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 
-	grpcapi "github.com/krok-o/krok/api"
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	grpcmiddleware "github.com/krok-o/krok/pkg/server/middleware"
+	repov1 "github.com/krok-o/krok/proto/repository/v1"
 )
 
 const (
@@ -51,7 +52,8 @@ type Dependencies struct {
 	CommandHandler    providers.CommandHandler
 	ApiKeyHandler     providers.ApiKeysHandler
 
-	RepositoryService grpcapi.RepositoryServiceServer
+	TokenProvider     providers.TokenProvider
+	RepositoryService repov1.RepositoryServiceServer
 }
 
 // Server defines a server which runs and accepts requests.
@@ -131,20 +133,29 @@ func (s *KrokServer) Run(ctx context.Context) error {
 		e.AutoTLSManager.Cache = autocert.DirCache(s.Config.CacheDir)
 		return e.StartAutoTLS(hostPort)
 	}
+
+	go func() {
+		<-ctx.Done()
+		e.Shutdown(ctx)
+	}()
+
 	// Start regular server
 	return e.Start(hostPort)
 }
 
+// RunGRPC runs grpc and grpc-gateway.
 func (s *KrokServer) RunGRPC(ctx context.Context) error {
-	// TODO: Do we actually want to start a GRPC server too?
-	// I'm not sure if we can start a standard server without (will check).
-	gs := grpc.NewServer()
+	// TODO: Use SSL/TLS
+	gs := grpc.NewServer(
+		grpc.UnaryInterceptor(grpcmiddleware.JwtAuthInterceptor(s.TokenProvider)),
+	)
 
-	grpcapi.RegisterRepositoryServiceServer(gs, s.RepositoryService)
+	repov1.RegisterRepositoryServiceServer(gs, s.RepositoryService)
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-	if err := grpcapi.RegisterRepositoryServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
+
+	if err := repov1.RegisterRepositoryServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
 		return fmt.Errorf("register service: %w", err)
 	}
 

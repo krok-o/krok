@@ -192,14 +192,19 @@ func (p *TokenProvider) TokenHandler() echo.HandlerFunc {
 // GetToken gets the JWT token from the echo context
 func (p *TokenProvider) GetToken(c echo.Context) (*jwt.Token, error) {
 	// Get the token
-	jwtRaw := c.Request().Header.Get("Authorization")
-	split := strings.Split(jwtRaw, " ")
+	raw := c.Request().Header.Get("Authorization")
+	return p.GetTokenRaw(raw)
+}
+
+// GetToken gets the JWT token from the echo context
+func (p *TokenProvider) GetTokenRaw(raw string) (*jwt.Token, error) {
+	split := strings.Split(raw, " ")
 	if len(split) != 2 {
 		return nil, errors.New("unauthorized")
 	}
-	jwtString := split[1]
-	// Parse token
-	token, err := jwt.Parse(jwtString, func(token *jwt.Token) (interface{}, error) {
+	raw = split[1]
+
+	token, err := jwt.Parse(raw, func(token *jwt.Token) (interface{}, error) {
 		signingMethodError := fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		switch token.Method.(type) {
 		case *jwt.SigningMethodHMAC:
