@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	commandsTable = "commands"
+	commandsTable        = "commands"
+	commandSettingsTable = "command_settings"
 )
 
 // CommandStore is a postgres based store for commands.
@@ -422,20 +423,113 @@ func (s *CommandStore) RemoveCommandRelForRepository(ctx context.Context, comman
 	return nil
 }
 
-func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.CommandSetting) error {
-	panic("implement me")
+// CreateSetting will create a setting will take a list of settings and save it for a command.
+// Since settings are usually submitted in a batch, this takes a list of settings by default.
+func (s *CommandStore) CreateSetting(ctx context.Context, settings []*models.CommandSetting) error {
+	log := s.Logger.With().Str("func", "CreateSetting").Int("count", len(settings)).Logger()
+	f := func(tx pgx.Tx) error {
+		// construct a batch and send it.
+		batch := &pgx.Batch{}
+		for _, setting := range settings {
+			// TODO : If InVault, store in vault and generate a unique key for the vault and the
+			// value of the actual setting here will be the key of the generated vault setting name as a reference.
+			batch.Queue(fmt.Sprintf("insert into %s(command_id, key, value, in_vault) values($1, $2, $3, $4)", commandSettingsTable),
+				setting.CommandID,
+				setting.Key,
+				setting.Value,
+				setting.InVault)
+		}
+
+		br := tx.SendBatch(ctx, batch)
+		if tags, err := br.Exec(); err != nil {
+			log.Debug().Err(err).Msg("Failed to batch create settings.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "insert into command_settings",
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.ErrNoRowsAffected,
+				Query: "insert into command_settings",
+			}
+		}
+		return nil
+	}
+
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to execute with transaction.")
+		return err
+	}
+	return nil
 }
 
+// DeleteSetting takes a
 func (s *CommandStore) DeleteSetting(ctx context.Context, id int) error {
-	panic("implement me")
+	log := s.Logger.With().Int("id", id).Logger()
+	f := func(tx pgx.Tx) error {
+		if _, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", commandSettingsTable), id); err != nil {
+			log.Debug().Err(err).Msg("Failed to delete command setting.")
+			return &kerr.QueryError{
+				Query: "delete id",
+				Err:   fmt.Errorf("failed delete command setting: %w", err),
+			}
+		}
+		return nil
+	}
+
+	return s.Connector.ExecuteWithTransaction(ctx, log, f)
 }
 
 func (s *CommandStore) ListSettings(ctx context.Context, commandID int) ([]*models.CommandSetting, error) {
 	panic("implement me")
 }
 
+// GetSetting returns a single setting for an ID.
 func (s *CommandStore) GetSetting(ctx context.Context, id int) (*models.CommandSetting, error) {
-	panic("implement me")
+	log := s.Logger.With().Int("id", id).Logger()
+
+	var (
+		storedID  int
+		commandID int
+		key       string
+		value     string
+		inVault   bool
+	)
+	f := func(tx pgx.Tx) error {
+		query := fmt.Sprintf("select id, command_id, key, value, in_vault from %s where id = $1", commandSettingsTable)
+		if err := tx.QueryRow(ctx, query, id).
+			Scan(&storedID, &commandID, &key, &value, &inVault); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: query,
+					Err:   kerr.ErrNotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query row.")
+			return &kerr.QueryError{
+				Query: query,
+				Err:   err,
+			}
+		}
+		return nil
+	}
+
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("failed to run in transactions")
+		return nil, err
+	}
+
+	if inVault {
+		value = "****************"
+	}
+
+	return &models.CommandSetting{
+		ID:        storedID,
+		CommandID: commandID,
+		Key:       key,
+		Value:     value,
+		InVault:   inVault,
+	}, nil
 }
 
 func (s *CommandStore) UpdateSetting(ctx context.Context, setting *models.CommandSetting) error {
