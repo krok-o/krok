@@ -51,7 +51,6 @@ func TestCommandSettings_Flow(t *testing.T) {
 	assert.True(t, 0 < c.ID)
 
 	err = cp.CreateSetting(ctx, &models.CommandSetting{
-		ID:        0,
 		CommandID: c.ID,
 		Key:       "key",
 		Value:     "value",
@@ -156,4 +155,161 @@ func TestCommandSettings_Vault(t *testing.T) {
 	getSetting, err := cp.GetSetting(ctx, setting.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, "confidential_value", getSetting.Value)
+}
+
+func TestCommandSettings_CascadingDelete(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandSettings_CascadingDelete")
+	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: livestore.NewDatabaseConnector(livestore.Config{
+			Hostname: dbaccess.Hostname,
+			Database: dbaccess.Db,
+			Username: dbaccess.Username,
+			Password: dbaccess.Password,
+		}, livestore.Dependencies{
+			Logger:    logger,
+			Converter: env,
+		}),
+	})
+	assert.NoError(t, err)
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_CascadeDelete_Setting_1",
+		Schedule:     "test-schedule-setting-1",
+		Repositories: nil,
+		Filename:     "test-CascadeDelete",
+		Location:     location,
+		Hash:         "settings-CascadeDelete",
+		Enabled:      true,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+
+	err = cp.CreateSetting(ctx, &models.CommandSetting{
+		CommandID: c.ID,
+		Key:       "key-5",
+		Value:     "value",
+		InVault:   false,
+	})
+	assert.NoError(t, err)
+	list, err := cp.ListSettings(ctx, c.ID)
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+
+	setting := list[0]
+
+	err = cp.Delete(ctx, c.ID)
+	assert.NoError(t, err)
+
+	// Try getting the setting should result in NotFound
+	_, err = cp.GetSetting(ctx, setting.ID)
+	assert.True(t, errors.Is(err, kerr.ErrNotFound))
+}
+
+func TestCommandSettings_UpdateError(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandSettings_UpdateError")
+	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: livestore.NewDatabaseConnector(livestore.Config{
+			Hostname: dbaccess.Hostname,
+			Database: dbaccess.Db,
+			Username: dbaccess.Username,
+			Password: dbaccess.Password,
+		}, livestore.Dependencies{
+			Logger:    logger,
+			Converter: env,
+		}),
+	})
+	assert.NoError(t, err)
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_Update_Error_Setting_1",
+		Schedule:     "test-schedule-setting-1",
+		Repositories: nil,
+		Filename:     "test-UpdateError",
+		Location:     location,
+		Hash:         "settings-UpdateError",
+		Enabled:      true,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+
+	err = cp.CreateSetting(ctx, &models.CommandSetting{
+		CommandID: c.ID,
+		Key:       "key-6",
+		Value:     "value",
+		InVault:   false,
+	})
+	assert.NoError(t, err)
+	list, err := cp.ListSettings(ctx, c.ID)
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+
+	setting := list[0]
+
+	newSetting := *setting
+	newSetting.InVault = true
+	err = cp.UpdateSetting(ctx, &newSetting)
+	assert.Error(t, err)
+	newSetting.InVault = false
+	newSetting.Key = "newKey"
+	err = cp.UpdateSetting(ctx, &newSetting)
+	assert.Error(t, err)
+}
+
+func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandSettings_CantCreateSameKeyAndCommandCombination")
+	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: livestore.NewDatabaseConnector(livestore.Config{
+			Hostname: dbaccess.Hostname,
+			Database: dbaccess.Db,
+			Username: dbaccess.Username,
+			Password: dbaccess.Password,
+		}, livestore.Dependencies{
+			Logger:    logger,
+			Converter: env,
+		}),
+	})
+	assert.NoError(t, err)
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_CreateError_Setting_1",
+		Schedule:     "test-schedule-setting-1",
+		Repositories: nil,
+		Filename:     "test-CreateError",
+		Location:     location,
+		Hash:         "settings-CreateError",
+		Enabled:      true,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+
+	err = cp.CreateSetting(ctx, &models.CommandSetting{
+		CommandID: c.ID,
+		Key:       "key-5",
+		Value:     "value",
+		InVault:   false,
+	})
+	assert.NoError(t, err)
+	err = cp.CreateSetting(ctx, &models.CommandSetting{
+		CommandID: c.ID,
+		Key:       "key-5",
+		Value:     "value",
+		InVault:   false,
+	})
+	assert.Error(t, err)
+	err = cp.CreateSetting(ctx, &models.CommandSetting{
+		CommandID: 999,
+		Key:       "key-5",
+		Value:     "value",
+		InVault:   false,
+	})
+	assert.Error(t, err)
 }
