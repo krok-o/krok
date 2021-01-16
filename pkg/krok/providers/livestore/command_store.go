@@ -545,7 +545,7 @@ func (s *CommandStore) ListSettings(ctx context.Context, commandID int) ([]*mode
 	// Select all commands.
 	result := make([]*models.CommandSetting, 0)
 	f := func(tx pgx.Tx) error {
-		sql := fmt.Sprintf("select id, command_id, key, value, in_vault from %s where id = $1", commandSettingsTable)
+		sql := fmt.Sprintf("select id, command_id, key, value, in_vault from %s where command_id = $1", commandSettingsTable)
 		rows, err := tx.Query(ctx, sql, commandID)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
