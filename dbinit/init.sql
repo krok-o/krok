@@ -8,6 +8,23 @@ create table commands (
     enabled boolean not null
 );
 
+create table command_settings
+(
+    id serial primary key,
+    command_id int,
+    constraint fk_command_id
+        foreign key (command_id)
+            references commands(id)
+            on delete cascade,
+    -- this will have to be appended with the command ID and a unique id
+    -- in case it's in_vault to not clash with other settings.
+    key varchar,
+    value varchar,
+    in_vault boolean,
+    -- for a command make sure a key is unique. But for other commands the same key can be used.
+    unique(command_id, key)
+);
+
 create table repositories (
     id serial primary key,
     name varchar ( 256 ) unique not null,
