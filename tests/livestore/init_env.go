@@ -27,7 +27,6 @@ func createTestContainerIfNotCI() (func() error, error) {
 		Env: []string{
 			"POSTGRES_USER=krok",
 			"POSTGRES_PASSWORD=password123",
-			"listen_addresses = '*'",
 		},
 		Mounts: []string{"dbinit:/docker-entrypoint-initdb.d"},
 	}, func(config *docker.HostConfig) {
@@ -44,7 +43,7 @@ func createTestContainerIfNotCI() (func() error, error) {
 
 	if err = pool.Retry(func() error {
 		var err error
-		db, err := sql.Open("postgres", fmt.Sprintf("postgres://postgres:password123@localhost:%s/%s?sslmode=disable", resource.GetPort("5432/tcp"), "krok"))
+		db, err := sql.Open("postgres", fmt.Sprintf("postgres://krok:password123@localhost:%s/%s?sslmode=disable", resource.GetPort("5432/tcp"), "krok"))
 		if err != nil {
 			return err
 		}
