@@ -32,6 +32,7 @@ type CommandStore struct {
 type CommandDependencies struct {
 	Dependencies
 	Connector *Connector
+	Vault     providers.Vault
 }
 
 // NewCommandStore creates a new CommandStore
@@ -423,26 +424,36 @@ func (s *CommandStore) RemoveCommandRelForRepository(ctx context.Context, comman
 	return nil
 }
 
-// CreateSetting will create a setting will take a list of settings and save it for a command.
-// Since settings are usually submitted in a batch, this takes a list of settings by default.
-func (s *CommandStore) CreateSetting(ctx context.Context, settings []*models.CommandSetting) error {
-	log := s.Logger.With().Str("func", "CreateSetting").Int("count", len(settings)).Logger()
+// CreateSetting will create a setting for a command.
+func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.CommandSetting) error {
+	log := s.Logger.
+		With().
+		Str("func", "CreateSetting").
+		Str("key", setting.Key).
+		Bool("in_vault", setting.InVault).
+		Logger()
+	rollBackValue := ""
 	f := func(tx pgx.Tx) error {
-		// construct a batch and send it.
-		batch := &pgx.Batch{}
-		for _, setting := range settings {
-			// TODO : If InVault, store in vault and generate a unique key for the vault and the
-			// value of the actual setting here will be the key of the generated vault setting name as a reference.
-			batch.Queue(fmt.Sprintf("insert into %s(command_id, key, value, in_vault) values($1, $2, $3, $4)", commandSettingsTable),
-				setting.CommandID,
-				setting.Key,
-				setting.Value,
-				setting.InVault)
+		value := setting.Value
+		if setting.InVault {
+			value = s.generateUniqueVaultID(setting.CommandID, setting.Key)
+			if err := s.Vault.LoadSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to load secrets.")
+				return err
+			}
+			s.Vault.AddSecret(value, []byte(setting.Value))
+			if err := s.Vault.SaveSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to save secrets.")
+				return err
+			}
+			rollBackValue = value
 		}
-
-		br := tx.SendBatch(ctx, batch)
-		if tags, err := br.Exec(); err != nil {
-			log.Debug().Err(err).Msg("Failed to batch create settings.")
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(command_id, key, value, in_vault) values($1, $2, $3, $4)", commandSettingsTable),
+			setting.CommandID,
+			setting.Key,
+			value,
+			setting.InVault); err != nil {
+			log.Debug().Err(err).Msg("Failed to create setting.")
 			return &kerr.QueryError{
 				Err:   err,
 				Query: "insert into command_settings",
@@ -458,15 +469,44 @@ func (s *CommandStore) CreateSetting(ctx context.Context, settings []*models.Com
 
 	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to execute with transaction.")
+		// delete all the possibly created vault settings
+		if rollBackValue != "" {
+			if err := s.Vault.LoadSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to load secrets.")
+				return err
+			}
+			s.Vault.DeleteSecret(rollBackValue)
+			if err := s.Vault.SaveSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to save secrets.")
+				return err
+			}
+		}
 		return err
 	}
 	return nil
 }
 
+// generateUniqueVaultID generates a unique vault key based on the command id and the key name.
+func (s *CommandStore) generateUniqueVaultID(commandID int, key string) string {
+	return fmt.Sprintf("command_setting_%d_%s", commandID, key)
+}
+
 // DeleteSetting takes a
 func (s *CommandStore) DeleteSetting(ctx context.Context, id int) error {
 	log := s.Logger.With().Int("id", id).Logger()
+	// We only delete the values once they successfully been removed from the DB.
+	// If the vault delete would fail that's less of a problem compared to if we
+	// remove the vault value and the database reference remains to it.
+	toDeleteVaultValues := make([]string, 0)
 	f := func(tx pgx.Tx) error {
+		// if setting is in vault, we delete from there as well.
+		setting, err := s.GetSetting(ctx, id)
+		if err != nil {
+			return err
+		}
+		if setting.InVault {
+			toDeleteVaultValues = append(toDeleteVaultValues, setting.Value)
+		}
 		if _, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", commandSettingsTable), id); err != nil {
 			log.Debug().Err(err).Msg("Failed to delete command setting.")
 			return &kerr.QueryError{
@@ -477,11 +517,83 @@ func (s *CommandStore) DeleteSetting(ctx context.Context, id int) error {
 		return nil
 	}
 
-	return s.Connector.ExecuteWithTransaction(ctx, log, f)
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to run transaction.")
+		return err
+	}
+
+	// remove the vault values if any
+	if len(toDeleteVaultValues) > 0 {
+		if err := s.Vault.LoadSecrets(); err != nil {
+			log.Debug().Err(err).Msg("Failed to load secrets.")
+			return err
+		}
+		for _, v := range toDeleteVaultValues {
+			s.Vault.DeleteSecret(v)
+		}
+		if err := s.Vault.SaveSecrets(); err != nil {
+			log.Debug().Err(err).Msg("Failed to save secrets.")
+			return err
+		}
+	}
+	return nil
 }
 
+// ListSettings lists all settings for a command. This will not show values for settings which are stored in vault.
 func (s *CommandStore) ListSettings(ctx context.Context, commandID int) ([]*models.CommandSetting, error) {
-	panic("implement me")
+	log := s.Logger.With().Str("func", "ListSettings").Logger()
+	// Select all commands.
+	result := make([]*models.CommandSetting, 0)
+	f := func(tx pgx.Tx) error {
+		sql := fmt.Sprintf("select id, command_id, key, value, in_vault from %s where id = $1", commandSettingsTable)
+		rows, err := tx.Query(ctx, sql, commandID)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: "select all command settings",
+					Err:   kerr.ErrNotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query command settings.")
+			return &kerr.QueryError{
+				Query: "select all command settings",
+				Err:   fmt.Errorf("failed to list all command settings: %w", err),
+			}
+		}
+
+		for rows.Next() {
+			var (
+				id              int
+				storedCommandID int
+				key             string
+				value           string
+				inVault         bool
+			)
+			if err := rows.Scan(&id, &storedCommandID, &key, &value, &inVault); err != nil {
+				log.Debug().Err(err).Msg("Failed to scan.")
+				return &kerr.QueryError{
+					Query: "select all command settings",
+					Err:   fmt.Errorf("failed to scan: %w", err),
+				}
+			}
+			if inVault {
+				value = "***********"
+			}
+			setting := &models.CommandSetting{
+				ID:        id,
+				CommandID: storedCommandID,
+				Key:       key,
+				Value:     value,
+				InVault:   inVault,
+			}
+			result = append(result, setting)
+		}
+		return nil
+	}
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		return nil, fmt.Errorf("failed to execute List all command settings: %w", err)
+	}
+	return result, nil
 }
 
 // GetSetting returns a single setting for an ID.
@@ -520,7 +632,15 @@ func (s *CommandStore) GetSetting(ctx context.Context, id int) (*models.CommandS
 	}
 
 	if inVault {
-		value = "****************"
+		if err := s.Vault.LoadSecrets(); err != nil {
+			log.Debug().Err(err).Msg("Failed to load secrets.")
+			return nil, err
+		}
+		b, err := s.Vault.GetSecret(value)
+		if err != nil {
+			return nil, err
+		}
+		value = string(b)
 	}
 
 	return &models.CommandSetting{
@@ -532,6 +652,80 @@ func (s *CommandStore) GetSetting(ctx context.Context, id int) (*models.CommandS
 	}, nil
 }
 
+// UpdateSetting updates the value of a setting. Transferring values is not supported. Aka.:
+// If a value was in Vault it must remain in vault. If it was in db it must remain in db.
+// Updating the key is also not supported.
 func (s *CommandStore) UpdateSetting(ctx context.Context, setting *models.CommandSetting) error {
-	panic("implement me")
+	log := s.Logger.
+		With().
+		Str("func", "UpdateSetting").
+		Str("key", setting.Key).
+		Bool("in_vault", setting.InVault).
+		Logger()
+	rollBackKey := ""
+	var rollBackValue []byte
+	f := func(tx pgx.Tx) error {
+		storedSetting, err := s.GetSetting(ctx, setting.ID)
+		if err != nil {
+			return err
+		}
+		if storedSetting.InVault != setting.InVault {
+			return fmt.Errorf("missmatched vault setting for key %s. got: %v want: %v", setting.Key, setting.InVault, storedSetting.InVault)
+		}
+		if storedSetting.Key != setting.Key {
+			return fmt.Errorf("missmatched key setting for key %s. got: %s want: %s", setting.Key, setting.Key, storedSetting.Key)
+		}
+
+		// If it was in vault, it's easier to just overwrite whatever was in vault.
+		if setting.InVault {
+			value := s.generateUniqueVaultID(setting.CommandID, setting.Key)
+			if err := s.Vault.LoadSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to load secrets.")
+				return err
+			}
+			if rollBackValue, err = s.Vault.GetSecret(value); err != nil {
+				log.Debug().Err(err).Msg("Failed to get secret key.")
+				return err
+			}
+			s.Vault.AddSecret(value, []byte(setting.Value))
+			if err := s.Vault.SaveSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to save secrets.")
+				return err
+			}
+			rollBackKey = value
+			setting.Value = value
+		}
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("update %s set value = $1 where id = $2", commandSettingsTable),
+			setting.Value, setting.ID); err != nil {
+			log.Debug().Err(err).Msg("Failed to update setting.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "update command_settings",
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.ErrNoRowsAffected,
+				Query: "update command setting",
+			}
+		}
+		return nil
+	}
+
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to execute with transaction.")
+		// We set back the vault value to its original value if key is not empty.
+		if rollBackKey != "" {
+			if err := s.Vault.LoadSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to load secrets.")
+				return err
+			}
+			s.Vault.AddSecret(rollBackKey, rollBackValue)
+			if err := s.Vault.SaveSecrets(); err != nil {
+				log.Debug().Err(err).Msg("Failed to save secrets.")
+				return err
+			}
+		}
+		return err
+	}
+	return nil
 }
