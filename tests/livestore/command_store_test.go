@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"strings"
 	"testing"
@@ -24,6 +25,15 @@ import (
 )
 
 func TestCommandStore_Flow(t *testing.T) {
+	cleanup, err := createTestContainerIfNotCI()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := cleanup(); err != nil {
+			log.Fatal("error while cleaning up container: ", err)
+		}
+	})
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_Create")
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
