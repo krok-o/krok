@@ -313,3 +313,69 @@ func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 	})
 	assert.Error(t, err)
 }
+
+func TestCommandSettings_UpdateInVault(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandSettings_UpdateInVault")
+	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	fileStore, err := filevault.NewFileStorer(filevault.Config{
+		Location: location,
+		Key:      "password123",
+	}, filevault.Dependencies{Logger: logger})
+	assert.NoError(t, err)
+	err = fileStore.Init()
+	assert.NoError(t, err)
+	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
+	assert.NoError(t, err)
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: livestore.NewDatabaseConnector(livestore.Config{
+			Hostname: dbaccess.Hostname,
+			Database: dbaccess.Db,
+			Username: dbaccess.Username,
+			Password: dbaccess.Password,
+		}, livestore.Dependencies{
+			Logger:    logger,
+			Converter: env,
+		}),
+		Vault: v,
+	})
+	assert.NoError(t, err)
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_UpdateVault_Setting_1",
+		Schedule:     "test-schedule-setting-1",
+		Repositories: nil,
+		Filename:     "test-filename-update-vault-1",
+		Location:     location,
+		Hash:         "settings-update-vault",
+		Enabled:      true,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+
+	err = cp.CreateSetting(ctx, &models.CommandSetting{
+		CommandID: c.ID,
+		Key:       "key",
+		Value:     "value",
+		InVault:   true,
+	})
+	assert.NoError(t, err)
+	list, err := cp.ListSettings(ctx, c.ID)
+	assert.NoError(t, err)
+	assert.Len(t, list, 1)
+
+	setting := list[0]
+	// Update setting
+	setting.Value = "new_value"
+	err = cp.UpdateSetting(ctx, setting)
+	assert.NoError(t, err)
+	vKey := fmt.Sprintf("command_setting_%d_%s", c.ID, setting.Key)
+
+	err = v.LoadSecrets()
+	assert.NoError(t, err)
+
+	secret, err := v.GetSecret(vKey)
+	assert.NoError(t, err)
+	assert.Equal(t, "new_value", string(secret))
+}
