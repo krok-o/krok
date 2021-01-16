@@ -3,8 +3,8 @@ package livestore
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"testing"
 
@@ -142,19 +142,16 @@ func TestCommandSettings_Vault(t *testing.T) {
 	err = v.LoadSecrets()
 	assert.NoError(t, err)
 
-	l := v.ListSecrets()
-	log.Println("all secrets: ", l)
-
-	value, err := v.GetSecret("command_setting_1_key")
-	assert.NoError(t, err)
-	assert.Equal(t, string(value), "confidential_value")
-
 	list, err := cp.ListSettings(ctx, c.ID)
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
 	setting := list[0]
-
 	assert.Equal(t, "***********", setting.Value)
+
+	vKey := fmt.Sprintf("command_setting_%d_%s", c.ID, setting.Key)
+	value, err := v.GetSecret(vKey)
+	assert.NoError(t, err)
+	assert.Equal(t, string(value), "confidential_value")
 
 	getSetting, err := cp.GetSetting(ctx, setting.ID)
 	assert.NoError(t, err)
