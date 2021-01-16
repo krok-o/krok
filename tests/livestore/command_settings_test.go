@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io/ioutil"
+	"log"
 	"os"
 	"testing"
 
@@ -140,6 +141,10 @@ func TestCommandSettings_Vault(t *testing.T) {
 
 	err = v.LoadSecrets()
 	assert.NoError(t, err)
+
+	l := v.ListSecrets()
+	log.Println("all secrets: ", l)
+
 	value, err := v.GetSecret("command_setting_1_key")
 	assert.NoError(t, err)
 	assert.Equal(t, string(value), "confidential_value")
