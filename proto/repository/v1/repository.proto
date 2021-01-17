@@ -7,17 +7,17 @@ option go_package = "github.com/krok-o/krok-o/proto/repository/v1;repov1";
 import "google/api/annotations.proto";
 
 message Repository {
-  string name = 1;
-  int32 id = 2;
+  int32 id = 1;
+  string name = 2;
   string url = 3;
   int32 vcs = 4;
-  string unique_url = 7;
+  string unique_url = 5;
 }
 
 message CreateRepositoryRequest {
   string name = 1;
-  string url = 3;
-  int32 vcs = 4;
+  string url = 2;
+  int32 vcs = 3;
 }
 
 message GetRepositoryRequest {
