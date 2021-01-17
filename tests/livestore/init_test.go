@@ -3,7 +3,6 @@ package livestore
 import (
 	"database/sql"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path/filepath"
@@ -61,11 +60,7 @@ func createTestContainerIfNotCI() (string, func() error, error) {
 		logger.Debug().Err(err).Msg("Failed to get working director.")
 		return "", func() error { return nil }, err
 	}
-	if err := copyInitSql(cwd); err != nil {
-		logger.Debug().Err(err).Msg("Failed to copy over init script.")
-		return "", func() error { return nil }, err
-	}
-	dbInit := filepath.Join(cwd, "dbinit")
+	dbInit := filepath.Join(cwd, "..", "..", "dbinit")
 
 	resource, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "postgres",
@@ -109,29 +104,4 @@ func createTestContainerIfNotCI() (string, func() error, error) {
 	}
 
 	return resource.GetPort("5432/tcp"), cleanup, nil
-}
-
-// copyInitSql copies over the initialisation sql file for the ephemeral container.
-func copyInitSql(cwd string) error {
-	src := filepath.Join(cwd, "..", "..", "dbinit")
-	dst := filepath.Join(cwd, "dbinit")
-	sourceFile, err := os.Open(filepath.Join(src, "init.sql"))
-	if err != nil {
-		return err
-	}
-	defer sourceFile.Close()
-
-	// Create new file
-	newFile, err := os.Create(filepath.Join(dst, "init.sql"))
-	if err != nil {
-		return err
-	}
-	defer newFile.Close()
-
-	bytesCopied, err := io.Copy(newFile, sourceFile)
-	if err != nil {
-		return err
-	}
-	log.Printf("Copied %d bytes.", bytesCopied)
-	return nil
 }
