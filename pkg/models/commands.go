@@ -11,3 +11,12 @@ type Command struct {
 	Hash         string        `json:"hash"`
 	Enabled      bool          `json:"enabled"`
 }
+
+// CommandSetting defines the settings a command can have.
+type CommandSetting struct {
+	ID        int    `json:"id"`
+	CommandID int    `json:"command_id"`
+	Key       string `json:"key"`
+	Value     string `json:"value"`
+	InVault   bool   `json:"in_vault"`
+}

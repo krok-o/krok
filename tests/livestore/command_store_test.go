@@ -29,7 +29,7 @@ func TestCommandStore_Flow(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
@@ -106,7 +106,7 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,
@@ -211,7 +211,7 @@ func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
@@ -244,7 +244,7 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
