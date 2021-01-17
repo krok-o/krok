@@ -59,7 +59,7 @@ func TestRepositoryService_CreateRepository(t *testing.T) {
 	})
 }
 
-func TestRepositoryService_UpdateRepository2Repository(t *testing.T) {
+func TestRepositoryService_UpdateRepository(t *testing.T) {
 	t.Run("successful update of repository", func(t *testing.T) {
 		storer := &mocks.RepositoryStorer{}
 		storer.On("Update", context.Background(), &models.Repository{
