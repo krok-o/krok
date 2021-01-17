@@ -196,7 +196,7 @@ func (p *TokenProvider) GetToken(c echo.Context) (*jwt.Token, error) {
 	return p.GetTokenRaw(raw)
 }
 
-// GetToken gets the JWT token from the echo context
+// GetTokenRaw gets the JWT token from a raw token string.
 func (p *TokenProvider) GetTokenRaw(raw string) (*jwt.Token, error) {
 	split := strings.Split(raw, " ")
 	if len(split) != 2 {
@@ -226,10 +226,12 @@ func (p *TokenProvider) GetTokenRaw(raw string) (*jwt.Token, error) {
 		p.Logger.Error().Msg("No email found in token claim.")
 		return nil, errors.New("invalid token signature")
 	}
+
 	email := iEmail.(string)
 	if v, ok := p.cache.Has(email); ok && !v.Expired() {
 		return token, nil
 	}
+
 	if _, err := p.UserStore.GetByEmail(context.Background(), email); err != nil {
 		p.Logger.Err(err).Msg("Failed to get user by email.")
 		return nil, err
