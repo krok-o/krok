@@ -26,7 +26,7 @@ func TestCommandSettings_Flow(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
@@ -103,7 +103,7 @@ func TestCommandSettings_Vault(t *testing.T) {
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,
@@ -163,7 +163,7 @@ func TestCommandSettings_CascadingDelete(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
@@ -214,7 +214,7 @@ func TestCommandSettings_UpdateError(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
@@ -267,7 +267,7 @@ func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,
@@ -329,7 +329,7 @@ func TestCommandSettings_UpdateInVault(t *testing.T) {
 	assert.NoError(t, err)
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: dbaccess.Hostname,
+			Hostname: hostname,
 			Database: dbaccess.Db,
 			Username: dbaccess.Username,
 			Password: dbaccess.Password,

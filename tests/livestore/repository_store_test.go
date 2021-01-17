@@ -39,7 +39,7 @@ func TestRepositoryStore_Flow(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,
@@ -109,7 +109,7 @@ func TestRepositoryStore_ListByFilter(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,
@@ -178,7 +178,7 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,
@@ -254,7 +254,7 @@ func TestRepositoryStore_Create_WithCommands(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,

@@ -21,7 +21,7 @@ func TestUserStore_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,
@@ -73,7 +73,7 @@ func TestUserStore_Create_Unique(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
-		Hostname: dbaccess.Hostname,
+		Hostname: hostname,
 		Database: dbaccess.Db,
 		Username: dbaccess.Username,
 		Password: dbaccess.Password,
