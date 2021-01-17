@@ -59,6 +59,49 @@ func TestRepositoryService_CreateRepository(t *testing.T) {
 	})
 }
 
+func TestRepositoryService_UpdateRepository2Repository(t *testing.T) {
+	t.Run("successful update of repository", func(t *testing.T) {
+		storer := &mocks.RepositoryStorer{}
+		storer.On("Update", context.Background(), &models.Repository{
+			ID:   1,
+			Name: "new-name",
+		}).Return(&models.Repository{
+			ID:   1,
+			Name: "test",
+			URL:  "test-url",
+			VCS:  models.BITBUCKET,
+		}, nil).Once()
+
+		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
+
+		created, err := svc.UpdateRepository(context.Background(), &repov1.UpdateRepositoryRequest{
+			Id:   "1",
+			Name: "new-name",
+		})
+		storer.AssertExpectations(t)
+		assert.NoError(t, err)
+		assert.Equal(t, int32(1), created.Id)
+		assert.Equal(t, "test", created.Name)
+		assert.Equal(t, "test-url", created.Url)
+		assert.Equal(t, "hostname/1/4/callback", created.UniqueUrl)
+	})
+
+	t.Run("store update repository error", func(t *testing.T) {
+		storer := &mocks.RepositoryStorer{}
+		storer.On("Update", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Once()
+
+		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
+
+		created, err := svc.UpdateRepository(context.Background(), &repov1.UpdateRepositoryRequest{
+			Id:   "1",
+			Name: "new-name",
+		})
+		storer.AssertExpectations(t)
+		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to update repository")
+		assert.Nil(t, created)
+	})
+}
+
 func TestRepositoryService_GetRepository(t *testing.T) {
 	t.Run("successful creation of repository", func(t *testing.T) {
 		storer := &mocks.RepositoryStorer{}
@@ -90,5 +133,76 @@ func TestRepositoryService_GetRepository(t *testing.T) {
 		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to get repository")
 		assert.Nil(t, repository)
+	})
+}
+
+func TestRepositoryService_ListRepositories(t *testing.T) {
+	t.Run("successful listing of repositories", func(t *testing.T) {
+		storer := &mocks.RepositoryStorer{}
+		storer.On("List", context.Background(), &models.ListOptions{VCS: models.BITBUCKET}).Return([]*models.Repository{
+			{
+				ID:   1,
+				Name: "test-1",
+				URL:  "test-url",
+				VCS:  models.BITBUCKET,
+			},
+			{
+				ID:   2,
+				Name: "test-2",
+				URL:  "test-url",
+				VCS:  models.BITBUCKET,
+			},
+		}, nil).Once()
+
+		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
+
+		repos, err := svc.ListRepositories(context.Background(), &repov1.ListRepositoryRequest{Vcs: models.BITBUCKET})
+		storer.AssertExpectations(t)
+		assert.NoError(t, err)
+		assert.Len(t, repos.List, 2)
+		assert.Equal(t, int32(1), repos.List[0].Id)
+		assert.Equal(t, "test-1", repos.List[0].Name)
+		assert.Equal(t, "test-url", repos.List[0].Url)
+		assert.Equal(t, int32(4), repos.List[0].Vcs)
+		assert.Equal(t, int32(2), repos.List[1].Id)
+		assert.Equal(t, "test-2", repos.List[1].Name)
+		assert.Equal(t, "test-url", repos.List[1].Url)
+		assert.Equal(t, int32(4), repos.List[1].Vcs)
+	})
+
+	t.Run("store list repositories error", func(t *testing.T) {
+		storer := &mocks.RepositoryStorer{}
+		storer.On("List", context.Background(), mock.Anything).Return(nil, errors.New("err")).Once()
+
+		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
+
+		repository, err := svc.ListRepositories(context.Background(), &repov1.ListRepositoryRequest{Name: "test"})
+		storer.AssertExpectations(t)
+		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to list repositories")
+		assert.Nil(t, repository)
+	})
+}
+
+func TestRepositoryService_DeleteRepository(t *testing.T) {
+	t.Run("successful deletion of repository", func(t *testing.T) {
+		storer := &mocks.RepositoryStorer{}
+		storer.On("Delete", context.Background(), 1234).Return(nil).Once()
+
+		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
+
+		_, err := svc.DeleteRepository(context.Background(), &repov1.DeleteRepositoryRequest{Id: "1234"})
+		storer.AssertExpectations(t)
+		assert.NoError(t, err)
+	})
+
+	t.Run("store delete repository error", func(t *testing.T) {
+		storer := &mocks.RepositoryStorer{}
+		storer.On("Delete", context.Background(), 1234).Return(errors.New("err")).Once()
+
+		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
+
+		_, err := svc.DeleteRepository(context.Background(), &repov1.DeleteRepositoryRequest{Id: "1234"})
+		storer.AssertExpectations(t)
+		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to delete repository")
 	})
 }

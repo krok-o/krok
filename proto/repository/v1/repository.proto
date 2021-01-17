@@ -5,6 +5,7 @@ package repository.v1;
 option go_package = "github.com/krok-o/krok-o/proto/repository/v1;repov1";
 
 import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
 
 message Repository {
   int32 id = 1;
@@ -12,6 +13,10 @@ message Repository {
   string url = 3;
   int32 vcs = 4;
   string unique_url = 5;
+}
+
+message Repositories {
+  repeated Repository list = 1;
 }
 
 message CreateRepositoryRequest {
@@ -24,7 +29,24 @@ message GetRepositoryRequest {
   string id = 1;
 }
 
+message ListRepositoryRequest {
+  string name = 1;
+  int32 vcs = 2;
+}
+
+message UpdateRepositoryRequest {
+  string id = 1;
+  string name = 2;
+}
+
+message DeleteRepositoryRequest {
+  string id = 1;
+}
+
 service RepositoryService {
   rpc CreateRepository(CreateRepositoryRequest) returns (Repository) {}
+  rpc UpdateRepository(UpdateRepositoryRequest) returns (Repository) {}
   rpc GetRepository(GetRepositoryRequest) returns (Repository) {}
+  rpc ListRepositories(ListRepositoryRequest) returns (Repositories) {}
+  rpc DeleteRepository(DeleteRepositoryRequest) returns (google.protobuf.Empty) {}
 }

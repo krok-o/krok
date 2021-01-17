@@ -96,11 +96,6 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// Repository related actions.
 	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
-	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
-	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
-	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())
-	auth.POST("/repositories", s.Dependencies.RepositoryHandler.ListRepositories())
-	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.UpdateRepository())
 
 	// command related actions.
 	auth.GET("/command/:id", s.Dependencies.CommandHandler.GetCommand())
