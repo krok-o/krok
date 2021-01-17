@@ -192,14 +192,19 @@ func (p *TokenProvider) TokenHandler() echo.HandlerFunc {
 // GetToken gets the JWT token from the echo context
 func (p *TokenProvider) GetToken(c echo.Context) (*jwt.Token, error) {
 	// Get the token
-	jwtRaw := c.Request().Header.Get("Authorization")
-	split := strings.Split(jwtRaw, " ")
+	raw := c.Request().Header.Get("Authorization")
+	return p.GetTokenRaw(raw)
+}
+
+// GetTokenRaw gets the JWT token from a raw token string.
+func (p *TokenProvider) GetTokenRaw(raw string) (*jwt.Token, error) {
+	split := strings.Split(raw, " ")
 	if len(split) != 2 {
 		return nil, errors.New("unauthorized")
 	}
-	jwtString := split[1]
-	// Parse token
-	token, err := jwt.Parse(jwtString, func(token *jwt.Token) (interface{}, error) {
+	raw = split[1]
+
+	token, err := jwt.Parse(raw, func(token *jwt.Token) (interface{}, error) {
 		signingMethodError := fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		switch token.Method.(type) {
 		case *jwt.SigningMethodHMAC:
@@ -221,10 +226,12 @@ func (p *TokenProvider) GetToken(c echo.Context) (*jwt.Token, error) {
 		p.Logger.Error().Msg("No email found in token claim.")
 		return nil, errors.New("invalid token signature")
 	}
+
 	email := iEmail.(string)
 	if v, ok := p.cache.Has(email); ok && !v.Expired() {
 		return token, nil
 	}
+
 	if _, err := p.UserStore.GetByEmail(context.Background(), email); err != nil {
 		p.Logger.Err(err).Msg("Failed to get user by email.")
 		return nil, err

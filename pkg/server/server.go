@@ -6,14 +6,21 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net"
+	"net/http"
 
+	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/acme/autocert"
+	"golang.org/x/sync/errgroup"
+	"google.golang.org/grpc"
 
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	grpcmiddleware "github.com/krok-o/krok/pkg/server/middleware"
+	repov1 "github.com/krok-o/krok/proto/repository/v1"
 )
 
 const (
@@ -44,11 +51,15 @@ type Dependencies struct {
 	RepositoryHandler providers.RepositoryHandler
 	CommandHandler    providers.CommandHandler
 	ApiKeyHandler     providers.ApiKeysHandler
+
+	TokenProvider     providers.TokenProvider
+	RepositoryService repov1.RepositoryServiceServer
 }
 
 // Server defines a server which runs and accepts requests.
 type Server interface {
 	Run(context.Context) error
+	RunGRPC(context.Context) error
 }
 
 // NewKrokServer creates a new krok server.
@@ -122,6 +133,46 @@ func (s *KrokServer) Run(ctx context.Context) error {
 		e.AutoTLSManager.Cache = autocert.DirCache(s.Config.CacheDir)
 		return e.StartAutoTLS(hostPort)
 	}
+
+	go func() {
+		<-ctx.Done()
+		e.Shutdown(ctx)
+	}()
+
 	// Start regular server
 	return e.Start(hostPort)
+}
+
+// RunGRPC runs grpc and grpc-gateway.
+func (s *KrokServer) RunGRPC(ctx context.Context) error {
+	// TODO: Use SSL/TLS
+	gs := grpc.NewServer(
+		grpc.UnaryInterceptor(grpcmiddleware.JwtAuthInterceptor(s.TokenProvider)),
+	)
+
+	repov1.RegisterRepositoryServiceServer(gs, s.RepositoryService)
+
+	mux := runtime.NewServeMux()
+	opts := []grpc.DialOption{grpc.WithInsecure()}
+
+	if err := repov1.RegisterRepositoryServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
+		return fmt.Errorf("register service: %w", err)
+	}
+
+	listener, err := net.Listen("tcp", ":9090")
+	if err != nil {
+		return fmt.Errorf("net listen: %w", err)
+	}
+
+	g, ctx := errgroup.WithContext(ctx)
+
+	g.Go(func() error {
+		return gs.Serve(listener)
+	})
+
+	g.Go(func() error {
+		return http.ListenAndServe(":8081", mux)
+	})
+
+	return g.Wait()
 }

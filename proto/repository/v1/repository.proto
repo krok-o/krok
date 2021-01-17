@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package repository.v1;
+
+option go_package = "github.com/krok-o/krok-o/proto/repository/v1;repov1";
+
+import "google/api/annotations.proto";
+
+message Repository {
+  int32 id = 1;
+  string name = 2;
+  string url = 3;
+  int32 vcs = 4;
+  string unique_url = 5;
+}
+
+message CreateRepositoryRequest {
+  string name = 1;
+  string url = 2;
+  int32 vcs = 3;
+}
+
+message GetRepositoryRequest {
+  string id = 1;
+}
+
+service RepositoryService {
+  rpc CreateRepository(CreateRepositoryRequest) returns (Repository) {}
+  rpc GetRepository(GetRepositoryRequest) returns (Repository) {}
+}
