@@ -147,16 +147,39 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
 		return err
 	}
-	// TODO: Check if exists and disabled. If hash==thisnewhash enable the plugin.
-	if _, err := p.Store.Create(ctx, &models.Command{
-		Name:     filepath.Base(file),
-		Filename: file,
-		Location: p.Location,
-		Hash:     hash,
-		Enabled:  true,
-	}); err != nil {
-		log.Error().Err(err).Msg("Failed to add new command.")
+	command, err := p.Store.GetByName(ctx, file)
+	if err != nil {
+		if !errors.Is(err, kerr.ErrNotFound) {
+			log.Debug().Err(err).Msg("Failed to get command.")
+			return err
+		}
+		// The command doesn't exist yet, so we create it.
+		if _, err := p.Store.Create(ctx, &models.Command{
+			Name:     filepath.Base(file),
+			Filename: file,
+			Location: p.Location,
+			Hash:     hash,
+			Enabled:  true,
+		}); err != nil {
+			log.Debug().Err(err).Msg("Failed to add new command.")
+		}
+		return nil
 	}
+	// the command exists in the db check if it is enabled, if not and the hash equals,
+	// enable it. If the hash does not equal, throw an error that command exists with different hash.
+	// The user should delete the command in this case.
+	if !command.Enabled && command.Hash == hash {
+		command.Enabled = true
+		if _, err := p.Store.Update(ctx, command); err != nil {
+			log.Debug().Err(err).Msg("Failed to update command to enabled.")
+			return err
+		}
+		return nil
+	}
+	if !command.Enabled && command.Hash != hash {
+		return errors.New("new file's hash does not equal with the stored command's hash")
+	}
+	// command is enabled and hash equals stored hash, nothing to do.
 	return nil
 }
 
