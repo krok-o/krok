@@ -13,6 +13,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	repov1 "github.com/krok-o/krok/proto/repository/v1"
@@ -45,7 +46,7 @@ func TestJwtAuthInterceptor(t *testing.T) {
 		}
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
-		_, err = client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: "1"})
+		_, err = client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
 		mockTokenProvider.AssertExpectations(t)
 		assert.NoError(t, err)
 	})
@@ -60,7 +61,7 @@ func TestJwtAuthInterceptor(t *testing.T) {
 
 		client := repov1.NewRepositoryServiceClient(conn)
 
-		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: "1"})
+		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
 		mockTokenProvider.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Unauthenticated desc = failed to get header")
 		assert.Nil(t, repo)
@@ -81,7 +82,7 @@ func TestJwtAuthInterceptor(t *testing.T) {
 		}
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
-		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: "1"})
+		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
 		mockTokenProvider.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Unauthenticated desc = failed to get header")
 		assert.Nil(t, repo)
@@ -104,7 +105,7 @@ func TestJwtAuthInterceptor(t *testing.T) {
 		}
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
-		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: "1"})
+		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
 		mockTokenProvider.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Unauthenticated desc = failed to get token")
 		assert.Nil(t, repo)

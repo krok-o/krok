@@ -4,10 +4,10 @@ import (
 	"context"
 	"crypto/md5"
 	"fmt"
-	"strconv"
 	"time"
 
 	"github.com/golang/protobuf/ptypes"
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -21,9 +21,9 @@ const (
 	defaultApiKeyTTL  = 7 * 24 * time.Hour
 )
 
-// UserApiKeyService represents the user api key service.
-type UserApiKeyService struct {
-	storer        providers.ApiKeysStorer
+// UserAPIKeyService represents the user api key service.
+type UserAPIKeyService struct {
+	storer        providers.APIKeysStorer
 	authenticator providers.ApiKeysAuthenticator
 	uuid          providers.UUIDGenerator
 	clock         providers.Clock
@@ -31,14 +31,14 @@ type UserApiKeyService struct {
 	userv1.UnimplementedApiKeyServiceServer
 }
 
-// NewUserApiKeyService creates a new UserApiKeyService
-func NewUserApiKeyService(
-	storer providers.ApiKeysStorer,
+// NewUserAPIKeyService creates a new UserAPIKeyService
+func NewUserAPIKeyService(
+	storer providers.APIKeysStorer,
 	authenticator providers.ApiKeysAuthenticator,
 	uuid providers.UUIDGenerator,
 	time providers.Clock,
-) *UserApiKeyService {
-	return &UserApiKeyService{
+) *UserAPIKeyService {
+	return &UserAPIKeyService{
 		storer:        storer,
 		authenticator: authenticator,
 		uuid:          uuid,
@@ -46,15 +46,10 @@ func NewUserApiKeyService(
 	}
 }
 
-// CreateApiKey creates a user api key.
-func (s *UserApiKeyService) CreateApiKey(ctx context.Context, request *userv1.CreateApiKeyRequest) (*userv1.ApiKey, error) {
-	if request.UserId == "" {
-		return nil, status.Error(codes.InvalidArgument, "must provide user_id")
-	}
-
-	uid, err := strconv.Atoi(request.UserId)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to convert user_id")
+// CreateApiKey creates a user api key pair.
+func (s *UserAPIKeyService) CreateApiKey(ctx context.Context, request *userv1.CreateAPIKeyRequest) (*userv1.ApiKey, error) {
+	if request.UserId == nil {
+		return nil, status.Error(codes.Internal, "missing user_id")
 	}
 
 	name := request.Name
@@ -79,7 +74,7 @@ func (s *UserApiKeyService) CreateApiKey(ctx context.Context, request *userv1.Cr
 
 	key := &models.APIKey{
 		Name:         name,
-		UserID:       uid,
+		UserID:       int(request.UserId.Value),
 		APIKeyID:     keyID,
 		APIKeySecret: encrypted,
 		TTL:          s.clock.Now().Add(defaultApiKeyTTL),
@@ -97,14 +92,31 @@ func (s *UserApiKeyService) CreateApiKey(ctx context.Context, request *userv1.Cr
 	return &userv1.ApiKey{
 		Id:        int32(created.ID),
 		Name:      key.Name,
-		UserId:    int32(uid),
+		UserId:    int32(key.UserID),
 		KeyId:     keyID,
 		KeySecret: keySecret,
 		Ttl:       ttl,
 	}, nil
 }
 
-func (s *UserApiKeyService) generateKeyID() (string, error) {
+// DeleteApiKey deletes a user api key pair.
+func (s *UserAPIKeyService) DeleteApiKey(ctx context.Context, request *userv1.DeleteAPIKeyRequest) (*empty.Empty, error) {
+	if request.GetId() == nil {
+		return nil, status.Error(codes.Internal, "missing id")
+	}
+
+	if request.GetUserId() == nil {
+		return nil, status.Error(codes.Internal, "missing user_id")
+	}
+
+	if err := s.storer.Delete(ctx, int(request.Id.Value), int(request.UserId.Value)); err != nil {
+		return nil, status.Error(codes.Internal, "failed to delete api key")
+	}
+
+	return &empty.Empty{}, nil
+}
+
+func (s *UserAPIKeyService) generateKeyID() (string, error) {
 	u, err := s.uuid.Generate()
 	if err != nil {
 		return "", err

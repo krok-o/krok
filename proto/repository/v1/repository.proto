@@ -6,6 +6,7 @@ option go_package = "github.com/krok-o/krok-o/proto/repository/v1;repov1";
 
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 
 message Repository {
   int32 id = 1;
@@ -26,7 +27,7 @@ message CreateRepositoryRequest {
 }
 
 message GetRepositoryRequest {
-  string id = 1;
+  google.protobuf.Int32Value id = 1;
 }
 
 message ListRepositoryRequest {
@@ -35,12 +36,12 @@ message ListRepositoryRequest {
 }
 
 message UpdateRepositoryRequest {
-  string id = 1;
+  google.protobuf.Int32Value id = 1;
   string name = 2;
 }
 
 message DeleteRepositoryRequest {
-  string id = 1;
+  google.protobuf.Int32Value id = 1;
 }
 
 service RepositoryService {

@@ -33,7 +33,7 @@ func NewAPIKeysStore(deps APIKeysDependencies) *APIKeysStore {
 	return &APIKeysStore{APIKeysDependencies: deps}
 }
 
-var _ providers.ApiKeysStorer = &APIKeysStore{}
+var _ providers.APIKeysStorer = &APIKeysStore{}
 
 // Create an apikey.
 func (a *APIKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.APIKey, error) {

@@ -62,18 +62,12 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov
 
 // UpdateRepository updates a repository.
 func (s *RepositoryService) UpdateRepository(ctx context.Context, request *repov1.UpdateRepositoryRequest) (*repov1.Repository, error) {
-	id := request.Id
-	if id == "" {
-		return nil, status.Error(codes.InvalidArgument, "invalid id")
-	}
-
-	n, err := strconv.Atoi(id)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to convert id to number")
+	if request.Id == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing id")
 	}
 
 	repository, err := s.storer.Update(ctx, &models.Repository{
-		ID:   n,
+		ID:   int(request.Id.Value),
 		Name: request.Name,
 	})
 	if err != nil {
@@ -98,17 +92,11 @@ func (s *RepositoryService) UpdateRepository(ctx context.Context, request *repov
 
 // GetRepository gets a repository.
 func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.GetRepositoryRequest) (*repov1.Repository, error) {
-	id := request.Id
-	if id == "" {
-		return nil, status.Error(codes.InvalidArgument, "invalid id")
+	if request.Id == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing id")
 	}
 
-	n, err := strconv.Atoi(id)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to convert id to number")
-	}
-
-	repository, err := s.storer.Get(ctx, n)
+	repository, err := s.storer.Get(ctx, int(request.Id.Value))
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to get repository")
 	}
@@ -153,17 +141,11 @@ func (s *RepositoryService) ListRepositories(ctx context.Context, request *repov
 
 // DeleteRepository deletes a repository.
 func (s *RepositoryService) DeleteRepository(ctx context.Context, request *repov1.DeleteRepositoryRequest) (*empty.Empty, error) {
-	id := request.Id
-	if id == "" {
-		return nil, status.Error(codes.InvalidArgument, "invalid id")
+	if request.Id == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing id")
 	}
 
-	n, err := strconv.Atoi(id)
-	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to convert id to number")
-	}
-
-	if err := s.storer.Delete(ctx, n); err != nil {
+	if err := s.storer.Delete(ctx, int(request.Id.Value)); err != nil {
 		return nil, status.Error(codes.Internal, "failed to delete repository")
 	}
 

@@ -6,6 +6,8 @@ option go_package = "github.com/krok-o/krok-o/proto/user/v1;userv1";
 
 import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/wrappers.proto";
 
 message ApiKey {
   int32 id = 1;
@@ -16,11 +18,17 @@ message ApiKey {
   google.protobuf.Timestamp ttl = 6;
 }
 
-message CreateApiKeyRequest {
-  string user_id = 1;
+message CreateAPIKeyRequest {
+  google.protobuf.Int32Value user_id = 1;
   string name = 2;
 }
 
+message DeleteAPIKeyRequest {
+  google.protobuf.Int32Value id = 1;
+  google.protobuf.Int32Value user_id = 2;
+}
+
 service ApiKeyService {
-  rpc CreateApiKey(CreateApiKeyRequest) returns (ApiKey) {}
+  rpc CreateApiKey(CreateAPIKeyRequest) returns (ApiKey) {}
+  rpc DeleteApiKey(DeleteAPIKeyRequest) returns (google.protobuf.Empty) {}
 }

@@ -23,7 +23,7 @@ const (
 // ApiKeysHandlerDependencies defines the dependencies for the api keys handler provider.
 type ApiKeysHandlerDependencies struct {
 	Dependencies
-	APIKeysStore  providers.ApiKeysStorer
+	APIKeysStore  providers.APIKeysStorer
 	TokenProvider *TokenProvider
 }
 

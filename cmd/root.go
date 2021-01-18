@@ -192,7 +192,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 		TokenProvider:     tp,
 		RepositoryService: service.NewRepositoryService(repoSvcConfig, repoStore),
-		UserApiKeyService: service.NewUserApiKeyService(apiKeyStore, authMatcher, uuidGenerator, clock),
+		UserApiKeyService: service.NewUserAPIKeyService(apiKeyStore, authMatcher, uuidGenerator, clock),
 	})
 
 	// Run service & server

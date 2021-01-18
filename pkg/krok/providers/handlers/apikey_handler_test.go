@@ -50,7 +50,7 @@ func generateTestToken(email string) (string, error) {
 }
 
 type mockApiKeysStore struct {
-	providers.ApiKeysStorer
+	providers.APIKeysStorer
 	getKey    *models.APIKey
 	deleteErr error
 	keyList   []*models.APIKey

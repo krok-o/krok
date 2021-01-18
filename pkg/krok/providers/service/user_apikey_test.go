@@ -8,6 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
@@ -38,10 +39,10 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 			TTL:          ttl.Add(defaultApiKeyTTL),
 		}).Return(&models.APIKey{ID: 1234}, nil).Once()
 
-		svc := NewUserApiKeyService(storer, authenticator, uuid, clock)
+		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
 
-		key, err := svc.CreateApiKey(context.Background(), &userv1.CreateApiKeyRequest{
-			UserId: "1",
+		key, err := svc.CreateApiKey(context.Background(), &userv1.CreateAPIKeyRequest{
+			UserId: wrapperspb.Int32(1),
 			Name:   "Key-1",
 		})
 		storer.AssertExpectations(t)
@@ -74,10 +75,10 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 			TTL:          ttl.Add(defaultApiKeyTTL),
 		}).Return(&models.APIKey{ID: 1234}, nil).Once()
 
-		svc := NewUserApiKeyService(storer, authenticator, uuid, clock)
+		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
 
-		key, err := svc.CreateApiKey(context.Background(), &userv1.CreateApiKeyRequest{
-			UserId: "1",
+		key, err := svc.CreateApiKey(context.Background(), &userv1.CreateAPIKeyRequest{
+			UserId: wrapperspb.Int32(1),
 		})
 		storer.AssertExpectations(t)
 		assert.NoError(t, err)
@@ -97,10 +98,10 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 		clock := &mocks.Clock{}
 		storer := &mocks.APIKeysStorer{}
 
-		svc := NewUserApiKeyService(storer, authenticator, uuid, clock)
+		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
 
-		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateApiKeyRequest{
-			UserId: "1",
+		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateAPIKeyRequest{
+			UserId: wrapperspb.Int32(1),
 		})
 		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to generate unique key")
@@ -115,10 +116,10 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 		clock := &mocks.Clock{}
 		storer := &mocks.APIKeysStorer{}
 
-		svc := NewUserApiKeyService(storer, authenticator, uuid, clock)
+		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
 
-		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateApiKeyRequest{
-			UserId: "1",
+		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateAPIKeyRequest{
+			UserId: wrapperspb.Int32(1),
 		})
 		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to generate unique key id")
@@ -137,10 +138,10 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 
 		storer := &mocks.APIKeysStorer{}
 
-		svc := NewUserApiKeyService(storer, authenticator, uuid, clock)
+		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
 
-		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateApiKeyRequest{
-			UserId: "1",
+		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateAPIKeyRequest{
+			UserId: wrapperspb.Int32(1),
 		})
 		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to encrypt unique key")
@@ -160,10 +161,10 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 		storer := &mocks.APIKeysStorer{}
 		storer.On("Create", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Once()
 
-		svc := NewUserApiKeyService(storer, authenticator, uuid, clock)
+		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
 
-		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateApiKeyRequest{
-			UserId: "1",
+		_, err := svc.CreateApiKey(context.Background(), &userv1.CreateAPIKeyRequest{
+			UserId: wrapperspb.Int32(1),
 		})
 		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to create key")

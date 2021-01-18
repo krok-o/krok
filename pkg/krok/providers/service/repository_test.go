@@ -7,6 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"google.golang.org/protobuf/types/known/wrapperspb"
 
 	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
@@ -75,7 +76,7 @@ func TestRepositoryService_UpdateRepository(t *testing.T) {
 		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
 
 		created, err := svc.UpdateRepository(context.Background(), &repov1.UpdateRepositoryRequest{
-			Id:   "1",
+			Id:   wrapperspb.Int32(1),
 			Name: "new-name",
 		})
 		storer.AssertExpectations(t)
@@ -93,7 +94,7 @@ func TestRepositoryService_UpdateRepository(t *testing.T) {
 		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
 
 		created, err := svc.UpdateRepository(context.Background(), &repov1.UpdateRepositoryRequest{
-			Id:   "1",
+			Id:   wrapperspb.Int32(1),
 			Name: "new-name",
 		})
 		storer.AssertExpectations(t)
@@ -114,7 +115,7 @@ func TestRepositoryService_GetRepository(t *testing.T) {
 
 		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
 
-		repository, err := svc.GetRepository(context.Background(), &repov1.GetRepositoryRequest{Id: "1234"})
+		repository, err := svc.GetRepository(context.Background(), &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1234)})
 		storer.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, int32(1234), repository.Id)
@@ -129,7 +130,7 @@ func TestRepositoryService_GetRepository(t *testing.T) {
 
 		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
 
-		repository, err := svc.GetRepository(context.Background(), &repov1.GetRepositoryRequest{Id: "1234"})
+		repository, err := svc.GetRepository(context.Background(), &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1234)})
 		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to get repository")
 		assert.Nil(t, repository)
@@ -190,7 +191,7 @@ func TestRepositoryService_DeleteRepository(t *testing.T) {
 
 		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
 
-		_, err := svc.DeleteRepository(context.Background(), &repov1.DeleteRepositoryRequest{Id: "1234"})
+		_, err := svc.DeleteRepository(context.Background(), &repov1.DeleteRepositoryRequest{Id: wrapperspb.Int32(1234)})
 		storer.AssertExpectations(t)
 		assert.NoError(t, err)
 	})
@@ -201,7 +202,7 @@ func TestRepositoryService_DeleteRepository(t *testing.T) {
 
 		svc := NewRepositoryService(RepositoryServiceConfig{Hostname: "hostname"}, storer)
 
-		_, err := svc.DeleteRepository(context.Background(), &repov1.DeleteRepositoryRequest{Id: "1234"})
+		_, err := svc.DeleteRepository(context.Background(), &repov1.DeleteRepositoryRequest{Id: wrapperspb.Int32(1234)})
 		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to delete repository")
 	})
