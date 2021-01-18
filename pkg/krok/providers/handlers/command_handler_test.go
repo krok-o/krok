@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -15,6 +16,59 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
+
+type mockUserStorer struct {
+	providers.UserStorer
+}
+
+func (mus *mockUserStorer) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+	return &models.User{
+		DisplayName: "testUser",
+		Email:       email,
+		ID:          0,
+		LastLogin:   time.Now(),
+		APIKeys: []*models.APIKey{
+			{
+				ID:           0,
+				Name:         "test",
+				UserID:       0,
+				APIKeyID:     "apikeyid",
+				APIKeySecret: []byte("secret"),
+				TTL:          time.Now().Add(10 * time.Minute),
+			},
+		},
+	}, nil
+}
+
+type mockRepositoryStorer struct {
+	providers.RepositoryStorer
+	id        int
+	getRepo   *models.Repository
+	deleteErr error
+	listRepo  []*models.Repository
+}
+
+func (mrs *mockRepositoryStorer) Create(ctx context.Context, repo *models.Repository) (*models.Repository, error) {
+	repo.ID = mrs.id
+	mrs.id++
+	return repo, nil
+}
+
+func (mrs *mockRepositoryStorer) Update(ctx context.Context, repo *models.Repository) (*models.Repository, error) {
+	return repo, nil
+}
+
+func (mrs *mockRepositoryStorer) Get(ctx context.Context, id int) (*models.Repository, error) {
+	return mrs.getRepo, nil
+}
+
+func (mrs *mockRepositoryStorer) List(ctx context.Context, opts *models.ListOptions) ([]*models.Repository, error) {
+	return mrs.listRepo, nil
+}
+
+func (mrs *mockRepositoryStorer) Delete(ctx context.Context, id int) error {
+	return mrs.deleteErr
+}
 
 type mockCommandStorer struct {
 	providers.CommandStorer

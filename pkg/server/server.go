@@ -46,11 +46,10 @@ type KrokServer struct {
 
 // Dependencies defines needed dependencies for the krok server.
 type Dependencies struct {
-	Logger            zerolog.Logger
-	Krok              krok.Handler
-	RepositoryHandler providers.RepositoryHandler
-	CommandHandler    providers.CommandHandler
-	ApiKeyHandler     providers.ApiKeysHandler
+	Logger         zerolog.Logger
+	Krok           krok.Handler
+	CommandHandler providers.CommandHandler
+	ApiKeyHandler  providers.ApiKeysHandler
 
 	TokenProvider     providers.TokenProvider
 	RepositoryService repov1.RepositoryServiceServer
@@ -96,11 +95,6 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// Repository related actions.
 	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
-	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
-	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
-	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())
-	auth.POST("/repositories", s.Dependencies.RepositoryHandler.ListRepositories())
-	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.UpdateRepository())
 
 	// command related actions.
 	auth.GET("/command/:id", s.Dependencies.CommandHandler.GetCommand())
