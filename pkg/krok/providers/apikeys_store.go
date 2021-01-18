@@ -6,8 +6,8 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-// APIKeysStorer defines operations that an api key provider must have
-type APIKeysStorer interface {
+// ApiKeysStorer defines operations that an api key provider must have
+type ApiKeysStorer interface {
 	// Create an apikey.
 	Create(ctx context.Context, key *models.APIKey) (*models.APIKey, error)
 	// Delete an apikey.

@@ -9,6 +9,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok"
+	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
@@ -179,6 +180,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// Set up the server
 	// ************************
 
+	uuidGenerator := providers.NewUUIDGenerator()
+	clock := providers.NewClock()
+
 	repoSvcConfig := service.RepositoryServiceConfig{Hostname: krokArgs.server.Hostname}
 	server := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:         log,
@@ -186,9 +190,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		CommandHandler: commandHandler,
 		ApiKeyHandler:  apiKeysHandler,
 
-		// TODO: Find a better place?
 		TokenProvider:     tp,
 		RepositoryService: service.NewRepositoryService(repoSvcConfig, repoStore),
+		UserApiKeyService: service.NewUserApiKeyService(apiKeyStore, authMatcher, uuidGenerator, clock),
 	})
 
 	// Run service & server

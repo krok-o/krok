@@ -18,7 +18,7 @@ type ApiKeysConfig struct {
 // ApiKeysDependencies defines the dependencies for the apikeys provider.
 type ApiKeysDependencies struct {
 	Logger       zerolog.Logger
-	ApiKeysStore providers.APIKeysStorer
+	ApiKeysStore providers.ApiKeysStorer
 }
 
 // ApiKeysProvider is the authentication provider for api keys.

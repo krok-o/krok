@@ -15,7 +15,7 @@ import (
 )
 
 type mockApiKeysStore struct {
-	providers.APIKeysStorer
+	providers.ApiKeysStorer
 
 	key *models.APIKey
 	err error
