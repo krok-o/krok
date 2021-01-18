@@ -163,15 +163,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 	})
 
-	apiKeysHandler, _ := handlers.NewApiKeysHandler(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
-	}, handlers.ApiKeysHandlerDependencies{
-		APIKeysStore:  apiKeyStore,
-		TokenProvider: tp,
-		Dependencies:  handlerDeps,
-	})
-
 	krokHandler := krok.NewHookHandler(krok.Config{}, krok.Dependencies{
 		Logger: log,
 	})
@@ -188,7 +179,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:         log,
 		Krok:           krokHandler,
 		CommandHandler: commandHandler,
-		ApiKeyHandler:  apiKeysHandler,
 
 		TokenProvider:     tp,
 		RepositoryService: service.NewRepositoryService(repoSvcConfig, repoStore),

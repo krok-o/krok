@@ -50,11 +50,10 @@ type Dependencies struct {
 	Logger         zerolog.Logger
 	Krok           krok.Handler
 	CommandHandler providers.CommandHandler
-	ApiKeyHandler  providers.ApiKeysHandler
 
 	TokenProvider     providers.TokenProvider
 	RepositoryService repov1.RepositoryServiceServer
-	UserApiKeyService userv1.ApiKeyServiceServer
+	UserApiKeyService userv1.APIKeyServiceServer
 }
 
 // Server defines a server which runs and accepts requests.
@@ -106,12 +105,6 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
 
-	// api keys related actions
-	auth.POST("/user/:uid/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
-	auth.DELETE("/user/:uid/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
-	auth.POST("/user/:uid/apikeys", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
-	auth.GET("/user/:uid/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
-
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 
 	// Start TLS with certificate paths
@@ -147,7 +140,7 @@ func (s *KrokServer) RunGRPC(ctx context.Context) error {
 	)
 
 	repov1.RegisterRepositoryServiceServer(gs, s.RepositoryService)
-	userv1.RegisterApiKeyServiceServer(gs, s.UserApiKeyService)
+	userv1.RegisterAPIKeyServiceServer(gs, s.UserApiKeyService)
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
@@ -155,7 +148,7 @@ func (s *KrokServer) RunGRPC(ctx context.Context) error {
 	if err := repov1.RegisterRepositoryServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
 		return fmt.Errorf("register repository service: %w", err)
 	}
-	if err := userv1.RegisterApiKeyServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
+	if err := userv1.RegisterAPIKeyServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
 		return fmt.Errorf("register user apikey service: %w", err)
 	}
 

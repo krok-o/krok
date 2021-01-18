@@ -17,8 +17,8 @@ import (
 )
 
 const (
-	defaultApiKeyName = "My API Key"
-	defaultApiKeyTTL  = 7 * 24 * time.Hour
+	defaultAPIKeyName = "My API Key"
+	defaultAPIKeyTTL  = 7 * 24 * time.Hour
 )
 
 // UserAPIKeyService represents the user api key service.
@@ -28,7 +28,7 @@ type UserAPIKeyService struct {
 	uuid          providers.UUIDGenerator
 	clock         providers.Clock
 
-	userv1.UnimplementedApiKeyServiceServer
+	userv1.UnimplementedAPIKeyServiceServer
 }
 
 // NewUserAPIKeyService creates a new UserAPIKeyService
@@ -46,15 +46,15 @@ func NewUserAPIKeyService(
 	}
 }
 
-// CreateApiKey creates a user api key pair.
-func (s *UserAPIKeyService) CreateApiKey(ctx context.Context, request *userv1.CreateAPIKeyRequest) (*userv1.ApiKey, error) {
+// CreateAPIKey creates a user api key pair.
+func (s *UserAPIKeyService) CreateAPIKey(ctx context.Context, request *userv1.CreateAPIKeyRequest) (*userv1.APIKey, error) {
 	if request.UserId == nil {
-		return nil, status.Error(codes.Internal, "missing user_id")
+		return nil, status.Error(codes.InvalidArgument, "missing user_id")
 	}
 
 	name := request.Name
 	if name == "" {
-		name = defaultApiKeyName
+		name = defaultAPIKeyName
 	}
 
 	keySecret, err := s.uuid.Generate()
@@ -77,11 +77,11 @@ func (s *UserAPIKeyService) CreateApiKey(ctx context.Context, request *userv1.Cr
 		UserID:       int(request.UserId.Value),
 		APIKeyID:     keyID,
 		APIKeySecret: encrypted,
-		TTL:          s.clock.Now().Add(defaultApiKeyTTL),
+		TTL:          s.clock.Now().Add(defaultAPIKeyTTL),
 	}
 	created, err := s.storer.Create(ctx, key)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "failed to create key")
+		return nil, status.Error(codes.Internal, "failed to create api key")
 	}
 
 	ttl, err := ptypes.TimestampProto(key.TTL)
@@ -89,7 +89,7 @@ func (s *UserAPIKeyService) CreateApiKey(ctx context.Context, request *userv1.Cr
 		return nil, status.Error(codes.Internal, "failed to create ttl timestamp")
 	}
 
-	return &userv1.ApiKey{
+	return &userv1.APIKey{
 		Id:        int32(created.ID),
 		Name:      key.Name,
 		UserId:    int32(key.UserID),
@@ -99,14 +99,14 @@ func (s *UserAPIKeyService) CreateApiKey(ctx context.Context, request *userv1.Cr
 	}, nil
 }
 
-// DeleteApiKey deletes a user api key pair.
-func (s *UserAPIKeyService) DeleteApiKey(ctx context.Context, request *userv1.DeleteAPIKeyRequest) (*empty.Empty, error) {
-	if request.GetId() == nil {
-		return nil, status.Error(codes.Internal, "missing id")
+// DeleteAPIKey deletes a user api key pair.
+func (s *UserAPIKeyService) DeleteAPIKey(ctx context.Context, request *userv1.DeleteAPIKeyRequest) (*empty.Empty, error) {
+	if request.Id == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing id")
 	}
 
-	if request.GetUserId() == nil {
-		return nil, status.Error(codes.Internal, "missing user_id")
+	if request.UserId == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing user_id")
 	}
 
 	if err := s.storer.Delete(ctx, int(request.Id.Value), int(request.UserId.Value)); err != nil {
@@ -114,6 +114,66 @@ func (s *UserAPIKeyService) DeleteApiKey(ctx context.Context, request *userv1.De
 	}
 
 	return &empty.Empty{}, nil
+}
+
+// GetAPIKey gets an API key.
+func (s *UserAPIKeyService) GetAPIKey(ctx context.Context, request *userv1.GetAPIKeyRequest) (*userv1.APIKey, error) {
+	if request.Id == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing id")
+	}
+
+	if request.UserId == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing user_id")
+	}
+
+	key, err := s.storer.Get(ctx, int(request.Id.Value), int(request.UserId.Value))
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to get api key")
+	}
+
+	ttl, err := ptypes.TimestampProto(key.TTL)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to create ttl timestamp")
+	}
+
+	return &userv1.APIKey{
+		Id:     int32(key.ID),
+		Name:   key.Name,
+		UserId: int32(key.UserID),
+		KeyId:  key.APIKeyID,
+		Ttl:    ttl,
+	}, nil
+}
+
+// ListAPIKeys lists API keys for a user.
+func (s *UserAPIKeyService) ListAPIKeys(ctx context.Context, request *userv1.ListAPIKeyRequest) (*userv1.APIKeys, error) {
+	if request.UserId == nil {
+		return nil, status.Error(codes.InvalidArgument, "missing user_id")
+	}
+
+	keys, err := s.storer.List(ctx, int(request.UserId.Value))
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to list api keys")
+	}
+
+	list := make([]*userv1.APIKey, len(keys))
+	for i := range list {
+		list[i] = &userv1.APIKey{
+			Id:     int32(keys[i].ID),
+			Name:   keys[i].Name,
+			UserId: int32(keys[i].UserID),
+			KeyId:  keys[i].APIKeyID,
+		}
+
+		ttl, err := ptypes.TimestampProto(keys[i].TTL)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "failed to create ttl timestamp")
+		}
+
+		list[i].Ttl = ttl
+	}
+
+	return &userv1.APIKeys{List: list}, nil
 }
 
 func (s *UserAPIKeyService) generateKeyID() (string, error) {

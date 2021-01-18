@@ -31,7 +31,7 @@ var _ = runtime.String
 var _ = utilities.NewDoubleArray
 var _ = metadata.Join
 
-func request_ApiKeyService_CreateApiKey_0(ctx context.Context, marshaler runtime.Marshaler, client ApiKeyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_APIKeyService_CreateAPIKey_0(ctx context.Context, marshaler runtime.Marshaler, client APIKeyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateAPIKeyRequest
 	var metadata runtime.ServerMetadata
 
@@ -43,12 +43,12 @@ func request_ApiKeyService_CreateApiKey_0(ctx context.Context, marshaler runtime
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.CreateApiKey(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.CreateAPIKey(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ApiKeyService_CreateApiKey_0(ctx context.Context, marshaler runtime.Marshaler, server ApiKeyServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_APIKeyService_CreateAPIKey_0(ctx context.Context, marshaler runtime.Marshaler, server APIKeyServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq CreateAPIKeyRequest
 	var metadata runtime.ServerMetadata
 
@@ -60,12 +60,12 @@ func local_request_ApiKeyService_CreateApiKey_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.CreateApiKey(ctx, &protoReq)
+	msg, err := server.CreateAPIKey(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_ApiKeyService_DeleteApiKey_0(ctx context.Context, marshaler runtime.Marshaler, client ApiKeyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func request_APIKeyService_DeleteAPIKey_0(ctx context.Context, marshaler runtime.Marshaler, client APIKeyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DeleteAPIKeyRequest
 	var metadata runtime.ServerMetadata
 
@@ -77,12 +77,12 @@ func request_ApiKeyService_DeleteApiKey_0(ctx context.Context, marshaler runtime
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.DeleteApiKey(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.DeleteAPIKey(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_ApiKeyService_DeleteApiKey_0(ctx context.Context, marshaler runtime.Marshaler, server ApiKeyServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+func local_request_APIKeyService_DeleteAPIKey_0(ctx context.Context, marshaler runtime.Marshaler, server APIKeyServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq DeleteAPIKeyRequest
 	var metadata runtime.ServerMetadata
 
@@ -94,29 +94,97 @@ func local_request_ApiKeyService_DeleteApiKey_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.DeleteApiKey(ctx, &protoReq)
+	msg, err := server.DeleteAPIKey(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-// RegisterApiKeyServiceHandlerServer registers the http handlers for service ApiKeyService to "mux".
-// UnaryRPC     :call ApiKeyServiceServer directly.
+func request_APIKeyService_GetAPIKey_0(ctx context.Context, marshaler runtime.Marshaler, client APIKeyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetAPIKeyRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.GetAPIKey(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_APIKeyService_GetAPIKey_0(ctx context.Context, marshaler runtime.Marshaler, server APIKeyServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetAPIKeyRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.GetAPIKey(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_APIKeyService_ListAPIKeys_0(ctx context.Context, marshaler runtime.Marshaler, client APIKeyServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListAPIKeyRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.ListAPIKeys(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_APIKeyService_ListAPIKeys_0(ctx context.Context, marshaler runtime.Marshaler, server APIKeyServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListAPIKeyRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.ListAPIKeys(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+// RegisterAPIKeyServiceHandlerServer registers the http handlers for service APIKeyService to "mux".
+// UnaryRPC     :call APIKeyServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
-// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterApiKeyServiceHandlerFromEndpoint instead.
-func RegisterApiKeyServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server ApiKeyServiceServer) error {
+// Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterAPIKeyServiceHandlerFromEndpoint instead.
+func RegisterAPIKeyServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server APIKeyServiceServer) error {
 
-	mux.Handle("POST", pattern_ApiKeyService_CreateApiKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_APIKeyService_CreateAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.v1.ApiKeyService/CreateApiKey")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.v1.APIKeyService/CreateAPIKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiKeyService_CreateApiKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_APIKeyService_CreateAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -124,22 +192,22 @@ func RegisterApiKeyServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_ApiKeyService_CreateApiKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_APIKeyService_CreateAPIKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_ApiKeyService_DeleteApiKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_APIKeyService_DeleteAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.v1.ApiKeyService/DeleteApiKey")
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.v1.APIKeyService/DeleteAPIKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiKeyService_DeleteApiKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_APIKeyService_DeleteAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -147,16 +215,62 @@ func RegisterApiKeyServiceHandlerServer(ctx context.Context, mux *runtime.ServeM
 			return
 		}
 
-		forward_ApiKeyService_DeleteApiKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_APIKeyService_DeleteAPIKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_APIKeyService_GetAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.v1.APIKeyService/GetAPIKey")
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_APIKeyService_GetAPIKey_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_APIKeyService_GetAPIKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_APIKeyService_ListAPIKeys_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/user.v1.APIKeyService/ListAPIKeys")
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_APIKeyService_ListAPIKeys_0(rctx, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_APIKeyService_ListAPIKeys_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
 	return nil
 }
 
-// RegisterApiKeyServiceHandlerFromEndpoint is same as RegisterApiKeyServiceHandler but
+// RegisterAPIKeyServiceHandlerFromEndpoint is same as RegisterAPIKeyServiceHandler but
 // automatically dials to "endpoint" and closes the connection when "ctx" gets done.
-func RegisterApiKeyServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
+func RegisterAPIKeyServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.ServeMux, endpoint string, opts []grpc.DialOption) (err error) {
 	conn, err := grpc.Dial(endpoint, opts...)
 	if err != nil {
 		return err
@@ -176,59 +290,99 @@ func RegisterApiKeyServiceHandlerFromEndpoint(ctx context.Context, mux *runtime.
 		}()
 	}()
 
-	return RegisterApiKeyServiceHandler(ctx, mux, conn)
+	return RegisterAPIKeyServiceHandler(ctx, mux, conn)
 }
 
-// RegisterApiKeyServiceHandler registers the http handlers for service ApiKeyService to "mux".
+// RegisterAPIKeyServiceHandler registers the http handlers for service APIKeyService to "mux".
 // The handlers forward requests to the grpc endpoint over "conn".
-func RegisterApiKeyServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
-	return RegisterApiKeyServiceHandlerClient(ctx, mux, NewApiKeyServiceClient(conn))
+func RegisterAPIKeyServiceHandler(ctx context.Context, mux *runtime.ServeMux, conn *grpc.ClientConn) error {
+	return RegisterAPIKeyServiceHandlerClient(ctx, mux, NewAPIKeyServiceClient(conn))
 }
 
-// RegisterApiKeyServiceHandlerClient registers the http handlers for service ApiKeyService
-// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "ApiKeyServiceClient".
-// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "ApiKeyServiceClient"
+// RegisterAPIKeyServiceHandlerClient registers the http handlers for service APIKeyService
+// to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "APIKeyServiceClient".
+// Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "APIKeyServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "ApiKeyServiceClient" to call the correct interceptors.
-func RegisterApiKeyServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client ApiKeyServiceClient) error {
+// "APIKeyServiceClient" to call the correct interceptors.
+func RegisterAPIKeyServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client APIKeyServiceClient) error {
 
-	mux.Handle("POST", pattern_ApiKeyService_CreateApiKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_APIKeyService_CreateAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/user.v1.ApiKeyService/CreateApiKey")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/user.v1.APIKeyService/CreateAPIKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiKeyService_CreateApiKey_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_APIKeyService_CreateAPIKey_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ApiKeyService_CreateApiKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_APIKeyService_CreateAPIKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("POST", pattern_ApiKeyService_DeleteApiKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_APIKeyService_DeleteAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/user.v1.ApiKeyService/DeleteApiKey")
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/user.v1.APIKeyService/DeleteAPIKey")
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiKeyService_DeleteApiKey_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_APIKeyService_DeleteAPIKey_0(rctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_ApiKeyService_DeleteApiKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_APIKeyService_DeleteAPIKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_APIKeyService_GetAPIKey_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/user.v1.APIKeyService/GetAPIKey")
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_APIKeyService_GetAPIKey_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_APIKeyService_GetAPIKey_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_APIKeyService_ListAPIKeys_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/user.v1.APIKeyService/ListAPIKeys")
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_APIKeyService_ListAPIKeys_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_APIKeyService_ListAPIKeys_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -236,13 +390,21 @@ func RegisterApiKeyServiceHandlerClient(ctx context.Context, mux *runtime.ServeM
 }
 
 var (
-	pattern_ApiKeyService_CreateApiKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user.v1.ApiKeyService", "CreateApiKey"}, ""))
+	pattern_APIKeyService_CreateAPIKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user.v1.APIKeyService", "CreateAPIKey"}, ""))
 
-	pattern_ApiKeyService_DeleteApiKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user.v1.ApiKeyService", "DeleteApiKey"}, ""))
+	pattern_APIKeyService_DeleteAPIKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user.v1.APIKeyService", "DeleteAPIKey"}, ""))
+
+	pattern_APIKeyService_GetAPIKey_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user.v1.APIKeyService", "GetAPIKey"}, ""))
+
+	pattern_APIKeyService_ListAPIKeys_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"user.v1.APIKeyService", "ListAPIKeys"}, ""))
 )
 
 var (
-	forward_ApiKeyService_CreateApiKey_0 = runtime.ForwardResponseMessage
+	forward_APIKeyService_CreateAPIKey_0 = runtime.ForwardResponseMessage
 
-	forward_ApiKeyService_DeleteApiKey_0 = runtime.ForwardResponseMessage
+	forward_APIKeyService_DeleteAPIKey_0 = runtime.ForwardResponseMessage
+
+	forward_APIKeyService_GetAPIKey_0 = runtime.ForwardResponseMessage
+
+	forward_APIKeyService_ListAPIKeys_0 = runtime.ForwardResponseMessage
 )

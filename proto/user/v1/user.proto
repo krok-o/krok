@@ -9,7 +9,7 @@ import "google/protobuf/timestamp.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 
-message ApiKey {
+message APIKey {
   int32 id = 1;
   string name = 2;
   int32 user_id = 3;
@@ -18,9 +18,22 @@ message ApiKey {
   google.protobuf.Timestamp ttl = 6;
 }
 
+message APIKeys {
+  repeated APIKey list = 1;
+}
+
 message CreateAPIKeyRequest {
   google.protobuf.Int32Value user_id = 1;
   string name = 2;
+}
+
+message GetAPIKeyRequest {
+  google.protobuf.Int32Value id = 1;
+  google.protobuf.Int32Value user_id = 2;
+}
+
+message ListAPIKeyRequest {
+  google.protobuf.Int32Value user_id = 1;
 }
 
 message DeleteAPIKeyRequest {
@@ -28,7 +41,9 @@ message DeleteAPIKeyRequest {
   google.protobuf.Int32Value user_id = 2;
 }
 
-service ApiKeyService {
-  rpc CreateApiKey(CreateAPIKeyRequest) returns (ApiKey) {}
-  rpc DeleteApiKey(DeleteAPIKeyRequest) returns (google.protobuf.Empty) {}
+service APIKeyService {
+  rpc CreateAPIKey(CreateAPIKeyRequest) returns (APIKey) {}
+  rpc DeleteAPIKey(DeleteAPIKeyRequest) returns (google.protobuf.Empty) {}
+  rpc GetAPIKey(GetAPIKeyRequest) returns (APIKey) {}
+  rpc ListAPIKeys(ListAPIKeyRequest) returns (APIKeys) {}
 }

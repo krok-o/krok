@@ -14,119 +14,191 @@ import (
 // is compatible with the grpc package it is being compiled against.
 const _ = grpc.SupportPackageIsVersion7
 
-// ApiKeyServiceClient is the client API for ApiKeyService service.
+// APIKeyServiceClient is the client API for APIKeyService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type ApiKeyServiceClient interface {
-	CreateApiKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*ApiKey, error)
-	DeleteApiKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+type APIKeyServiceClient interface {
+	CreateAPIKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error)
+	DeleteAPIKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	GetAPIKey(ctx context.Context, in *GetAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error)
+	ListAPIKeys(ctx context.Context, in *ListAPIKeyRequest, opts ...grpc.CallOption) (*APIKeys, error)
 }
 
-type apiKeyServiceClient struct {
+type aPIKeyServiceClient struct {
 	cc grpc.ClientConnInterface
 }
 
-func NewApiKeyServiceClient(cc grpc.ClientConnInterface) ApiKeyServiceClient {
-	return &apiKeyServiceClient{cc}
+func NewAPIKeyServiceClient(cc grpc.ClientConnInterface) APIKeyServiceClient {
+	return &aPIKeyServiceClient{cc}
 }
 
-func (c *apiKeyServiceClient) CreateApiKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*ApiKey, error) {
-	out := new(ApiKey)
-	err := c.cc.Invoke(ctx, "/user.v1.ApiKeyService/CreateApiKey", in, out, opts...)
+func (c *aPIKeyServiceClient) CreateAPIKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error) {
+	out := new(APIKey)
+	err := c.cc.Invoke(ctx, "/user.v1.APIKeyService/CreateAPIKey", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *apiKeyServiceClient) DeleteApiKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+func (c *aPIKeyServiceClient) DeleteAPIKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
 	out := new(empty.Empty)
-	err := c.cc.Invoke(ctx, "/user.v1.ApiKeyService/DeleteApiKey", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/user.v1.APIKeyService/DeleteAPIKey", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-// ApiKeyServiceServer is the server API for ApiKeyService service.
-// All implementations must embed UnimplementedApiKeyServiceServer
+func (c *aPIKeyServiceClient) GetAPIKey(ctx context.Context, in *GetAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error) {
+	out := new(APIKey)
+	err := c.cc.Invoke(ctx, "/user.v1.APIKeyService/GetAPIKey", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *aPIKeyServiceClient) ListAPIKeys(ctx context.Context, in *ListAPIKeyRequest, opts ...grpc.CallOption) (*APIKeys, error) {
+	out := new(APIKeys)
+	err := c.cc.Invoke(ctx, "/user.v1.APIKeyService/ListAPIKeys", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// APIKeyServiceServer is the server API for APIKeyService service.
+// All implementations must embed UnimplementedAPIKeyServiceServer
 // for forward compatibility
-type ApiKeyServiceServer interface {
-	CreateApiKey(context.Context, *CreateAPIKeyRequest) (*ApiKey, error)
-	DeleteApiKey(context.Context, *DeleteAPIKeyRequest) (*empty.Empty, error)
-	mustEmbedUnimplementedApiKeyServiceServer()
+type APIKeyServiceServer interface {
+	CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error)
+	DeleteAPIKey(context.Context, *DeleteAPIKeyRequest) (*empty.Empty, error)
+	GetAPIKey(context.Context, *GetAPIKeyRequest) (*APIKey, error)
+	ListAPIKeys(context.Context, *ListAPIKeyRequest) (*APIKeys, error)
+	mustEmbedUnimplementedAPIKeyServiceServer()
 }
 
-// UnimplementedApiKeyServiceServer must be embedded to have forward compatible implementations.
-type UnimplementedApiKeyServiceServer struct {
+// UnimplementedAPIKeyServiceServer must be embedded to have forward compatible implementations.
+type UnimplementedAPIKeyServiceServer struct {
 }
 
-func (UnimplementedApiKeyServiceServer) CreateApiKey(context.Context, *CreateAPIKeyRequest) (*ApiKey, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateApiKey not implemented")
+func (UnimplementedAPIKeyServiceServer) CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAPIKey not implemented")
 }
-func (UnimplementedApiKeyServiceServer) DeleteApiKey(context.Context, *DeleteAPIKeyRequest) (*empty.Empty, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteApiKey not implemented")
+func (UnimplementedAPIKeyServiceServer) DeleteAPIKey(context.Context, *DeleteAPIKeyRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAPIKey not implemented")
 }
-func (UnimplementedApiKeyServiceServer) mustEmbedUnimplementedApiKeyServiceServer() {}
+func (UnimplementedAPIKeyServiceServer) GetAPIKey(context.Context, *GetAPIKeyRequest) (*APIKey, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAPIKey not implemented")
+}
+func (UnimplementedAPIKeyServiceServer) ListAPIKeys(context.Context, *ListAPIKeyRequest) (*APIKeys, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListAPIKeys not implemented")
+}
+func (UnimplementedAPIKeyServiceServer) mustEmbedUnimplementedAPIKeyServiceServer() {}
 
-// UnsafeApiKeyServiceServer may be embedded to opt out of forward compatibility for this service.
-// Use of this interface is not recommended, as added methods to ApiKeyServiceServer will
+// UnsafeAPIKeyServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to APIKeyServiceServer will
 // result in compilation errors.
-type UnsafeApiKeyServiceServer interface {
-	mustEmbedUnimplementedApiKeyServiceServer()
+type UnsafeAPIKeyServiceServer interface {
+	mustEmbedUnimplementedAPIKeyServiceServer()
 }
 
-func RegisterApiKeyServiceServer(s grpc.ServiceRegistrar, srv ApiKeyServiceServer) {
-	s.RegisterService(&_ApiKeyService_serviceDesc, srv)
+func RegisterAPIKeyServiceServer(s grpc.ServiceRegistrar, srv APIKeyServiceServer) {
+	s.RegisterService(&_APIKeyService_serviceDesc, srv)
 }
 
-func _ApiKeyService_CreateApiKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _APIKeyService_CreateAPIKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateAPIKeyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApiKeyServiceServer).CreateApiKey(ctx, in)
+		return srv.(APIKeyServiceServer).CreateAPIKey(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/user.v1.ApiKeyService/CreateApiKey",
+		FullMethod: "/user.v1.APIKeyService/CreateAPIKey",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiKeyServiceServer).CreateApiKey(ctx, req.(*CreateAPIKeyRequest))
+		return srv.(APIKeyServiceServer).CreateAPIKey(ctx, req.(*CreateAPIKeyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _ApiKeyService_DeleteApiKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _APIKeyService_DeleteAPIKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteAPIKeyRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(ApiKeyServiceServer).DeleteApiKey(ctx, in)
+		return srv.(APIKeyServiceServer).DeleteAPIKey(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/user.v1.ApiKeyService/DeleteApiKey",
+		FullMethod: "/user.v1.APIKeyService/DeleteAPIKey",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(ApiKeyServiceServer).DeleteApiKey(ctx, req.(*DeleteAPIKeyRequest))
+		return srv.(APIKeyServiceServer).DeleteAPIKey(ctx, req.(*DeleteAPIKeyRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-var _ApiKeyService_serviceDesc = grpc.ServiceDesc{
-	ServiceName: "user.v1.ApiKeyService",
-	HandlerType: (*ApiKeyServiceServer)(nil),
+func _APIKeyService_GetAPIKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAPIKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIKeyServiceServer).GetAPIKey(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.v1.APIKeyService/GetAPIKey",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIKeyServiceServer).GetAPIKey(ctx, req.(*GetAPIKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _APIKeyService_ListAPIKeys_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListAPIKeyRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(APIKeyServiceServer).ListAPIKeys(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/user.v1.APIKeyService/ListAPIKeys",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(APIKeyServiceServer).ListAPIKeys(ctx, req.(*ListAPIKeyRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+var _APIKeyService_serviceDesc = grpc.ServiceDesc{
+	ServiceName: "user.v1.APIKeyService",
+	HandlerType: (*APIKeyServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "CreateApiKey",
-			Handler:    _ApiKeyService_CreateApiKey_Handler,
+			MethodName: "CreateAPIKey",
+			Handler:    _APIKeyService_CreateAPIKey_Handler,
 		},
 		{
-			MethodName: "DeleteApiKey",
-			Handler:    _ApiKeyService_DeleteApiKey_Handler,
+			MethodName: "DeleteAPIKey",
+			Handler:    _APIKeyService_DeleteAPIKey_Handler,
+		},
+		{
+			MethodName: "GetAPIKey",
+			Handler:    _APIKeyService_GetAPIKey_Handler,
+		},
+		{
+			MethodName: "ListAPIKeys",
+			Handler:    _APIKeyService_ListAPIKeys_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
