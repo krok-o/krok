@@ -82,14 +82,11 @@ func TestPluginProviderFlow(t *testing.T) {
 
 	// Wait for the watcher to pick up the new file and call create.
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, &models.Command{
-		Name:     "test",
-		ID:       0,
-		Filename: "test",
-		Location: location,
-		Hash:     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-		Enabled:  true,
-	}, mcs.getCommand)
+	assert.Equal(t, "test", mcs.getCommand.Name)
+	assert.Equal(t, 0, mcs.getCommand.ID)
+	assert.Equal(t, "test", mcs.getCommand.Filename)
+	assert.Equal(t, location, mcs.getCommand.Location)
+	assert.NotEqual(t, "", mcs.getCommand.Hash)
 }
 
 // copyTestPlugin copies over the test plugin.
