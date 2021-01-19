@@ -2,8 +2,7 @@ package providers
 
 import (
 	"context"
-
-	"cirello.io/pglock"
+	"io"
 
 	"github.com/krok-o/krok/pkg/models"
 )
@@ -29,7 +28,7 @@ type CommandStorer interface {
 	// Lock file functionality to prevent processing multiple commands simultaneously.
 
 	// AcquireLock creates a lock entry for a name
-	AcquireLock(ctx context.Context, name string) (*pglock.Lock, error)
+	AcquireLock(ctx context.Context, name string) (io.Closer, error)
 
 	// Settings
 
