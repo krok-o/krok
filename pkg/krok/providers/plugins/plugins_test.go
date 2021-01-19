@@ -4,8 +4,8 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 	"time"
@@ -20,11 +20,9 @@ import (
 
 type mockCommandStorer struct {
 	providers.CommandStorer
-	getCommand  *models.Command
-	getError    error
-	deleteErr   error
-	commandList []*models.Command
-	id          int
+	getCommand *models.Command
+	getError   error
+	id         int
 }
 
 func (mcs *mockCommandStorer) Update(ctx context.Context, command *models.Command) (*models.Command, error) {
@@ -82,9 +80,9 @@ func TestPluginProviderFlow(t *testing.T) {
 
 	// Wait for the watcher to pick up the new file and call create.
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, file.Name(), mcs.getCommand.Name)
+	assert.Equal(t, filepath.Base(file.Name()), mcs.getCommand.Name)
 	assert.Equal(t, 0, mcs.getCommand.ID)
-	assert.Equal(t, file.Name(), mcs.getCommand.Filename)
+	assert.Equal(t, filepath.Base(file.Name()), mcs.getCommand.Filename)
 	assert.Equal(t, location, mcs.getCommand.Location)
 	assert.NotEqual(t, "", mcs.getCommand.Hash)
 }
@@ -107,7 +105,7 @@ func TestPluginProviderLoad(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for the watcher to start up...
-	err = copyTestPlugin(location)
+	err = compileTestDataToLocation(location)
 	assert.NoError(t, err)
 	// Now try loading the plugin.
 	p, err := pp.Load(context.Background(), filepath.Join(location, "test.so"))
@@ -120,29 +118,16 @@ func TestPluginProviderLoad(t *testing.T) {
 }
 
 // copyTestPlugin copies over the test plugin.
-func copyTestPlugin(location string) error {
+func compileTestDataToLocation(location string) error {
 	cwd, err := os.Getwd()
 	if err != nil {
 		return err
 	}
-	src := filepath.Join(cwd, "testdata")
-	sourceFile, err := os.Open(filepath.Join(src, "test.so"))
-	if err != nil {
+	src := filepath.Join(cwd, "testdata", "test.go")
+	dst := filepath.Join(location, "test.so")
+	cmd := exec.Command("go", "build", "-buildmode=plugin", "-o", dst, src)
+	if err := cmd.Run(); err != nil {
 		return err
 	}
-	defer sourceFile.Close()
-
-	// Create new file
-	newFile, err := os.Create(filepath.Join(location, "test.so"))
-	if err != nil {
-		return err
-	}
-	defer newFile.Close()
-
-	bytesCopied, err := io.Copy(newFile, sourceFile)
-	if err != nil {
-		return err
-	}
-	log.Printf("Copied %d bytes.", bytesCopied)
 	return nil
 }
