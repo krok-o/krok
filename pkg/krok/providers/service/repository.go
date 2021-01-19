@@ -127,16 +127,16 @@ func (s *RepositoryService) ListRepositories(ctx context.Context, request *repov
 		return nil, status.Error(codes.Internal, "failed to list repositories")
 	}
 
-	list := make([]*repov1.Repository, len(repositories))
-	for i := range list {
-		list[i] = &repov1.Repository{
+	items := make([]*repov1.Repository, len(repositories))
+	for i := range items {
+		items[i] = &repov1.Repository{
 			Id:   int32(repositories[i].ID),
 			Name: repositories[i].Name,
 			Vcs:  int32(repositories[i].VCS),
 			Url:  repositories[i].URL,
 		}
 	}
-	return &repov1.Repositories{List: list}, nil
+	return &repov1.Repositories{Items: items}, nil
 }
 
 // DeleteRepository deletes a repository.

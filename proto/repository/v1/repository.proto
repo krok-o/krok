@@ -17,7 +17,7 @@ message Repository {
 }
 
 message Repositories {
-  repeated Repository list = 1;
+  repeated Repository items = 1;
 }
 
 message CreateRepositoryRequest {

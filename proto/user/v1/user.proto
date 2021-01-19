@@ -19,7 +19,7 @@ message APIKey {
 }
 
 message APIKeys {
-  repeated APIKey list = 1;
+  repeated APIKey items = 1;
 }
 
 message CreateAPIKeyRequest {

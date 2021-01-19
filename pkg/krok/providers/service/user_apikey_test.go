@@ -39,13 +39,22 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 			TTL:          ttl.Add(defaultAPIKeyTTL),
 		}).Return(&models.APIKey{ID: 1234}, nil).Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				UUID:          uuid,
+				Authenticator: authenticator,
+				Clock:         clock,
+				Storer:        storer,
+			},
+		}
 		key, err := svc.CreateAPIKey(context.Background(), &userv1.CreateAPIKeyRequest{
 			UserId: wrapperspb.Int32(1),
 			Name:   "Key-1",
 		})
+		uuid.AssertExpectations(t)
+		authenticator.AssertExpectations(t)
 		storer.AssertExpectations(t)
+		clock.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, int32(1234), key.Id)
 		assert.Equal(t, "Key-1", key.Name)
@@ -75,12 +84,21 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 			TTL:          ttl.Add(defaultAPIKeyTTL),
 		}).Return(&models.APIKey{ID: 1234}, nil).Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				UUID:          uuid,
+				Authenticator: authenticator,
+				Clock:         clock,
+				Storer:        storer,
+			},
+		}
 		key, err := svc.CreateAPIKey(context.Background(), &userv1.CreateAPIKeyRequest{
 			UserId: wrapperspb.Int32(1),
 		})
+		uuid.AssertExpectations(t)
+		authenticator.AssertExpectations(t)
 		storer.AssertExpectations(t)
+		clock.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, int32(1234), key.Id)
 		assert.Equal(t, "My API Key", key.Name)
@@ -91,15 +109,8 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 	})
 
 	t.Run("missing user_id in request", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{}
 		_, err := svc.CreateAPIKey(context.Background(), &userv1.CreateAPIKeyRequest{})
-		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = missing user_id")
 	})
 
@@ -107,16 +118,15 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 		uuid := &mocks.UUIDGenerator{}
 		uuid.On("Generate").Return("", errors.New("err")).Once()
 
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				UUID: uuid,
+			},
+		}
 		_, err := svc.CreateAPIKey(context.Background(), &userv1.CreateAPIKeyRequest{
 			UserId: wrapperspb.Int32(1),
 		})
-		storer.AssertExpectations(t)
+		uuid.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to generate unique key")
 	})
 
@@ -125,16 +135,15 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 		uuid.On("Generate").Return("2c038884-8076-4352-8f68-19ef9ea6a584", nil).Once()
 		uuid.On("Generate").Return("", errors.New("err")).Once()
 
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				UUID: uuid,
+			},
+		}
 		_, err := svc.CreateAPIKey(context.Background(), &userv1.CreateAPIKeyRequest{
 			UserId: wrapperspb.Int32(1),
 		})
-		storer.AssertExpectations(t)
+		uuid.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to generate unique key id")
 	})
 
@@ -146,17 +155,17 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 		authenticator := &mocks.ApiKeysAuthenticator{}
 		authenticator.On("Encrypt", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Once()
 
-		clock := &mocks.Clock{}
-		clock.On("Now").Return(ttl).Once()
-
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				UUID:          uuid,
+				Authenticator: authenticator,
+			},
+		}
 		_, err := svc.CreateAPIKey(context.Background(), &userv1.CreateAPIKeyRequest{
 			UserId: wrapperspb.Int32(1),
 		})
-		storer.AssertExpectations(t)
+		uuid.AssertExpectations(t)
+		authenticator.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to encrypt unique key")
 	})
 
@@ -174,55 +183,49 @@ func TestUserApiKeyService_CreateApiKey(t *testing.T) {
 		storer := &mocks.APIKeysStorer{}
 		storer.On("Create", mock.Anything, mock.Anything).Return(nil, errors.New("err")).Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				UUID:          uuid,
+				Authenticator: authenticator,
+				Clock:         clock,
+				Storer:        storer,
+			},
+		}
 		_, err := svc.CreateAPIKey(context.Background(), &userv1.CreateAPIKeyRequest{
 			UserId: wrapperspb.Int32(1),
 		})
+		uuid.AssertExpectations(t)
+		authenticator.AssertExpectations(t)
 		storer.AssertExpectations(t)
+		clock.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Internal desc = failed to create api key")
 	})
 }
 
 func TestUserAPIKeyService_DeleteAPIKey(t *testing.T) {
 	t.Run("missing id in request", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{}
 		_, err := svc.DeleteAPIKey(context.Background(), &userv1.DeleteAPIKeyRequest{})
-		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = missing id")
 	})
 
 	t.Run("missing user_id in request", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{}
 		_, err := svc.DeleteAPIKey(context.Background(), &userv1.DeleteAPIKeyRequest{
 			Id: wrapperspb.Int32(1),
 		})
-		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = missing user_id")
 	})
 
 	t.Run("successfully delete api key", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
 		storer := &mocks.APIKeysStorer{}
-
 		storer.On("Delete", context.Background(), 1, 1234).Return(nil).Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				Storer: storer,
+			},
+		}
 		_, err := svc.DeleteAPIKey(context.Background(), &userv1.DeleteAPIKeyRequest{
 			Id:     wrapperspb.Int32(1),
 			UserId: wrapperspb.Int32(1234),
@@ -232,15 +235,14 @@ func TestUserAPIKeyService_DeleteAPIKey(t *testing.T) {
 	})
 
 	t.Run("store delete error", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
 		storer := &mocks.APIKeysStorer{}
-
 		storer.On("Delete", context.Background(), 1, 1234).Return(errors.New("err")).Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				Storer: storer,
+			},
+		}
 		_, err := svc.DeleteAPIKey(context.Background(), &userv1.DeleteAPIKeyRequest{
 			Id:     wrapperspb.Int32(1),
 			UserId: wrapperspb.Int32(1234),
@@ -252,39 +254,22 @@ func TestUserAPIKeyService_DeleteAPIKey(t *testing.T) {
 
 func TestAPIKeyService_GetAPIKey(t *testing.T) {
 	t.Run("missing id in request", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{}
 		_, err := svc.GetAPIKey(context.Background(), &userv1.GetAPIKeyRequest{})
-		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = missing id")
 	})
 
 	t.Run("missing user_id in request", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{}
 		_, err := svc.GetAPIKey(context.Background(), &userv1.GetAPIKeyRequest{
 			Id: wrapperspb.Int32(1),
 		})
-		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = missing user_id")
 	})
 
 	t.Run("successfully get api key", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
 		now := time.Now()
+		storer := &mocks.APIKeysStorer{}
 		storer.On("Get", context.Background(), 1, 1234).
 			Return(&models.APIKey{
 				ID:       1,
@@ -295,8 +280,11 @@ func TestAPIKeyService_GetAPIKey(t *testing.T) {
 			}, nil).
 			Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				Storer: storer,
+			},
+		}
 		key, err := svc.GetAPIKey(context.Background(), &userv1.GetAPIKeyRequest{
 			Id:     wrapperspb.Int32(1),
 			UserId: wrapperspb.Int32(1234),
@@ -311,14 +299,14 @@ func TestAPIKeyService_GetAPIKey(t *testing.T) {
 	})
 
 	t.Run("store get api key error", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
 		storer := &mocks.APIKeysStorer{}
 		storer.On("Get", context.Background(), 1, 1234).Return(nil, errors.New("err")).Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				Storer: storer,
+			},
+		}
 		_, err := svc.GetAPIKey(context.Background(), &userv1.GetAPIKeyRequest{
 			Id:     wrapperspb.Int32(1),
 			UserId: wrapperspb.Int32(1234),
@@ -330,22 +318,12 @@ func TestAPIKeyService_GetAPIKey(t *testing.T) {
 
 func TestAPIKeyService_ListAPIKeys(t *testing.T) {
 	t.Run("missing user_id in request", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
-		storer := &mocks.APIKeysStorer{}
-
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{}
 		_, err := svc.ListAPIKeys(context.Background(), &userv1.ListAPIKeyRequest{})
-		storer.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = InvalidArgument desc = missing user_id")
 	})
 
 	t.Run("successfully list api keys", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
 		storer := &mocks.APIKeysStorer{}
 		now := time.Now()
 		storer.On("List", context.Background(), 1234).
@@ -367,35 +345,38 @@ func TestAPIKeyService_ListAPIKeys(t *testing.T) {
 			}, nil).
 			Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				Storer: storer,
+			},
+		}
 		keys, err := svc.ListAPIKeys(context.Background(), &userv1.ListAPIKeyRequest{
 			UserId: wrapperspb.Int32(1234),
 		})
 		storer.AssertExpectations(t)
 		assert.NoError(t, err)
-		assert.Len(t, keys.List, 2)
-		assert.Equal(t, int32(1), keys.List[0].Id)
-		assert.Equal(t, "name", keys.List[0].Name)
-		assert.Equal(t, int32(1234), keys.List[0].UserId)
-		assert.Equal(t, "id", keys.List[0].KeyId)
-		assert.Equal(t, now.Unix(), keys.List[0].Ttl.GetSeconds())
-		assert.Equal(t, int32(2), keys.List[1].Id)
-		assert.Equal(t, "name-2", keys.List[1].Name)
-		assert.Equal(t, int32(1234), keys.List[1].UserId)
-		assert.Equal(t, "id-2", keys.List[1].KeyId)
-		assert.Equal(t, now.Unix(), keys.List[1].Ttl.GetSeconds())
+		assert.Len(t, keys.Items, 2)
+		assert.Equal(t, int32(1), keys.Items[0].Id)
+		assert.Equal(t, "name", keys.Items[0].Name)
+		assert.Equal(t, int32(1234), keys.Items[0].UserId)
+		assert.Equal(t, "id", keys.Items[0].KeyId)
+		assert.Equal(t, now.Unix(), keys.Items[0].Ttl.GetSeconds())
+		assert.Equal(t, int32(2), keys.Items[1].Id)
+		assert.Equal(t, "name-2", keys.Items[1].Name)
+		assert.Equal(t, int32(1234), keys.Items[1].UserId)
+		assert.Equal(t, "id-2", keys.Items[1].KeyId)
+		assert.Equal(t, now.Unix(), keys.Items[1].Ttl.GetSeconds())
 	})
 
 	t.Run("store list api keys error", func(t *testing.T) {
-		uuid := &mocks.UUIDGenerator{}
-		authenticator := &mocks.ApiKeysAuthenticator{}
-		clock := &mocks.Clock{}
 		storer := &mocks.APIKeysStorer{}
 		storer.On("List", context.Background(), 1234).Return(nil, errors.New("err")).Once()
 
-		svc := NewUserAPIKeyService(storer, authenticator, uuid, clock)
-
+		svc := &UserAPIKeyService{
+			UserAPIKeyServiceDependencies: UserAPIKeyServiceDependencies{
+				Storer: storer,
+			},
+		}
 		_, err := svc.ListAPIKeys(context.Background(), &userv1.ListAPIKeyRequest{
 			UserId: wrapperspb.Int32(1234),
 		})
