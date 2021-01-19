@@ -174,23 +174,27 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	uuidGenerator := providers.NewUUIDGenerator()
 	clock := providers.NewClock()
 
-	repoSvcConfig := service.RepositoryServiceConfig{Hostname: krokArgs.server.Hostname}
 	server := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:         log,
 		Krok:           krokHandler,
 		CommandHandler: commandHandler,
 
-		TokenProvider:     tp,
-		RepositoryService: service.NewRepositoryService(repoSvcConfig, repoStore),
-		UserApiKeyService: &service.UserAPIKeyService{
-			UserAPIKeyServiceDependencies: service.UserAPIKeyServiceDependencies{
-				Logger:        log,
-				Storer:        apiKeyStore,
-				Clock:         clock,
-				Authenticator: authMatcher,
-				UUID:          uuidGenerator,
-			},
-		},
+		TokenProvider: tp,
+		// RepositoryService
+		RepositoryService: service.NewRepositoryService(service.RepositoryServiceConfig{
+			Hostname: krokArgs.server.Hostname,
+		}, service.RepositoryServiceDependencies{
+			Logger: log,
+			Storer: repoStore,
+		}),
+		// UserApiKeyService
+		UserApiKeyService: service.NewUserAPIKeyService(service.UserAPIKeyServiceDependencies{
+			Logger:        log,
+			Storer:        apiKeyStore,
+			Clock:         clock,
+			Authenticator: authMatcher,
+			UUID:          uuidGenerator,
+		}),
 	})
 
 	// Run service & server

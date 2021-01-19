@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/rs/zerolog"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -21,32 +22,42 @@ type RepositoryServiceConfig struct {
 	Hostname string
 }
 
+// RepositoryServiceDependencies represents the RepositoryService dependencies.
+type RepositoryServiceDependencies struct {
+	Logger zerolog.Logger
+	Storer providers.RepositoryStorer
+}
+
 // RepositoryService is the gRPC server implementation for repository interactions.
 type RepositoryService struct {
-	config RepositoryServiceConfig
-	storer providers.RepositoryStorer
+	RepositoryServiceConfig
+	RepositoryServiceDependencies
 
 	repov1.UnimplementedRepositoryServiceServer
 }
 
 // NewRepositoryService creates a new RepositoryService.
-func NewRepositoryService(config RepositoryServiceConfig, storer providers.RepositoryStorer) *RepositoryService {
-	return &RepositoryService{config: config, storer: storer}
+func NewRepositoryService(cfg RepositoryServiceConfig, deps RepositoryServiceDependencies) *RepositoryService {
+	return &RepositoryService{RepositoryServiceConfig: cfg, RepositoryServiceDependencies: deps}
 }
 
 // CreateRepository creates a repository.
 func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov1.CreateRepositoryRequest) (*repov1.Repository, error) {
-	repository, err := s.storer.Create(ctx, &models.Repository{
+	log := s.Logger.Debug()
+
+	repository, err := s.Storer.Create(ctx, &models.Repository{
 		Name: request.Name,
 		URL:  request.Url,
 		VCS:  int(request.Vcs),
 	})
 	if err != nil {
+		log.Err(err).Msg("error creating repo in store")
 		return nil, status.Error(codes.Internal, "failed to create repository")
 	}
 
 	uurl, err := s.generateURL(repository)
 	if err != nil {
+		log.Err(err).Msg("error generating url")
 		return nil, status.Error(codes.Internal, "failed to generate url")
 	}
 	repository.UniqueURL = uurl
@@ -62,20 +73,26 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov
 
 // UpdateRepository updates a repository.
 func (s *RepositoryService) UpdateRepository(ctx context.Context, request *repov1.UpdateRepositoryRequest) (*repov1.Repository, error) {
+	id := request.GetId()
 	if request.Id == nil {
+		s.Logger.Debug().Msg("missing id")
 		return nil, status.Error(codes.InvalidArgument, "missing id")
 	}
 
-	repository, err := s.storer.Update(ctx, &models.Repository{
-		ID:   int(request.Id.Value),
+	log := s.Logger.Debug().Int32("id", id.GetValue())
+
+	repository, err := s.Storer.Update(ctx, &models.Repository{
+		ID:   int(id.GetValue()),
 		Name: request.Name,
 	})
 	if err != nil {
+		log.Err(err).Msg("error updating repo in store")
 		return nil, status.Error(codes.Internal, "failed to update repository")
 	}
 
 	uurl, err := s.generateURL(repository)
 	if err != nil {
+		log.Err(err).Msg("error generating url")
 		return nil, status.Error(codes.Internal, "failed to generate url")
 	}
 	repository.UniqueURL = uurl
@@ -92,17 +109,23 @@ func (s *RepositoryService) UpdateRepository(ctx context.Context, request *repov
 
 // GetRepository gets a repository.
 func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.GetRepositoryRequest) (*repov1.Repository, error) {
+	id := request.GetId()
 	if request.Id == nil {
+		s.Logger.Debug().Msg("missing id")
 		return nil, status.Error(codes.InvalidArgument, "missing id")
 	}
 
-	repository, err := s.storer.Get(ctx, int(request.Id.Value))
+	log := s.Logger.Debug().Int32("id", id.GetValue())
+
+	repository, err := s.Storer.Get(ctx, int(id.GetValue()))
 	if err != nil {
+		log.Err(err).Msg("error getting repo from store")
 		return nil, status.Error(codes.Internal, "failed to get repository")
 	}
 
 	uurl, err := s.generateURL(repository)
 	if err != nil {
+		log.Err(err).Msg("error generating url")
 		return nil, status.Error(codes.Internal, "failed to generate url")
 	}
 	repository.UniqueURL = uurl
@@ -119,11 +142,14 @@ func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.G
 
 // ListRepositories lists repositories.
 func (s *RepositoryService) ListRepositories(ctx context.Context, request *repov1.ListRepositoryRequest) (*repov1.Repositories, error) {
-	repositories, err := s.storer.List(ctx, &models.ListOptions{
+	log := s.Logger.Debug()
+
+	repositories, err := s.Storer.List(ctx, &models.ListOptions{
 		Name: request.Name,
 		VCS:  int(request.Vcs),
 	})
 	if err != nil {
+		log.Err(err).Msg("error listing repos from store")
 		return nil, status.Error(codes.Internal, "failed to list repositories")
 	}
 
@@ -141,11 +167,16 @@ func (s *RepositoryService) ListRepositories(ctx context.Context, request *repov
 
 // DeleteRepository deletes a repository.
 func (s *RepositoryService) DeleteRepository(ctx context.Context, request *repov1.DeleteRepositoryRequest) (*empty.Empty, error) {
+	id := request.GetId()
 	if request.Id == nil {
+		s.Logger.Debug().Msg("missing id")
 		return nil, status.Error(codes.InvalidArgument, "missing id")
 	}
 
-	if err := s.storer.Delete(ctx, int(request.Id.Value)); err != nil {
+	log := s.Logger.Debug().Int32("id", id.GetValue())
+
+	if err := s.Storer.Delete(ctx, int(request.Id.Value)); err != nil {
+		log.Err(err).Msg("error deleting repo from store")
 		return nil, status.Error(codes.Internal, "failed to delete repository")
 	}
 
@@ -154,7 +185,7 @@ func (s *RepositoryService) DeleteRepository(ctx context.Context, request *repov
 
 // generateURL generates the unique URL for the repository.
 func (s *RepositoryService) generateURL(repo *models.Repository) (string, error) {
-	u, err := url.Parse(s.config.Hostname)
+	u, err := url.Parse(s.Hostname)
 	if err != nil {
 		return "", fmt.Errorf("url parse: %w", err)
 	}

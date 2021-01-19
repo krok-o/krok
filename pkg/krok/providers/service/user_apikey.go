@@ -38,6 +38,11 @@ type UserAPIKeyService struct {
 	userv1.UnimplementedAPIKeyServiceServer
 }
 
+// NewUserAPIKeyService creates a new UserAPIKeyService.
+func NewUserAPIKeyService(deps UserAPIKeyServiceDependencies) *UserAPIKeyService {
+	return &UserAPIKeyService{UserAPIKeyServiceDependencies: deps}
+}
+
 // CreateAPIKey creates a user api key pair.
 func (s *UserAPIKeyService) CreateAPIKey(ctx context.Context, request *userv1.CreateAPIKeyRequest) (*userv1.APIKey, error) {
 	userId := request.GetUserId()
