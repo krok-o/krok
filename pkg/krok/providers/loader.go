@@ -12,5 +12,5 @@ type Loader interface {
 	// If a file appears in the watched folder, it will be picked up and saved into the commands.
 	Watch(ctx context.Context) error
 	// Load will load a plugin from a given location.
-	Load(ctx context.Context, location string) (krok.Plugin, error)
+	Load(ctx context.Context, location string) (krok.Execute, error)
 }

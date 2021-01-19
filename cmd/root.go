@@ -93,12 +93,12 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:    log,
 		Converter: converter,
 	}
-	filevault, _ := filevault.NewFileStorer(krokArgs.fileVault, filevault.Dependencies{
+	fv, _ := filevault.NewFileStorer(krokArgs.fileVault, filevault.Dependencies{
 		Logger: log,
 	})
 	v, _ := vault.NewKrokVault(vault.Config{}, vault.Dependencies{
 		Logger: log,
-		Storer: filevault,
+		Storer: fv,
 	})
 	a, _ := auth.NewKrokAuth(auth.AuthConfig{}, auth.AuthDependencies{
 		Logger: log,
@@ -143,6 +143,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:       log,
 		ApiKeysStore: apiKeyStore,
 	})
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create new Api keys provider.")
+	}
 	handlerDeps := handlers.Dependencies{
 		Logger:     log,
 		UserStore:  userStore,
@@ -152,6 +155,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Hostname:       krokArgs.server.Hostname,
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 	}, handlerDeps)
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to create token handler.")
+	}
 
 	commandHandler, _ := handlers.NewCommandsHandler(handlers.Config{
 		Hostname:       krokArgs.server.Hostname,
@@ -180,7 +186,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// ************************
 
 	repoSvcConfig := service.RepositoryServiceConfig{Hostname: krokArgs.server.Hostname}
-	server := server.NewKrokServer(krokArgs.server, server.Dependencies{
+	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:         log,
 		Krok:           krokHandler,
 		CommandHandler: commandHandler,
@@ -195,11 +201,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	g, ctx := errgroup.WithContext(context.Background())
 
 	g.Go(func() error {
-		return server.Run(ctx)
+		return sv.Run(ctx)
 	})
 
 	g.Go(func() error {
-		return server.RunGRPC(ctx)
+		return sv.RunGRPC(ctx)
 	})
 
 	if err := g.Wait(); err != nil {

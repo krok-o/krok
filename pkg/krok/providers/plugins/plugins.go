@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"plugin"
 	"time"
 
@@ -95,6 +94,7 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 		log.Debug().Err(err).Msg("Failed to add folder to watcher.")
 		return err
 	}
+	log.Debug().Str("location", p.Location).Msg("Started watching location...")
 	for {
 		select {
 		case event, ok := <-watcher.Events:
@@ -104,6 +104,7 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 			}
 			switch {
 			case event.Op&fsnotify.Create == fsnotify.Create:
+				log.Debug().Msg("received create event")
 				if err := p.handleCreateEvent(ctx, event, log); err != nil {
 					log.Error().Err(err).Msg("Failed to handle create event.")
 				}
@@ -147,16 +148,40 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
 		return err
 	}
-	// TODO: Check if exists and disabled. If hash==thisnewhash enable the plugin.
-	if _, err := p.Store.Create(ctx, &models.Command{
-		Name:     filepath.Base(file),
-		Filename: file,
-		Location: p.Location,
-		Hash:     hash,
-		Enabled:  true,
-	}); err != nil {
-		log.Error().Err(err).Msg("Failed to add new command.")
+	name := path.Base(file)
+	command, err := p.Store.GetByName(ctx, name)
+	if err != nil {
+		if !errors.Is(err, kerr.ErrNotFound) {
+			log.Debug().Err(err).Msg("Failed to get command.")
+			return err
+		}
+		// The command doesn't exist yet, so we create it.
+		if _, err := p.Store.Create(ctx, &models.Command{
+			Name:     name,
+			Filename: name,
+			Location: p.Location,
+			Hash:     hash,
+			Enabled:  true,
+		}); err != nil {
+			log.Debug().Err(err).Msg("Failed to add new command.")
+		}
+		return nil
 	}
+	// the command exists in the db check if it is enabled, if not and the hash equals,
+	// enable it. If the hash does not equal, throw an error that command exists with different hash.
+	// The user should delete the command in this case.
+	if !command.Enabled && command.Hash == hash {
+		command.Enabled = true
+		if _, err := p.Store.Update(ctx, command); err != nil {
+			log.Debug().Err(err).Msg("Failed to update command to enabled.")
+			return err
+		}
+		return nil
+	}
+	if !command.Enabled && command.Hash != hash {
+		return errors.New("new file's hash does not equal with the stored command's hash")
+	}
+	// command is enabled and hash equals stored hash, nothing to do.
 	return nil
 }
 
@@ -225,8 +250,8 @@ func (p *GoPlugins) generateHash(file string) (string, error) {
 
 // Load will load a plugin from a given location.
 // This will be called on demand given a location to a plugin when the command is about to be executed.
-func (p *GoPlugins) Load(ctx context.Context, location string) (krok.Plugin, error) {
-	log := p.Logger.With().Str("location", p.Location).Logger()
+func (p *GoPlugins) Load(ctx context.Context, location string) (krok.Execute, error) {
+	log := p.Logger.With().Str("location", location).Logger()
 	plug, err := plugin.Open(location)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to open Plugin.")
@@ -238,11 +263,10 @@ func (p *GoPlugins) Load(ctx context.Context, location string) (krok.Plugin, err
 		log.Warn().Err(err).Msg("Failed to lookup Symbol Execute.")
 		return nil, err
 	}
-
-	krokPlugin, ok := symPlugin.(krok.Plugin)
+	krokPlugin, ok := symPlugin.(krok.Execute)
 	if !ok {
-		log.Warn().Err(err).Msg("Loaded plugin is not of type Krok.Plugin.")
-		return nil, err
+		log.Warn().Msg("Loaded plugin is not of type Krok.Execute.")
+		return nil, errors.New("loaded plugin is not of type Krok.Execute")
 	}
 	return krokPlugin, nil
 }
