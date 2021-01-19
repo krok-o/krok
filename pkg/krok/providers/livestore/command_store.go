@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 	"time"
 
@@ -345,7 +346,7 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 }
 
 // AcquireLock acquires a lock on a file so no other process deals with the same file.
-func (s *CommandStore) AcquireLock(ctx context.Context, name string) (*pglock.Lock, error) {
+func (s *CommandStore) AcquireLock(ctx context.Context, name string) (io.Closer, error) {
 	log := s.Logger.With().Str("func", "AcquireLock").Str("name", name).Logger()
 	db, err := s.Connector.GetDB()
 	if err != nil {

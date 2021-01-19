@@ -8,7 +8,6 @@ import (
 	"io"
 	"os"
 	"path"
-	"path/filepath"
 	"plugin"
 	"time"
 
@@ -95,6 +94,7 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 		log.Debug().Err(err).Msg("Failed to add folder to watcher.")
 		return err
 	}
+	log.Debug().Str("location", p.Location).Msg("Started watching location...")
 	for {
 		select {
 		case event, ok := <-watcher.Events:
@@ -104,6 +104,7 @@ func (p *GoPlugins) Watch(ctx context.Context) error {
 			}
 			switch {
 			case event.Op&fsnotify.Create == fsnotify.Create:
+				log.Debug().Msg("received create event")
 				if err := p.handleCreateEvent(ctx, event, log); err != nil {
 					log.Error().Err(err).Msg("Failed to handle create event.")
 				}
@@ -147,7 +148,8 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
 		return err
 	}
-	command, err := p.Store.GetByName(ctx, file)
+	name := path.Base(file)
+	command, err := p.Store.GetByName(ctx, name)
 	if err != nil {
 		if !errors.Is(err, kerr.ErrNotFound) {
 			log.Debug().Err(err).Msg("Failed to get command.")
@@ -155,8 +157,8 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		}
 		// The command doesn't exist yet, so we create it.
 		if _, err := p.Store.Create(ctx, &models.Command{
-			Name:     filepath.Base(file),
-			Filename: file,
+			Name:     name,
+			Filename: name,
 			Location: p.Location,
 			Hash:     hash,
 			Enabled:  true,

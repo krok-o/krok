@@ -8,10 +8,12 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
@@ -19,8 +21,10 @@ import (
 type mockCommandStorer struct {
 	providers.CommandStorer
 	getCommand  *models.Command
+	getError    error
 	deleteErr   error
 	commandList []*models.Command
+	id          int
 }
 
 func (mcs *mockCommandStorer) Update(ctx context.Context, command *models.Command) (*models.Command, error) {
@@ -28,7 +32,29 @@ func (mcs *mockCommandStorer) Update(ctx context.Context, command *models.Comman
 }
 
 func (mcs *mockCommandStorer) Create(ctx context.Context, command *models.Command) (*models.Command, error) {
+	command.ID = mcs.id
+	mcs.id++
+	mcs.getCommand = command
 	return command, nil
+}
+
+func (mcs *mockCommandStorer) Get(ctx context.Context, id int) (*models.Command, error) {
+	return mcs.getCommand, mcs.getError
+}
+
+func (mcs *mockCommandStorer) GetByName(ctx context.Context, name string) (*models.Command, error) {
+	return mcs.getCommand, mcs.getError
+}
+
+type mockLock struct {
+}
+
+func (ml *mockLock) Close() error {
+	return nil
+}
+
+func (mcs *mockCommandStorer) AcquireLock(ctx context.Context, name string) (io.Closer, error) {
+	return &mockLock{}, nil
 }
 
 // Test the flow of the watcher. Create a location to watch and copy the command from
@@ -36,7 +62,9 @@ func (mcs *mockCommandStorer) Create(ctx context.Context, command *models.Comman
 func TestPluginProviderFlow(t *testing.T) {
 	location, _ := ioutil.TempDir("", "TestNewGoPluginsProvider")
 	logger := zerolog.New(os.Stderr)
-	mcs := &mockCommandStorer{}
+	mcs := &mockCommandStorer{
+		getError: kerr.ErrNotFound,
+	}
 	_, err := NewGoPluginsProvider(context.Background(), Config{
 		Location: location,
 	}, Dependencies{
@@ -45,8 +73,23 @@ func TestPluginProviderFlow(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
+
+	// Wait for the watcher to start up...
+	time.Sleep(1 * time.Second)
 	err = copyTestPlugin(location)
+	//file, err := ioutil.TempFile(location, "test")
 	assert.NoError(t, err)
+
+	// Wait for the watcher to pick up the new file and call create.
+	time.Sleep(1 * time.Second)
+	assert.Equal(t, &models.Command{
+		Name:     "test",
+		ID:       0,
+		Filename: "test",
+		Location: location,
+		Hash:     "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+		Enabled:  true,
+	}, mcs.getCommand)
 }
 
 // copyTestPlugin copies over the test plugin.
