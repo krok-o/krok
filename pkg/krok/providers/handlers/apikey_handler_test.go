@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,36 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
+
+type mockApiKeyAuth struct {
+	providers.ApiKeysAuthenticator
+}
+
+func (maka *mockApiKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
+	return nil
+}
+
+func (maka *mockApiKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
+	return nil, nil
+}
+
+func generateTestToken(email string) (string, error) {
+	// Create token
+	token := jwt.New(jwt.SigningMethodHS256)
+
+	// Set claims
+	claims := token.Claims.(jwt.MapClaims)
+	claims["email"] = email // from context
+	claims["admin"] = true
+	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
+
+	// Generate encoded token and send it as response.
+	t, err := token.SignedString([]byte("secret"))
+	if err != nil {
+		return "", err
+	}
+	return t, nil
+}
 
 type mockApiKeysStore struct {
 	providers.APIKeysStorer

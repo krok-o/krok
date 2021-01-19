@@ -7,6 +7,7 @@ import (
 	"path"
 	"strconv"
 
+	"github.com/golang/protobuf/ptypes/empty"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
@@ -44,11 +45,11 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov
 		return nil, status.Error(codes.Internal, "failed to create repository")
 	}
 
-	url, err := s.generateURL(repository)
+	uurl, err := s.generateURL(repository)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate url")
 	}
-	repository.UniqueURL = url
+	repository.UniqueURL = uurl
 
 	return &repov1.Repository{
 		Id:        int32(repository.ID),
@@ -57,6 +58,42 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov
 		Vcs:       int32(repository.VCS),
 		UniqueUrl: repository.UniqueURL,
 	}, nil
+}
+
+// UpdateRepository updates a repository.
+func (s *RepositoryService) UpdateRepository(ctx context.Context, request *repov1.UpdateRepositoryRequest) (*repov1.Repository, error) {
+	id := request.Id
+	if id == "" {
+		return nil, status.Error(codes.InvalidArgument, "invalid id")
+	}
+
+	n, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to convert id to number")
+	}
+
+	repository, err := s.storer.Update(ctx, &models.Repository{
+		ID:   n,
+		Name: request.Name,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to update repository")
+	}
+
+	uurl, err := s.generateURL(repository)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to generate url")
+	}
+	repository.UniqueURL = uurl
+
+	response := &repov1.Repository{
+		Id:        int32(repository.ID),
+		Name:      repository.Name,
+		Url:       repository.URL,
+		Vcs:       int32(repository.VCS),
+		UniqueUrl: repository.UniqueURL,
+	}
+	return response, nil
 }
 
 // GetRepository gets a repository.
@@ -76,11 +113,11 @@ func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.G
 		return nil, status.Error(codes.Internal, "failed to get repository")
 	}
 
-	url, err := s.generateURL(repository)
+	uurl, err := s.generateURL(repository)
 	if err != nil {
 		return nil, status.Error(codes.Internal, "failed to generate url")
 	}
-	repository.UniqueURL = url
+	repository.UniqueURL = uurl
 
 	response := &repov1.Repository{
 		Id:        int32(repository.ID),
@@ -90,6 +127,47 @@ func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.G
 		UniqueUrl: repository.UniqueURL,
 	}
 	return response, nil
+}
+
+// ListRepositories lists repositories.
+func (s *RepositoryService) ListRepositories(ctx context.Context, request *repov1.ListRepositoryRequest) (*repov1.Repositories, error) {
+	repositories, err := s.storer.List(ctx, &models.ListOptions{
+		Name: request.Name,
+		VCS:  int(request.Vcs),
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to list repositories")
+	}
+
+	list := make([]*repov1.Repository, len(repositories))
+	for i := range list {
+		list[i] = &repov1.Repository{
+			Id:   int32(repositories[i].ID),
+			Name: repositories[i].Name,
+			Vcs:  int32(repositories[i].VCS),
+			Url:  repositories[i].URL,
+		}
+	}
+	return &repov1.Repositories{List: list}, nil
+}
+
+// DeleteRepository deletes a repository.
+func (s *RepositoryService) DeleteRepository(ctx context.Context, request *repov1.DeleteRepositoryRequest) (*empty.Empty, error) {
+	id := request.Id
+	if id == "" {
+		return nil, status.Error(codes.InvalidArgument, "invalid id")
+	}
+
+	n, err := strconv.Atoi(id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "failed to convert id to number")
+	}
+
+	if err := s.storer.Delete(ctx, n); err != nil {
+		return nil, status.Error(codes.Internal, "failed to delete repository")
+	}
+
+	return &empty.Empty{}, nil
 }
 
 // generateURL generates the unique URL for the repository.
