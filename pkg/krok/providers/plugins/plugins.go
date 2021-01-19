@@ -250,8 +250,8 @@ func (p *GoPlugins) generateHash(file string) (string, error) {
 
 // Load will load a plugin from a given location.
 // This will be called on demand given a location to a plugin when the command is about to be executed.
-func (p *GoPlugins) Load(ctx context.Context, location string) (krok.Plugin, error) {
-	log := p.Logger.With().Str("location", p.Location).Logger()
+func (p *GoPlugins) Load(ctx context.Context, location string) (krok.Execute, error) {
+	log := p.Logger.With().Str("location", location).Logger()
 	plug, err := plugin.Open(location)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to open Plugin.")
@@ -263,11 +263,10 @@ func (p *GoPlugins) Load(ctx context.Context, location string) (krok.Plugin, err
 		log.Warn().Err(err).Msg("Failed to lookup Symbol Execute.")
 		return nil, err
 	}
-
-	krokPlugin, ok := symPlugin.(krok.Plugin)
+	krokPlugin, ok := symPlugin.(krok.Execute)
 	if !ok {
-		log.Warn().Err(err).Msg("Loaded plugin is not of type Krok.Plugin.")
-		return nil, err
+		log.Warn().Msg("Loaded plugin is not of type Krok.Execute.")
+		return nil, errors.New("loaded plugin is not of type Krok.Execute")
 	}
 	return krokPlugin, nil
 }

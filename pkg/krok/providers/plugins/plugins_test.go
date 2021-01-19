@@ -76,17 +76,47 @@ func TestPluginProviderFlow(t *testing.T) {
 
 	// Wait for the watcher to start up...
 	time.Sleep(1 * time.Second)
-	err = copyTestPlugin(location)
-	//file, err := ioutil.TempFile(location, "test")
+	//err = copyTestPlugin(location)
+	file, err := ioutil.TempFile(location, "test")
 	assert.NoError(t, err)
 
 	// Wait for the watcher to pick up the new file and call create.
 	time.Sleep(1 * time.Second)
-	assert.Equal(t, "test", mcs.getCommand.Name)
+	assert.Equal(t, file.Name(), mcs.getCommand.Name)
 	assert.Equal(t, 0, mcs.getCommand.ID)
-	assert.Equal(t, "test", mcs.getCommand.Filename)
+	assert.Equal(t, file.Name(), mcs.getCommand.Filename)
 	assert.Equal(t, location, mcs.getCommand.Location)
 	assert.NotEqual(t, "", mcs.getCommand.Hash)
+}
+
+// Test the flow of the watcher. Create a location to watch and copy the command from
+// testdata to this location and wait until the watcher picks it up.
+func TestPluginProviderLoad(t *testing.T) {
+	location, _ := ioutil.TempDir("", "TestPluginProviderLoad")
+	logger := zerolog.New(os.Stderr)
+	mcs := &mockCommandStorer{
+		getError: kerr.ErrNotFound,
+	}
+	pp, err := NewGoPluginsProvider(context.Background(), Config{
+		Location: location,
+	}, Dependencies{
+		Logger: logger,
+		Store:  mcs,
+	})
+
+	assert.NoError(t, err)
+
+	// Wait for the watcher to start up...
+	err = copyTestPlugin(location)
+	assert.NoError(t, err)
+	// Now try loading the plugin.
+	p, err := pp.Load(context.Background(), filepath.Join(location, "test.so"))
+	assert.NoError(t, err)
+	s, b, err := p("payload", "args1")
+	assert.NoError(t, err)
+	assert.Equal(t, "payload:args1", s)
+	assert.True(t, b)
+	assert.NoError(t, err)
 }
 
 // copyTestPlugin copies over the test plugin.
@@ -96,14 +126,14 @@ func copyTestPlugin(location string) error {
 		return err
 	}
 	src := filepath.Join(cwd, "testdata")
-	sourceFile, err := os.Open(filepath.Join(src, "test"))
+	sourceFile, err := os.Open(filepath.Join(src, "test.so"))
 	if err != nil {
 		return err
 	}
 	defer sourceFile.Close()
 
 	// Create new file
-	newFile, err := os.Create(filepath.Join(location, "test"))
+	newFile, err := os.Create(filepath.Join(location, "test.so"))
 	if err != nil {
 		return err
 	}
