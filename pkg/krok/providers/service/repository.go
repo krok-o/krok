@@ -190,6 +190,6 @@ func (s *RepositoryService) generateURL(repo *models.Repository) (string, error)
 		return "", fmt.Errorf("url parse: %w", err)
 	}
 
-	u.Path = path.Join(u.Path, strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
+	u.Path = path.Join(u.Path, "hooks", strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
 	return u.String(), nil
 }
