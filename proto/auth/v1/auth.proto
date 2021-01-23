@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+package auth.v1;
+
+option go_package = "github.com/krok-o/krok-o/proto/auth/v1;auth";
+
+import "google/api/annotations.proto";
+import "google/protobuf/empty.proto";
+
+message LoginRequest {
+}
+
+service AuthService {
+  rpc Login(LoginRequest) returns (google.protobuf.Empty) {}
+}

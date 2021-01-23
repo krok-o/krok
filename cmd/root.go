@@ -201,6 +201,8 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 			Authenticator: authMatcher,
 			UUID:          uuidGenerator,
 		}),
+		// 	AuthService
+		AuthService: &service.AuthService{},
 	})
 
 	// Run service & server

@@ -20,6 +20,7 @@ import (
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	grpcmiddleware "github.com/krok-o/krok/pkg/server/middleware"
+	authv1 "github.com/krok-o/krok/proto/auth/v1"
 	repov1 "github.com/krok-o/krok/proto/repository/v1"
 	userv1 "github.com/krok-o/krok/proto/user/v1"
 )
@@ -54,6 +55,7 @@ type Dependencies struct {
 	TokenProvider     providers.TokenProvider
 	RepositoryService repov1.RepositoryServiceServer
 	UserApiKeyService userv1.APIKeyServiceServer
+	AuthService       authv1.AuthServiceServer
 }
 
 // Server defines a server which runs and accepts requests.
@@ -141,6 +143,7 @@ func (s *KrokServer) RunGRPC(ctx context.Context) error {
 
 	repov1.RegisterRepositoryServiceServer(gs, s.RepositoryService)
 	userv1.RegisterAPIKeyServiceServer(gs, s.UserApiKeyService)
+	authv1.RegisterAuthServiceServer(gs, s.AuthService)
 
 	mux := runtime.NewServeMux()
 	opts := []grpc.DialOption{grpc.WithInsecure()}
@@ -150,6 +153,9 @@ func (s *KrokServer) RunGRPC(ctx context.Context) error {
 	}
 	if err := userv1.RegisterAPIKeyServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
 		return fmt.Errorf("register user apikey service: %w", err)
+	}
+	if err := authv1.RegisterAuthServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
+		return fmt.Errorf("register auth service: %w", err)
 	}
 
 	listener, err := net.Listen("tcp", ":9090")
