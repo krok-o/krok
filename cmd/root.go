@@ -38,8 +38,8 @@ var (
 		plugins     plugins.Config
 		email       mailgun.Config
 		fileVault   filevault.Config
-		// 	Auth
-		authSvc service.AuthServiceConfig
+		// 	OAuth
+		oauthCfg auth.OAuthConfig
 	}
 )
 
@@ -71,9 +71,9 @@ func init() {
 	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
 
 	// Auth config
-	flag.StringVar(&krokArgs.authSvc.GoogleClientID, "auth-google-client-id", "", "--auth-google-client-id my-client-id}")
-	flag.StringVar(&krokArgs.authSvc.GoogleClientSecret, "auth-google-client-secret", "", "--auth-google-client-secret my-client-secret}")
-	flag.StringVar(&krokArgs.authSvc.SessionSecret, "auth-session-secret", "1234", "--auth-session-secret my-secret}")
+	flag.StringVar(&krokArgs.oauthCfg.GoogleClientID, "auth-google-client-id", "", "--auth-google-client-id my-client-id}")
+	flag.StringVar(&krokArgs.oauthCfg.GoogleClientSecret, "auth-google-client-secret", "", "--auth-google-client-secret my-client-secret}")
+	flag.StringVar(&krokArgs.oauthCfg.SessionSecret, "auth-session-secret", "1234", "--auth-session-secret my-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -187,6 +187,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	uuidGenerator := providers.NewUUIDGenerator()
 	clock := providers.NewClock()
 
+	oauthProvider := auth.NewOAuthProvider(krokArgs.oauthCfg, auth.OAuthProviderDependencies{
+		Store: userStore,
+		UUID:  uuidGenerator,
+	})
+
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:         log,
 		Krok:           krokHandler,
@@ -209,7 +214,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 			UUID:          uuidGenerator,
 		}),
 		// 	AuthService
-		AuthService: service.NewAuthService(krokArgs.authSvc),
+		AuthService: service.NewAuthService(oauthProvider),
 	})
 
 	// Run service & server

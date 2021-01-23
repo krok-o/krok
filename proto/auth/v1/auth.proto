@@ -7,16 +7,10 @@ option go_package = "github.com/krok-o/krok-o/proto/auth/v1;auth";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
-enum LoginProvider {
-  GOOGLE = 0;
-}
-
 message LoginRequest {
-  LoginProvider provider = 1;
 }
 
 message CallbackRequest {
-  LoginProvider provider = 1;
   string code = 2;
   string state = 3;
 }

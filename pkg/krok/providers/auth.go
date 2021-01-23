@@ -3,6 +3,8 @@ package providers
 import (
 	"context"
 
+	"golang.org/x/oauth2"
+
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -20,4 +22,11 @@ type ApiKeysAuthenticator interface {
 	Match(ctx context.Context, key *models.APIKey) error
 	// Encrypt takes an api key secret and encrypts it for storage.
 	Encrypt(ctx context.Context, secret []byte) ([]byte, error)
+}
+
+type OAuthProvider interface {
+	GetAuthCodeURL(state string) string
+	Exchange(ctx context.Context, code string) (*oauth2.Token, error)
+	GenerateState() (string, error)
+	VerifyState(rawToken string) error
 }
