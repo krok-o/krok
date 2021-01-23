@@ -73,6 +73,7 @@ func init() {
 	// Auth config
 	flag.StringVar(&krokArgs.authSvc.GoogleClientID, "auth-google-client-id", "", "--auth-google-client-id my-client-id}")
 	flag.StringVar(&krokArgs.authSvc.GoogleClientSecret, "auth-google-client-secret", "", "--auth-google-client-secret my-client-secret}")
+	flag.StringVar(&krokArgs.authSvc.SessionSecret, "auth-session-secret", "1234", "--auth-session-secret my-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.

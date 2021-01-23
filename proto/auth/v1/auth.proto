@@ -16,8 +16,9 @@ message LoginRequest {
 }
 
 message CallbackRequest {
-  string code = 1;
-  LoginProvider provider = 2;
+  LoginProvider provider = 1;
+  string code = 2;
+  string state = 3;
 }
 
 service AuthService {

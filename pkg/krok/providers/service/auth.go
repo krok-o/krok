@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/dgrijalva/jwt-go"
 	"github.com/golang/protobuf/ptypes/empty"
+	"github.com/google/uuid"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/grpc"
@@ -22,10 +24,12 @@ import (
 type AuthServiceConfig struct {
 	GoogleClientID     string
 	GoogleClientSecret string
+	SessionSecret      string
 }
 
 // AuthService is the Authentication service.
 type AuthService struct {
+	config            AuthServiceConfig
 	googleOAuthConfig *oauth2.Config
 
 	authv1.UnimplementedAuthServiceServer
@@ -34,6 +38,7 @@ type AuthService struct {
 // NewAuthService creates a AuthService.
 func NewAuthService(cfg AuthServiceConfig) *AuthService {
 	return &AuthService{
+		config: cfg,
 		googleOAuthConfig: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
@@ -49,9 +54,13 @@ func NewAuthService(cfg AuthServiceConfig) *AuthService {
 
 // Login handles OAuth2 logins.
 func (s *AuthService) Login(ctx context.Context, request *authv1.LoginRequest) (*empty.Empty, error) {
+	state, err := s.GenerateState()
+	if err != nil {
+		return nil, err
+	}
+
 	if request.Provider == authv1.LoginProvider_GOOGLE {
-		// TODO: Generate a random string in a cookie for state.
-		url := s.googleOAuthConfig.AuthCodeURL("state")
+		url := s.googleOAuthConfig.AuthCodeURL(state)
 
 		header := metadata.Pairs("Location", url)
 		if err := grpc.SendHeader(ctx, header); err != nil {
@@ -66,6 +75,10 @@ func (s *AuthService) Login(ctx context.Context, request *authv1.LoginRequest) (
 
 // Callback is the OAuth0 callback endpoint.
 func (s *AuthService) Callback(ctx context.Context, request *authv1.CallbackRequest) (*empty.Empty, error) {
+	if err := s.VerifyState(request.State); err != nil {
+		return nil, err
+	}
+
 	var user models.User
 
 	if request.Provider == authv1.LoginProvider_GOOGLE {
@@ -110,4 +123,36 @@ func (s *AuthService) getGoogleUser(ctx context.Context, code string) (*googleUs
 	}
 
 	return user, nil
+}
+
+// VerifyState verifies the state nonce JWT.
+func (s *AuthService) VerifyState(rawToken string) error {
+	claims := jwt.StandardClaims{}
+
+	_, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(s.config.SessionSecret), nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if err := claims.Valid(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// GenerateState generates the state nonce JWT.
+func (s *AuthService) GenerateState() (string, error) {
+	claims := jwt.StandardClaims{
+		Subject: uuid.New().String(),
+	}
+
+	state, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(s.config.SessionSecret))
+	if err != nil {
+		return "", err
+	}
+
+	return state, nil
 }
