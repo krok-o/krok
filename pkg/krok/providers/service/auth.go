@@ -37,7 +37,7 @@ func NewAuthService(cfg AuthServiceConfig) *AuthService {
 		googleOAuthConfig: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
-			RedirectURL:  "http://localhost:8081/auth.v1.AuthService/Callback",
+			RedirectURL:  "http://localhost:8081/auth.v1.AuthService/Callback?provider=GOOGLE",
 			Scopes: []string{
 				"https://www.googleapis.com/auth/userinfo.email",
 				"https://www.googleapis.com/auth/userinfo.profile",
@@ -66,19 +66,19 @@ func (s *AuthService) Login(ctx context.Context, request *authv1.LoginRequest) (
 
 // Callback is the OAuth0 callback endpoint.
 func (s *AuthService) Callback(ctx context.Context, request *authv1.CallbackRequest) (*empty.Empty, error) {
-	// TODO: Design for more providers than Google.
-	gu, err := s.getGoogleUser(ctx, request.Code)
-	if err != nil {
-		return nil, err
+	var user models.User
+
+	if request.Provider == authv1.LoginProvider_GOOGLE {
+		gu, err := s.getGoogleUser(ctx, request.Code)
+		if err != nil {
+			return nil, err
+		}
+		user.Email = gu.Email
 	}
 
 	// Check if user/email exists.
 	// Create if not exists.
 
-	// TODO: DisplayName, FirstName, LastName.
-	user := models.User{
-		Email: gu.Email,
-	}
 	fmt.Println(user.Email)
 
 	// Redirect with token
