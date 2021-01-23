@@ -38,6 +38,8 @@ var (
 		plugins     plugins.Config
 		email       mailgun.Config
 		fileVault   filevault.Config
+		// 	Auth
+		authSvc service.AuthServiceConfig
 	}
 )
 
@@ -67,6 +69,10 @@ func init() {
 
 	// VaultStorer config
 	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
+
+	// Auth config
+	flag.StringVar(&krokArgs.authSvc.GoogleClientID, "auth-google-client-id", "", "--auth-google-client-id my-client-id}")
+	flag.StringVar(&krokArgs.authSvc.GoogleClientSecret, "auth-google-client-secret", "", "--auth-google-client-secret my-client-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -202,7 +208,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 			UUID:          uuidGenerator,
 		}),
 		// 	AuthService
-		AuthService: &service.AuthService{},
+		AuthService: service.NewAuthService(krokArgs.authSvc),
 	})
 
 	// Run service & server

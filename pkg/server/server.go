@@ -16,6 +16,7 @@ import (
 	"golang.org/x/crypto/acme/autocert"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -145,9 +146,10 @@ func (s *KrokServer) RunGRPC(ctx context.Context) error {
 	userv1.RegisterAPIKeyServiceServer(gs, s.UserApiKeyService)
 	authv1.RegisterAuthServiceServer(gs, s.AuthService)
 
-	mux := runtime.NewServeMux()
+	mux := runtime.NewServeMux(
+		runtime.WithForwardResponseOption(responseHeaderMatcher),
+	)
 	opts := []grpc.DialOption{grpc.WithInsecure()}
-
 	if err := repov1.RegisterRepositoryServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
 		return fmt.Errorf("register repository service: %w", err)
 	}
@@ -174,4 +176,15 @@ func (s *KrokServer) RunGRPC(ctx context.Context) error {
 	})
 
 	return g.Wait()
+}
+
+// responseHeaderMatcher allows us to perform redirects with grpc-gateway.
+func responseHeaderMatcher(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
+	headers := w.Header()
+	if location, ok := headers["Grpc-Metadata-Location"]; ok {
+		w.Header().Set("Location", location[0])
+		w.WriteHeader(http.StatusFound)
+	}
+
+	return nil
 }

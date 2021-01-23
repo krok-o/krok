@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	cirello.io/pglock v1.8.0
+	cloud.google.com/go v0.67.0 // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
@@ -24,10 +25,12 @@ require (
 	github.com/spf13/cobra v1.1.1
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
-	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/net v0.0.0-20210119194325-5f4716e94777 // indirect
+	golang.org/x/oauth2 v0.0.0-20210113205817-d3ed898aa8a3
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	golang.org/x/text v0.3.5 // indirect
+	google.golang.org/appengine v1.6.7 // indirect
 	google.golang.org/genproto v0.0.0-20210114201628-6edceaf6022f
 	google.golang.org/grpc v1.35.0
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.0.1

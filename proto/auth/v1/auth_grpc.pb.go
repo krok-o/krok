@@ -19,6 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Callback(ctx context.Context, in *CallbackRequest, opts ...grpc.CallOption) (*empty.Empty, error)
 }
 
 type authServiceClient struct {
@@ -38,11 +39,21 @@ func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ..
 	return out, nil
 }
 
+func (c *authServiceClient) Callback(ctx context.Context, in *CallbackRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/auth.v1.AuthService/Callback", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AuthServiceServer is the server API for AuthService service.
 // All implementations must embed UnimplementedAuthServiceServer
 // for forward compatibility
 type AuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*empty.Empty, error)
+	Callback(context.Context, *CallbackRequest) (*empty.Empty, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -52,6 +63,9 @@ type UnimplementedAuthServiceServer struct {
 
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
+}
+func (UnimplementedAuthServiceServer) Callback(context.Context, *CallbackRequest) (*empty.Empty, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Callback not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}
 
@@ -84,6 +98,24 @@ func _AuthService_Login_Handler(srv interface{}, ctx context.Context, dec func(i
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AuthService_Callback_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CallbackRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AuthServiceServer).Callback(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/auth.v1.AuthService/Callback",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AuthServiceServer).Callback(ctx, req.(*CallbackRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _AuthService_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "auth.v1.AuthService",
 	HandlerType: (*AuthServiceServer)(nil),
@@ -91,6 +123,10 @@ var _AuthService_serviceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Login",
 			Handler:    _AuthService_Login_Handler,
+		},
+		{
+			MethodName: "Callback",
+			Handler:    _AuthService_Callback_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

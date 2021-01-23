@@ -7,9 +7,27 @@ option go_package = "github.com/krok-o/krok-o/proto/auth/v1;auth";
 import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
+enum LoginProvider {
+  GOOGLE = 0;
+}
+
 message LoginRequest {
+  LoginProvider provider = 1;
+}
+
+message CallbackRequest {
+  string code = 1;
 }
 
 service AuthService {
-  rpc Login(LoginRequest) returns (google.protobuf.Empty) {}
+  rpc Login(LoginRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      get : "/auth.v1.AuthService/Login"
+    };
+  }
+  rpc Callback(CallbackRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {
+      get : "/auth.v1.AuthService/Callback"
+    };
+  }
 }
