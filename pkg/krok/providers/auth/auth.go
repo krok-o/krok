@@ -17,6 +17,7 @@ const (
 	usernameFormat = prefixFormat + "_REPO_USERNAME"
 	passwordFormat = prefixFormat + "_REPO_PASSWORD"
 	sshKeyFormat   = prefixFormat + "_REPO_SSH_KEY"
+	secretFormat   = prefixFormat + "_REPO_SECRET"
 )
 
 // AuthConfig has the configuration options for the vault.
@@ -68,6 +69,10 @@ func (a *KrokAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, i
 		log.Debug().Msg("Store ssh key")
 		a.Vault.AddSecret(fmt.Sprintf(sshKeyFormat, repositoryID), []byte(info.SSH))
 	}
+	if info.Secret != "" {
+		log.Debug().Msg("Store hook secret")
+		a.Vault.AddSecret(fmt.Sprintf(secretFormat, repositoryID), []byte(info.Secret))
+	}
 	if err := a.Vault.SaveSecrets(); err != nil {
 		log.Debug().Err(err).Msg("Failed to save secrets")
 		return fmt.Errorf("failed to save secrets: %w", err)
@@ -101,7 +106,13 @@ func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth,
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 
-	if username == nil && password == nil && sshKey == nil {
+	secret, err := a.Vault.GetSecret(fmt.Sprintf(secretFormat, id))
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
+		log.Debug().Err(err).Msg("GetSecret failed secret")
+		return nil, fmt.Errorf("failed to get repository auth: %w", err)
+	}
+
+	if username == nil && password == nil && sshKey == nil && secret == nil {
 		log.Debug().Msg("No auth information for given id.")
 		return nil, nil
 	}
@@ -109,6 +120,7 @@ func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth,
 		SSH:      string(sshKey),
 		Username: string(username),
 		Password: string(password),
+		Secret:   string(secret),
 	}
 	return result, nil
 }

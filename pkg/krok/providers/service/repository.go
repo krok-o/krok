@@ -49,6 +49,12 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov
 		Name: request.Name,
 		URL:  request.Url,
 		VCS:  int(request.Vcs),
+		Auth: &models.Auth{
+			Secret:   request.GetAuth().GetSecret(),
+			Username: request.GetAuth().GetUsername(),
+			Password: request.GetAuth().GetPassword(),
+			SSH:      request.GetAuth().GetSsh(),
+		},
 	})
 	if err != nil {
 		log.Err(err).Msg("error creating repo in store")
@@ -136,6 +142,12 @@ func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.G
 		Url:       repository.URL,
 		Vcs:       int32(repository.VCS),
 		UniqueUrl: repository.UniqueURL,
+		Auth: &repov1.Auth{
+			Ssh:      repository.Auth.SSH,
+			Username: repository.Auth.Username,
+			Password: repository.Auth.Password,
+			Secret:   repository.Auth.Secret,
+		},
 	}
 	return response, nil
 }

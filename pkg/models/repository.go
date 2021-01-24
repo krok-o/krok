@@ -5,7 +5,8 @@ type Auth struct {
 	SSH      string `json:"ssh,omitempty"`
 	Username string `json:"username,omitempty"`
 	Password string `json:"password,omitempty"`
-	Secret   string `json:"secret"`
+	// Hook secret to create a hook with on the respective platform.
+	Secret string `json:"secret"`
 }
 
 // Repository is a repository which can be managed by Krok.
