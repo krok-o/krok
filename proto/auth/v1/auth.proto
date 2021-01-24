@@ -11,8 +11,8 @@ message LoginRequest {
 }
 
 message CallbackRequest {
-  string code = 2;
-  string state = 3;
+  string code = 1;
+  string state = 2;
 }
 
 service AuthService {

@@ -215,7 +215,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Krok:           krokHandler,
 		CommandHandler: commandHandler,
 
-		TokenProvider: tp,
+		OAuthProvider: oauthProvider,
 		// RepositoryService
 		RepositoryService: service.NewRepositoryService(service.RepositoryServiceConfig{
 			Hostname: krokArgs.server.Hostname,

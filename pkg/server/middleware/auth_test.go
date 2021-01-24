@@ -32,10 +32,10 @@ func TestJwtAuthInterceptor(t *testing.T) {
 	t.Run("valid token success", func(t *testing.T) {
 		ctx := context.Background()
 
-		mockTokenProvider := &mocks.TokenProvider{}
-		mockTokenProvider.On("GetTokenRaw", "test").Return(&jwt.Token{}, nil)
+		mockOp := &mocks.OAuthProvider{}
+		mockOp.On("Verify", "test").Return(jwt.StandardClaims{}, nil)
 
-		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockTokenProvider)))
+		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockOp)))
 		require.NoError(t, err)
 		defer conn.Close()
 
@@ -47,22 +47,23 @@ func TestJwtAuthInterceptor(t *testing.T) {
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		_, err = client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
-		mockTokenProvider.AssertExpectations(t)
+		mockOp.AssertExpectations(t)
 		assert.NoError(t, err)
 	})
 
 	t.Run("no auth header", func(t *testing.T) {
 		ctx := context.Background()
 
-		mockTokenProvider := &mocks.TokenProvider{}
-		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockTokenProvider)))
+		mockOp := &mocks.OAuthProvider{}
+
+		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockOp)))
 		require.NoError(t, err)
 		defer conn.Close()
 
 		client := repov1.NewRepositoryServiceClient(conn)
 
 		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
-		mockTokenProvider.AssertExpectations(t)
+		mockOp.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Unauthenticated desc = failed to get header")
 		assert.Nil(t, repo)
 	})
@@ -70,8 +71,9 @@ func TestJwtAuthInterceptor(t *testing.T) {
 	t.Run("empty auth header", func(t *testing.T) {
 		ctx := context.Background()
 
-		mockTokenProvider := &mocks.TokenProvider{}
-		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockTokenProvider)))
+		mockOp := &mocks.OAuthProvider{}
+
+		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockOp)))
 		require.NoError(t, err)
 		defer conn.Close()
 
@@ -83,7 +85,7 @@ func TestJwtAuthInterceptor(t *testing.T) {
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
-		mockTokenProvider.AssertExpectations(t)
+		mockOp.AssertExpectations(t)
 		assert.EqualError(t, err, "rpc error: code = Unauthenticated desc = failed to get header")
 		assert.Nil(t, repo)
 	})
@@ -91,10 +93,10 @@ func TestJwtAuthInterceptor(t *testing.T) {
 	t.Run("token provider error", func(t *testing.T) {
 		ctx := context.Background()
 
-		mockTokenProvider := &mocks.TokenProvider{}
-		mockTokenProvider.On("GetTokenRaw", "test").Return(nil, errors.New("token err"))
+		mockOp := &mocks.OAuthProvider{}
+		mockOp.On("Verify", "test").Return(jwt.StandardClaims{}, errors.New("token err"))
 
-		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockTokenProvider)))
+		conn, err := grpc.DialContext(ctx, "", grpc.WithInsecure(), grpc.WithContextDialer(dialer(mockOp)))
 		require.NoError(t, err)
 		defer conn.Close()
 
@@ -106,16 +108,16 @@ func TestJwtAuthInterceptor(t *testing.T) {
 		ctx = metadata.NewOutgoingContext(ctx, md)
 
 		repo, err := client.GetRepository(ctx, &repov1.GetRepositoryRequest{Id: wrapperspb.Int32(1)})
-		mockTokenProvider.AssertExpectations(t)
-		assert.EqualError(t, err, "rpc error: code = Unauthenticated desc = failed to get token")
+		mockOp.AssertExpectations(t)
+		assert.EqualError(t, err, "rpc error: code = Unauthenticated desc = failed to verify token")
 		assert.Nil(t, repo)
 	})
 }
 
-func dialer(tp *mocks.TokenProvider) func(context.Context, string) (net.Conn, error) {
+func dialer(op *mocks.OAuthProvider) func(context.Context, string) (net.Conn, error) {
 	listener := bufconn.Listen(1024 * 1024)
 	server := grpc.NewServer(
-		grpc.UnaryInterceptor(JwtAuthInterceptor(tp)),
+		grpc.UnaryInterceptor(JwtAuthInterceptor(op)),
 	)
 
 	repov1.RegisterRepositoryServiceServer(server, &mockRepoService{})

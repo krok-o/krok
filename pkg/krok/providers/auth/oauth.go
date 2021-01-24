@@ -151,6 +151,7 @@ func (op *OAuthProvider) VerifyState(rawToken string) error {
 	return nil
 }
 
+// Verify verifies the provided raw JWT token string.
 func (op *OAuthProvider) Verify(rawToken string) (jwt.StandardClaims, error) {
 	var claims jwt.StandardClaims
 	_, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {

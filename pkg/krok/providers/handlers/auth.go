@@ -36,9 +36,6 @@ type Dependencies struct {
 type TokenProvider struct {
 	Config
 	Dependencies
-
-	// A cache to track authenticated users.
-	cache *cache.UserCache
 }
 
 // NewTokenProvider creates a new token provider which deals with generating and handling tokens.
@@ -145,7 +142,7 @@ func (p *TokenProvider) GetTokenRaw(raw string) (*jwt.Token, error) {
 	}
 
 	email := iEmail.(string)
-	if v, ok := p.cache.Has(email); ok && !v.Expired() {
+	if v, ok := p.UserCache.Has(email); ok && !v.Expired() {
 		return token, nil
 	}
 
@@ -157,7 +154,7 @@ func (p *TokenProvider) GetTokenRaw(raw string) (*jwt.Token, error) {
 
 	// cache user.
 	// if the email happens to already exist, the cache will be refreshed.
-	p.cache.Add(user.Email, user.ID)
+	p.UserCache.Add(user.Email, user.ID)
 
 	return token, nil
 }

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"strings"
 
 	"github.com/gobwas/glob"
 	"google.golang.org/grpc"
@@ -17,7 +18,7 @@ var allowList = []string{
 }
 
 // JwtAuthInterceptor is a grpc.UnaryServerInterceptor that enforcing the JWT authentication from the token provider.
-func JwtAuthInterceptor(tokenProvider providers.TokenProvider) grpc.UnaryServerInterceptor {
+func JwtAuthInterceptor(oauthProvider providers.OAuthProvider) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		allowed := false
 		for _, p := range allowList {
@@ -26,7 +27,6 @@ func JwtAuthInterceptor(tokenProvider providers.TokenProvider) grpc.UnaryServerI
 				break
 			}
 		}
-
 		if allowed {
 			return handler(ctx, req)
 		}
@@ -35,12 +35,11 @@ func JwtAuthInterceptor(tokenProvider providers.TokenProvider) grpc.UnaryServerI
 		if err != nil {
 			return ctx, err
 		}
+		token = strings.TrimPrefix(token, "Bearer ")
 
-		// Validate the token against the TokenProvider.
-		// TODO: Do we want to push the claims object into the context?
-		_, err = tokenProvider.GetTokenRaw(token)
+		_, err = oauthProvider.Verify(token)
 		if err != nil {
-			return ctx, status.Error(codes.Unauthenticated, "failed to get token")
+			return ctx, status.Error(codes.Unauthenticated, "failed to verify token")
 		}
 
 		return handler(ctx, req)

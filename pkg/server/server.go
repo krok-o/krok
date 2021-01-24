@@ -53,10 +53,10 @@ type Dependencies struct {
 	Krok           krok.Handler
 	CommandHandler providers.CommandHandler
 
-	TokenProvider     providers.TokenProvider
 	RepositoryService repov1.RepositoryServiceServer
 	UserApiKeyService userv1.APIKeyServiceServer
 	AuthService       authv1.AuthServiceServer
+	OAuthProvider     providers.OAuthProvider
 }
 
 // Server defines a server which runs and accepts requests.
@@ -139,7 +139,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 func (s *KrokServer) RunGRPC(ctx context.Context) error {
 	// TODO: Use SSL/TLS
 	gs := grpc.NewServer(
-		grpc.UnaryInterceptor(grpcmiddleware.JwtAuthInterceptor(s.TokenProvider)),
+		grpc.UnaryInterceptor(grpcmiddleware.JwtAuthInterceptor(s.OAuthProvider)),
 	)
 
 	repov1.RegisterRepositoryServiceServer(gs, s.RepositoryService)

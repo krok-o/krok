@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -12,29 +13,16 @@ const (
 	defaultTTL = 10 * time.Minute
 )
 
-// authUser is a user which is authenticated and doesn't need to be checked if it exists or not
-// for the duration of TTL.
-type authUser struct {
-	// constructed by time.Now().Add(TTL).
-	ttl  time.Time
-	user *models.User
-}
-
-// Expired returns if a user's TTL has expired.
-func (a *authUser) Expired() bool {
-	return time.Now().After(a.ttl)
-}
-
 // UserCache is a cache for authenticated users.
 type UserCache struct {
-	m map[string]*authUser
+	m map[string]*providers.UserCacheItem
 	sync.RWMutex
 }
 
 // NewUserCache creates a new UserCache.
 func NewUserCache() *UserCache {
 	return &UserCache{
-		m: make(map[string]*authUser),
+		m: make(map[string]*providers.UserCacheItem),
 	}
 }
 
@@ -43,9 +31,9 @@ func (c *UserCache) Add(email string, id int) {
 	c.Lock()
 	defer c.Unlock()
 
-	au := &authUser{
-		ttl: time.Now().Add(defaultTTL),
-		user: &models.User{
+	au := &providers.UserCacheItem{
+		TTL: time.Now().Add(defaultTTL),
+		User: &models.User{
 			Email: email,
 			ID:    id,
 		},
@@ -62,7 +50,7 @@ func (c *UserCache) Remove(email string) {
 }
 
 // Has returns whether we already saved the current user or not.
-func (c *UserCache) Has(email string) (*authUser, bool) {
+func (c *UserCache) Has(email string) (*providers.UserCacheItem, bool) {
 	c.RLock()
 	defer c.RUnlock()
 
