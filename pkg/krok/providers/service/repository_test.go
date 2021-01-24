@@ -21,6 +21,11 @@ func TestRepositoryService_CreateRepository(t *testing.T) {
 			Name: "test",
 			URL:  "test-url",
 			VCS:  models.BITBUCKET,
+			Auth: &models.Auth{
+				SSH:      "",
+				Username: "",
+				Password: "",
+			},
 		}).Return(&models.Repository{
 			ID:   1,
 			Name: "test",

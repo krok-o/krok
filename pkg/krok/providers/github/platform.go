@@ -96,6 +96,7 @@ func (g *Github) ValidateRequest(ctx context.Context, req *http.Request) error {
 		github.SecurityAdvisoryEvent,
 		github.StatusEvent)
 	if err != nil {
+		g.Logger.Debug().Err(err).Msg("Failed to parse github event.")
 		return err
 	}
 	switch h.(type) {
