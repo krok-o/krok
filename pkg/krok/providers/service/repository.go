@@ -136,18 +136,21 @@ func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.G
 	}
 	repository.UniqueURL = uurl
 
+	auth := &repov1.Auth{}
+	if repository.Auth != nil {
+		auth.Secret = repository.Auth.Secret
+		auth.Ssh = repository.Auth.SSH
+		auth.Username = repository.Auth.Username
+		auth.Password = repository.Auth.Password
+	}
+
 	response := &repov1.Repository{
 		Id:        int32(repository.ID),
 		Name:      repository.Name,
 		Url:       repository.URL,
 		Vcs:       int32(repository.VCS),
 		UniqueUrl: repository.UniqueURL,
-		Auth: &repov1.Auth{
-			Ssh:      repository.Auth.SSH,
-			Username: repository.Auth.Username,
-			Password: repository.Auth.Password,
-			Secret:   repository.Auth.Secret,
-		},
+		Auth:      auth,
 	}
 	return response, nil
 }
