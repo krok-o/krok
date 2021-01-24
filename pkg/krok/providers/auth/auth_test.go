@@ -36,6 +36,7 @@ func TestKrokAuth_CreateRepositoryAuth(t *testing.T) {
 		SSH:      "testssh",
 		Username: "testusername",
 		Password: "testpassword",
+		Secret:   "testsecret",
 	}
 	ctx := context.Background()
 	err = auth.CreateRepositoryAuth(ctx, 1, info)
