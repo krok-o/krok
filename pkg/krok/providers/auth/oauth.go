@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -12,7 +13,9 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/models"
 )
 
 type OAuthConfig struct {
@@ -67,7 +70,16 @@ func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Tok
 
 	user, err := op.Store.GetByEmail(ctx, gu.Email)
 	if err != nil {
-		return nil, err
+		var qe *kerr.QueryError
+		if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
+			dname := fmt.Sprintf("%s %s", gu.FirstName, gu.LastName)
+			user, err = op.Store.Create(ctx, &models.User{Email: gu.Email, DisplayName: dname})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
 	}
 
 	claims := jwt.StandardClaims{

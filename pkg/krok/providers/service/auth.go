@@ -33,6 +33,7 @@ func (s *AuthService) Login(ctx context.Context, request *authv1.LoginRequest) (
 
 	url := s.oauthProvider.GetAuthCodeURL(state)
 
+	// Redirect to the provided auth url.
 	header := metadata.Pairs("Location", url)
 	if err := grpc.SendHeader(ctx, header); err != nil {
 		return nil, err
