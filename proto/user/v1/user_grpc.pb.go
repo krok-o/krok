@@ -4,14 +4,15 @@ package userv1
 
 import (
 	context "context"
-	empty "github.com/golang/protobuf/ptypes/empty"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 // This is a compile-time assertion to ensure that this generated file
 // is compatible with the grpc package it is being compiled against.
+// Requires gRPC-Go v1.32.0 or later.
 const _ = grpc.SupportPackageIsVersion7
 
 // APIKeyServiceClient is the client API for APIKeyService service.
@@ -19,7 +20,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type APIKeyServiceClient interface {
 	CreateAPIKey(ctx context.Context, in *CreateAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error)
-	DeleteAPIKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	DeleteAPIKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error)
 	GetAPIKey(ctx context.Context, in *GetAPIKeyRequest, opts ...grpc.CallOption) (*APIKey, error)
 	ListAPIKeys(ctx context.Context, in *ListAPIKeyRequest, opts ...grpc.CallOption) (*APIKeys, error)
 }
@@ -41,8 +42,8 @@ func (c *aPIKeyServiceClient) CreateAPIKey(ctx context.Context, in *CreateAPIKey
 	return out, nil
 }
 
-func (c *aPIKeyServiceClient) DeleteAPIKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *aPIKeyServiceClient) DeleteAPIKey(ctx context.Context, in *DeleteAPIKeyRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
+	out := new(emptypb.Empty)
 	err := c.cc.Invoke(ctx, "/user.v1.APIKeyService/DeleteAPIKey", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -73,7 +74,7 @@ func (c *aPIKeyServiceClient) ListAPIKeys(ctx context.Context, in *ListAPIKeyReq
 // for forward compatibility
 type APIKeyServiceServer interface {
 	CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error)
-	DeleteAPIKey(context.Context, *DeleteAPIKeyRequest) (*empty.Empty, error)
+	DeleteAPIKey(context.Context, *DeleteAPIKeyRequest) (*emptypb.Empty, error)
 	GetAPIKey(context.Context, *GetAPIKeyRequest) (*APIKey, error)
 	ListAPIKeys(context.Context, *ListAPIKeyRequest) (*APIKeys, error)
 	mustEmbedUnimplementedAPIKeyServiceServer()
@@ -86,7 +87,7 @@ type UnimplementedAPIKeyServiceServer struct {
 func (UnimplementedAPIKeyServiceServer) CreateAPIKey(context.Context, *CreateAPIKeyRequest) (*APIKey, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAPIKey not implemented")
 }
-func (UnimplementedAPIKeyServiceServer) DeleteAPIKey(context.Context, *DeleteAPIKeyRequest) (*empty.Empty, error) {
+func (UnimplementedAPIKeyServiceServer) DeleteAPIKey(context.Context, *DeleteAPIKeyRequest) (*emptypb.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteAPIKey not implemented")
 }
 func (UnimplementedAPIKeyServiceServer) GetAPIKey(context.Context, *GetAPIKeyRequest) (*APIKey, error) {
@@ -105,7 +106,7 @@ type UnsafeAPIKeyServiceServer interface {
 }
 
 func RegisterAPIKeyServiceServer(s grpc.ServiceRegistrar, srv APIKeyServiceServer) {
-	s.RegisterService(&_APIKeyService_serviceDesc, srv)
+	s.RegisterService(&APIKeyService_ServiceDesc, srv)
 }
 
 func _APIKeyService_CreateAPIKey_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -180,7 +181,10 @@ func _APIKeyService_ListAPIKeys_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-var _APIKeyService_serviceDesc = grpc.ServiceDesc{
+// APIKeyService_ServiceDesc is the grpc.ServiceDesc for APIKeyService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var APIKeyService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "user.v1.APIKeyService",
 	HandlerType: (*APIKeyServiceServer)(nil),
 	Methods: []grpc.MethodDesc{

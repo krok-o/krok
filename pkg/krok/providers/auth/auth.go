@@ -68,7 +68,10 @@ func (a *KrokAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, i
 		log.Debug().Msg("Store ssh key")
 		a.Vault.AddSecret(fmt.Sprintf(sshKeyFormat, repositoryID), []byte(info.SSH))
 	}
-
+	if err := a.Vault.SaveSecrets(); err != nil {
+		log.Debug().Err(err).Msg("Failed to save secrets")
+		return fmt.Errorf("failed to save secrets: %w", err)
+	}
 	return nil
 }
 
