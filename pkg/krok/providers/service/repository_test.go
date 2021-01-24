@@ -43,7 +43,7 @@ func TestRepositoryService_CreateRepository(t *testing.T) {
 		assert.Equal(t, int32(1), created.Id)
 		assert.Equal(t, "test", created.Name)
 		assert.Equal(t, "test-url", created.Url)
-		assert.Equal(t, "hostname/1/4/callback", created.UniqueUrl)
+		assert.Equal(t, "hostname/hooks/1/4/callback", created.UniqueUrl)
 	})
 
 	t.Run("store create repository error", func(t *testing.T) {
@@ -93,7 +93,7 @@ func TestRepositoryService_UpdateRepository(t *testing.T) {
 		assert.Equal(t, int32(1), created.Id)
 		assert.Equal(t, "test", created.Name)
 		assert.Equal(t, "test-url", created.Url)
-		assert.Equal(t, "hostname/1/4/callback", created.UniqueUrl)
+		assert.Equal(t, "hostname/hooks/1/4/callback", created.UniqueUrl)
 	})
 
 	t.Run("store update repository error", func(t *testing.T) {
@@ -136,7 +136,7 @@ func TestRepositoryService_GetRepository(t *testing.T) {
 		assert.Equal(t, int32(1234), repository.Id)
 		assert.Equal(t, "test", repository.Name)
 		assert.Equal(t, "test-url", repository.Url)
-		assert.Equal(t, "hostname/1234/4/callback", repository.UniqueUrl)
+		assert.Equal(t, "hostname/hooks/1234/4/callback", repository.UniqueUrl)
 	})
 
 	t.Run("store get repository error", func(t *testing.T) {
