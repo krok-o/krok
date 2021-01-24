@@ -3,6 +3,8 @@ package providers
 import (
 	"context"
 	"net/http"
+
+	"github.com/krok-o/krok/pkg/models"
 )
 
 // Platform defines what a platform should be able to do in order for it to
@@ -11,7 +13,7 @@ import (
 // repository.
 type Platform interface {
 	// CreateHook creates a hook for the respective platform.
-	CreateHook(ctx context.Context) error
+	CreateHook(ctx context.Context, repo *models.Repository) error
 	// ValidateRequest will take a hook and verify it being a valid hook request according to
 	// platform rules.
 	ValidateRequest(ctx context.Context, r *http.Request) error

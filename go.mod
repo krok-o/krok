@@ -11,6 +11,8 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9
 	github.com/gobuffalo/envy v1.9.0 // indirect
 	github.com/golang/protobuf v1.4.3
+	github.com/google/go-github v17.0.0+incompatible
+	github.com/google/go-querystring v1.0.0 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.1.0
 	github.com/jackc/pgx/v4 v4.9.2
@@ -24,6 +26,7 @@ require (
 	github.com/stretchr/testify v1.5.1
 	golang.org/x/crypto v0.0.0-20201016220609-9e8e0b390897
 	golang.org/x/net v0.0.0-20201224014010-6772e930b67b // indirect
+	golang.org/x/oauth2 v0.0.0-20201208152858-08078c50e5b5
 	golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9
 	golang.org/x/sys v0.0.0-20210113181707-4bcb84eeeb78 // indirect
 	golang.org/x/text v0.3.5 // indirect
