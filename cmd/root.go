@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -11,6 +12,7 @@ import (
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
+	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
 	"github.com/krok-o/krok/pkg/krok/providers/service"
@@ -144,6 +146,20 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		APIKeys:      apiKeyStore,
 	})
 
+	userCache := cache.NewUserCache()
+	go func() {
+		interval := 1 * time.Minute
+		for {
+			userCache.ClearTTL()
+
+			// nolint:gosimple
+			select {
+			case <-time.After(interval):
+				log.Debug().Msg("Running user cache cleanup...")
+			}
+		}
+	}()
+
 	// ************************
 	// Set up handlers
 	// ************************
@@ -158,6 +174,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:     log,
 		UserStore:  userStore,
 		ApiKeyAuth: authMatcher,
+		UserCache:  userCache,
 	}
 	tp, err := handlers.NewTokenProvider(handlers.Config{
 		Hostname:       krokArgs.server.Hostname,
@@ -188,8 +205,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	clock := providers.NewClock()
 
 	oauthProvider := auth.NewOAuthProvider(krokArgs.oauthCfg, auth.OAuthProviderDependencies{
-		Store: userStore,
-		UUID:  uuidGenerator,
+		Store:     userStore,
+		UUID:      uuidGenerator,
+		UserCache: userCache,
 	})
 
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{

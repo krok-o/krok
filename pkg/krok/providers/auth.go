@@ -3,6 +3,7 @@ package providers
 import (
 	"context"
 
+	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/oauth2"
 
 	"github.com/krok-o/krok/pkg/models"
@@ -24,9 +25,11 @@ type ApiKeysAuthenticator interface {
 	Encrypt(ctx context.Context, secret []byte) ([]byte, error)
 }
 
+// OAuthProvider handles user authentication via OAuth2.
 type OAuthProvider interface {
 	GetAuthCodeURL(state string) string
 	Exchange(ctx context.Context, code string) (*oauth2.Token, error)
 	GenerateState() (string, error)
 	VerifyState(rawToken string) error
+	Verify(rawToken string) (jwt.StandardClaims, error)
 }

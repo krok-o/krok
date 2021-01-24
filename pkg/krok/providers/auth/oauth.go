@@ -15,7 +15,12 @@ import (
 
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/models"
+)
+
+const (
+	defaultTokenExpiry = time.Hour * 12
 )
 
 type OAuthConfig struct {
@@ -25,8 +30,9 @@ type OAuthConfig struct {
 }
 
 type OAuthProviderDependencies struct {
-	Store providers.UserStorer
-	UUID  providers.UUIDGenerator
+	Store     providers.UserStorer
+	UUID      providers.UUIDGenerator
+	UserCache *cache.UserCache
 }
 
 // OAuthProvider is the OAuth provider.
@@ -40,6 +46,7 @@ func NewOAuthProvider(cfg OAuthConfig, deps OAuthProviderDependencies) *OAuthPro
 	return &OAuthProvider{
 		OAuthConfig:               cfg,
 		OAuthProviderDependencies: deps,
+		// For now, just support Google.
 		oauthCfg: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
@@ -53,10 +60,13 @@ func NewOAuthProvider(cfg OAuthConfig, deps OAuthProviderDependencies) *OAuthPro
 	}
 }
 
+// GetAuthCodeURL gets the OAuth2 authentication URL.
 func (op *OAuthProvider) GetAuthCodeURL(state string) string {
 	return op.oauthCfg.AuthCodeURL(state, []oauth2.AuthCodeOption{oauth2.AccessTypeOffline}...)
 }
 
+// Exchange exchanges the code returned from the OAuth2 authentication URL for a valid token.
+// We attempt to get an internal user and create it if it doesn't exist.
 func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
 	token, err := op.oauthCfg.Exchange(ctx, code)
 	if err != nil {
@@ -68,23 +78,28 @@ func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Tok
 		return nil, err
 	}
 
-	user, err := op.Store.GetByEmail(ctx, gu.Email)
-	if err != nil {
-		var qe *kerr.QueryError
-		if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
-			dname := fmt.Sprintf("%s %s", gu.FirstName, gu.LastName)
-			user, err = op.Store.Create(ctx, &models.User{Email: gu.Email, DisplayName: dname})
-			if err != nil {
+	var userID int
+	if _, exists := op.UserCache.Has(gu.Email); !exists {
+		user, err := op.Store.GetByEmail(ctx, gu.Email)
+		if err != nil {
+			var qe *kerr.QueryError
+			if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
+				dname := fmt.Sprintf("%s %s", gu.FirstName, gu.LastName)
+				user, err = op.Store.Create(ctx, &models.User{Email: gu.Email, DisplayName: dname})
+				if err != nil {
+					return nil, err
+				}
+			} else {
 				return nil, err
 			}
-		} else {
-			return nil, err
 		}
+		userID = user.ID
 	}
+	op.UserCache.Add(gu.Email, userID)
 
 	claims := jwt.StandardClaims{
-		Subject:   strconv.Itoa(user.ID),
-		ExpiresAt: time.Now().Add(time.Hour * 12).Unix(),
+		Subject:   strconv.Itoa(userID),
+		ExpiresAt: time.Now().Add(defaultTokenExpiry).Unix(),
 	}
 
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(op.SessionSecret))
@@ -99,7 +114,7 @@ func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Tok
 	}, nil
 }
 
-// GenerateState generates the state nonce JWT.
+// GenerateState generates the state nonce JWT with expiry.
 func (op *OAuthProvider) GenerateState() (string, error) {
 	uuid, err := op.UUID.Generate()
 	if err != nil {
@@ -107,7 +122,9 @@ func (op *OAuthProvider) GenerateState() (string, error) {
 	}
 
 	claims := jwt.StandardClaims{
-		Subject: uuid,
+		Subject:   uuid,
+		ExpiresAt: time.Now().Add(time.Minute * 2).Unix(),
+		IssuedAt:  time.Now().Unix(),
 	}
 	state, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(op.SessionSecret))
 	if err != nil {
@@ -132,6 +149,22 @@ func (op *OAuthProvider) VerifyState(rawToken string) error {
 	}
 
 	return nil
+}
+
+func (op *OAuthProvider) Verify(rawToken string) (jwt.StandardClaims, error) {
+	var claims jwt.StandardClaims
+	_, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {
+		return []byte(op.SessionSecret), nil
+	})
+	if err != nil {
+		return claims, err
+	}
+
+	if err := claims.Valid(); err != nil {
+		return claims, err
+	}
+
+	return claims, nil
 }
 
 type googleUser struct {
