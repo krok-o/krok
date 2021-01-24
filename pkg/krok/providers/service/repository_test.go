@@ -22,15 +22,22 @@ func TestRepositoryService_CreateRepository(t *testing.T) {
 			URL:  "test-url",
 			VCS:  models.BITBUCKET,
 			Auth: &models.Auth{
-				SSH:      "",
-				Username: "",
-				Password: "",
+				SSH:      "ssh",
+				Username: "username",
+				Password: "password",
+				Secret:   "secret",
 			},
 		}).Return(&models.Repository{
 			ID:   1,
 			Name: "test",
 			URL:  "test-url",
 			VCS:  models.BITBUCKET,
+			Auth: &models.Auth{
+				SSH:      "ssh",
+				Username: "username",
+				Password: "password",
+				Secret:   "secret",
+			},
 		}, nil).Once()
 
 		svc := NewRepositoryService(RepositoryServiceConfig{
@@ -42,6 +49,12 @@ func TestRepositoryService_CreateRepository(t *testing.T) {
 			Name: "test",
 			Url:  "test-url",
 			Vcs:  models.BITBUCKET,
+			Auth: &repov1.Auth{
+				Ssh:      "ssh",
+				Username: "username",
+				Password: "password",
+				Secret:   "secret",
+			},
 		})
 		storer.AssertExpectations(t)
 		assert.NoError(t, err)
@@ -49,6 +62,12 @@ func TestRepositoryService_CreateRepository(t *testing.T) {
 		assert.Equal(t, "test", created.Name)
 		assert.Equal(t, "test-url", created.Url)
 		assert.Equal(t, "hostname/hooks/1/4/callback", created.UniqueUrl)
+		assert.Equal(t, &repov1.Auth{
+			Ssh:      "ssh",
+			Username: "username",
+			Password: "password",
+			Secret:   "secret",
+		}, created.Auth)
 	})
 
 	t.Run("store create repository error", func(t *testing.T) {
