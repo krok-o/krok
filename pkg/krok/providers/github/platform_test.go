@@ -16,7 +16,7 @@ import (
 )
 
 type mockAuthProvider struct {
-	providers.Auth
+	providers.RepositoryAuth
 	getAuth *models.Auth
 }
 

@@ -49,7 +49,7 @@ type Config struct {
 type Dependencies struct {
 	Logger                zerolog.Logger
 	PlatformTokenProvider providers.PlatformTokenProvider
-	AuthProvider          providers.Auth
+	AuthProvider          providers.RepositoryAuth
 }
 
 // Github is a github based platform implementation.

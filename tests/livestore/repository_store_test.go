@@ -33,7 +33,7 @@ func TestRepositoryStore_Flow(t *testing.T) {
 	assert.NoError(t, err)
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
-	a, err := auth.NewKrokAuth(auth.AuthConfig{}, auth.AuthDependencies{
+	a, err := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})
@@ -103,7 +103,7 @@ func TestRepositoryStore_ListByFilter(t *testing.T) {
 	assert.NoError(t, err)
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
-	a, err := auth.NewKrokAuth(auth.AuthConfig{}, auth.AuthDependencies{
+	a, err := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})
@@ -172,7 +172,7 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 	assert.NoError(t, err)
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
-	a, err := auth.NewKrokAuth(auth.AuthConfig{}, auth.AuthDependencies{
+	a, err := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})
@@ -248,7 +248,7 @@ func TestRepositoryStore_Create_WithCommands(t *testing.T) {
 	assert.NoError(t, err)
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
-	a, err := auth.NewKrokAuth(auth.AuthConfig{}, auth.AuthDependencies{
+	a, err := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})

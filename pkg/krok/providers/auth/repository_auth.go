@@ -20,34 +20,34 @@ const (
 	secretFormat   = prefixFormat + "_REPO_SECRET"
 )
 
-// AuthConfig has the configuration options for the vault.
-type AuthConfig struct {
+// RepositoryAuthConfig has the configuration options for the repository auth.
+type RepositoryAuthConfig struct {
 }
 
-// AuthDependencies defines the dependencies for the auth provider.
-type AuthDependencies struct {
+// RepositoryAuthDependencies defines the dependencies for the repository auth provider.
+type RepositoryAuthDependencies struct {
 	Logger zerolog.Logger
 	Vault  providers.Vault
 }
 
-// KrokAuth is the authentication provider for Krok.
-type KrokAuth struct {
-	AuthConfig
-	AuthDependencies
+// RepoAuth is the authentication provider for Krok repositories.
+type RepoAuth struct {
+	RepositoryAuthConfig
+	RepositoryAuthDependencies
 }
 
-// NewKrokAuth creates a new Krok authentication provider.
-func NewKrokAuth(cfg AuthConfig, deps AuthDependencies) (*KrokAuth, error) {
-	return &KrokAuth{
-		AuthConfig:       cfg,
-		AuthDependencies: deps,
+// NewKrokAuth creates a new repository authentication provider.
+func NewKrokAuth(cfg RepositoryAuthConfig, deps RepositoryAuthDependencies) (*RepoAuth, error) {
+	return &RepoAuth{
+		RepositoryAuthConfig:       cfg,
+		RepositoryAuthDependencies: deps,
 	}, nil
 }
 
-var _ providers.Auth = &KrokAuth{}
+var _ providers.RepositoryAuth = &RepoAuth{}
 
 // CreateRepositoryAuth creates auth data for a repository in vault.
-func (a *KrokAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, info *models.Auth) error {
+func (a *RepoAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, info *models.Auth) error {
 	log := a.Logger.With().Str("func", "CreateRepositoryAuth").Int("repository_id", repositoryID).Logger()
 	if info == nil {
 		log.Debug().Msg("No auth information for repository. Skip storing anything.")
@@ -82,7 +82,7 @@ func (a *KrokAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, i
 
 // GetRepositoryAuth returns auth data for a repository. Returns ErrNotFound if there is no
 // auth info for a repository.
-func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth, error) {
+func (a *RepoAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth, error) {
 	log := a.Logger.With().Int("id", id).Logger()
 	if err := a.Vault.LoadSecrets(); err != nil {
 		log.Debug().Err(err).Msg("Failed to load secrets")
