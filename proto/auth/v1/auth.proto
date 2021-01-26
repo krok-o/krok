@@ -8,11 +8,17 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 
 message LoginRequest {
+  string redirectURL = 1;
 }
 
 message CallbackRequest {
   string code = 1;
   string state = 2;
+  string id_token = 3;
+}
+
+message CallbackResponse {
+  string access_token = 1;
 }
 
 service AuthService {
@@ -21,7 +27,7 @@ service AuthService {
       get : "/auth.v1.AuthService/Login"
     };
   }
-  rpc Callback(CallbackRequest) returns (google.protobuf.Empty) {
+  rpc Callback(CallbackRequest) returns (CallbackResponse) {
     option (google.api.http) = {
       get : "/auth.v1.AuthService/Callback"
     };

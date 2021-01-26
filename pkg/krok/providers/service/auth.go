@@ -26,7 +26,7 @@ func NewAuthService(oauthProvider providers.OAuthProvider) *AuthService {
 
 // Login handles OAuth2 logins.
 func (s *AuthService) Login(ctx context.Context, request *authv1.LoginRequest) (*empty.Empty, error) {
-	state, err := s.oauthProvider.GenerateState()
+	state, err := s.oauthProvider.GenerateState(request.RedirectURL)
 	if err != nil {
 		return nil, err
 	}
@@ -43,8 +43,9 @@ func (s *AuthService) Login(ctx context.Context, request *authv1.LoginRequest) (
 }
 
 // Callback is the OAuth0 callback endpoint.
-func (s *AuthService) Callback(ctx context.Context, request *authv1.CallbackRequest) (*empty.Empty, error) {
-	if err := s.oauthProvider.VerifyState(request.State); err != nil {
+func (s *AuthService) Callback(ctx context.Context, request *authv1.CallbackRequest) (*authv1.CallbackResponse, error) {
+	redirectURL, err := s.oauthProvider.VerifyState(request.State)
+	if err != nil {
 		return nil, err
 	}
 
@@ -53,9 +54,17 @@ func (s *AuthService) Callback(ctx context.Context, request *authv1.CallbackRequ
 		return nil, err
 	}
 
+	header := metadata.Pairs(
+		"Location", redirectURL,
+		"Set-Cookie-Token", token.AccessToken,
+	)
+	if err := grpc.SendHeader(ctx, header); err != nil {
+		return nil, err
+	}
+
 	fmt.Println(token.AccessToken)
 
-	// Redirect with token
-
-	return &empty.Empty{}, nil
+	return &authv1.CallbackResponse{
+		AccessToken: token.AccessToken,
+	}, nil
 }

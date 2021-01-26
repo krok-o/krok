@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"strconv"
 	"strings"
 
 	"github.com/gobwas/glob"
@@ -31,37 +32,51 @@ func JwtAuthInterceptor(oauthProvider providers.OAuthProvider) grpc.UnaryServerI
 			return handler(ctx, req)
 		}
 
-		token, err := getHeader(ctx, "authorization")
+		token, err := getToken(ctx)
 		if err != nil {
 			return ctx, err
 		}
-		token = strings.TrimPrefix(token, "Bearer ")
 
-		_, err = oauthProvider.Verify(token)
+		claims, err := oauthProvider.Verify(token)
 		if err != nil {
 			return ctx, status.Error(codes.Unauthenticated, "failed to verify token")
 		}
 
-		return handler(ctx, req)
+		userID, err := strconv.Atoi(claims.Subject)
+		if err != nil {
+			return ctx, status.Error(codes.Unauthenticated, "failed to convert sub")
+		}
+		contextWithClaims := context.WithValue(ctx, UserClaimsCtxKey{}, UserClaims{UserID: userID})
+
+		return handler(contextWithClaims, req)
 	}
 }
 
-func getHeader(ctx context.Context, key string) (string, error) {
+type UserClaimsCtxKey struct{}
+
+type UserClaims struct {
+	UserID int
+}
+
+func getToken(ctx context.Context) (string, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
-		return "", status.Error(codes.Internal, "failed to get request metadata")
+		return "", status.Error(codes.Unauthenticated, "failed to get request metadata")
 	}
 
-	header := md.Get(key)
-	if header == nil {
-		return "", status.Error(codes.Unauthenticated, "failed to get header")
+	header := md.Get("authorization")
+	if header != nil && len(header) == 1 {
+		token := strings.TrimPrefix(header[0], "Bearer ")
+		return token, nil
 	}
 
-	if len(header) != 1 {
-		return "", status.Error(codes.Unauthenticated, "more than one header")
+	cookie := md.Get("grpcgateway-cookie")
+	if cookie == nil {
+		return "", status.Error(codes.Unauthenticated, "token not present")
 	}
 
-	return header[0], nil
+	token := strings.TrimPrefix(cookie[0], "_token_=")
+	return token, nil
 }
 
 func checkAllowed(pattern, input string) bool {

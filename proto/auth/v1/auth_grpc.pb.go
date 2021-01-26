@@ -19,7 +19,7 @@ const _ = grpc.SupportPackageIsVersion7
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type AuthServiceClient interface {
 	Login(ctx context.Context, in *LoginRequest, opts ...grpc.CallOption) (*empty.Empty, error)
-	Callback(ctx context.Context, in *CallbackRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	Callback(ctx context.Context, in *CallbackRequest, opts ...grpc.CallOption) (*CallbackResponse, error)
 }
 
 type authServiceClient struct {
@@ -39,8 +39,8 @@ func (c *authServiceClient) Login(ctx context.Context, in *LoginRequest, opts ..
 	return out, nil
 }
 
-func (c *authServiceClient) Callback(ctx context.Context, in *CallbackRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
-	out := new(empty.Empty)
+func (c *authServiceClient) Callback(ctx context.Context, in *CallbackRequest, opts ...grpc.CallOption) (*CallbackResponse, error) {
+	out := new(CallbackResponse)
 	err := c.cc.Invoke(ctx, "/auth.v1.AuthService/Callback", in, out, opts...)
 	if err != nil {
 		return nil, err
@@ -53,7 +53,7 @@ func (c *authServiceClient) Callback(ctx context.Context, in *CallbackRequest, o
 // for forward compatibility
 type AuthServiceServer interface {
 	Login(context.Context, *LoginRequest) (*empty.Empty, error)
-	Callback(context.Context, *CallbackRequest) (*empty.Empty, error)
+	Callback(context.Context, *CallbackRequest) (*CallbackResponse, error)
 	mustEmbedUnimplementedAuthServiceServer()
 }
 
@@ -64,7 +64,7 @@ type UnimplementedAuthServiceServer struct {
 func (UnimplementedAuthServiceServer) Login(context.Context, *LoginRequest) (*empty.Empty, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Login not implemented")
 }
-func (UnimplementedAuthServiceServer) Callback(context.Context, *CallbackRequest) (*empty.Empty, error) {
+func (UnimplementedAuthServiceServer) Callback(context.Context, *CallbackRequest) (*CallbackResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Callback not implemented")
 }
 func (UnimplementedAuthServiceServer) mustEmbedUnimplementedAuthServiceServer() {}

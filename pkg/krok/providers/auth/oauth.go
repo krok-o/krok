@@ -46,11 +46,13 @@ func NewOAuthProvider(cfg OAuthConfig, deps OAuthProviderDependencies) *OAuthPro
 	return &OAuthProvider{
 		OAuthConfig:               cfg,
 		OAuthProviderDependencies: deps,
+
 		// For now, just support Google.
 		oauthCfg: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
-			RedirectURL:  "http://localhost:8081/auth.v1.AuthService/Callback?provider=GOOGLE",
+			RedirectURL:  "http://localhost:8081/auth.v1.AuthService/Callback",
+			// RedirectURL: "http://localhost:3000", // Set to the frontend URL as the authorization code originates from there.
 			Scopes: []string{
 				"https://www.googleapis.com/auth/userinfo.email",
 				"https://www.googleapis.com/auth/userinfo.profile",
@@ -114,17 +116,25 @@ func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Tok
 	}, nil
 }
 
+type stateClaims struct {
+	jwt.StandardClaims
+	RedirectURL string `json:"redirect_url"`
+}
+
 // GenerateState generates the state nonce JWT with expiry.
-func (op *OAuthProvider) GenerateState() (string, error) {
+func (op *OAuthProvider) GenerateState(redirectURL string) (string, error) {
 	uuid, err := op.UUID.Generate()
 	if err != nil {
 		return "", err
 	}
 
-	claims := jwt.StandardClaims{
-		Subject:   uuid,
-		ExpiresAt: time.Now().Add(time.Minute * 2).Unix(),
-		IssuedAt:  time.Now().Unix(),
+	claims := stateClaims{
+		StandardClaims: jwt.StandardClaims{
+			Subject:   uuid,
+			ExpiresAt: time.Now().Add(time.Minute * 2).Unix(),
+			IssuedAt:  time.Now().Unix(),
+		},
+		RedirectURL: redirectURL,
 	}
 	state, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(op.SessionSecret))
 	if err != nil {
@@ -135,20 +145,20 @@ func (op *OAuthProvider) GenerateState() (string, error) {
 }
 
 // VerifyState verifies the state nonce JWT.
-func (op *OAuthProvider) VerifyState(rawToken string) error {
-	var claims jwt.StandardClaims
+func (op *OAuthProvider) VerifyState(rawToken string) (string, error) {
+	var claims stateClaims
 	_, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(op.SessionSecret), nil
 	})
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	if err := claims.Valid(); err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return claims.RedirectURL, nil
 }
 
 // Verify verifies the provided raw JWT token string.

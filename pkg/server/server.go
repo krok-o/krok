@@ -180,11 +180,24 @@ func (s *KrokServer) RunGRPC(ctx context.Context) error {
 
 // responseHeaderMatcher allows us to perform redirects with grpc-gateway.
 func responseHeaderMatcher(ctx context.Context, w http.ResponseWriter, resp proto.Message) error {
-	headers := w.Header()
-	if location, ok := headers["Grpc-Metadata-Location"]; ok {
+	md, ok := runtime.ServerMetadataFromContext(ctx)
+	if !ok {
+		return nil
+	}
+
+	if cookies := md.HeaderMD.Get("Set-Cookie-Token"); len(cookies) > 0 {
+		cookie := &http.Cookie{
+			Name:     "_token_",
+			Value:    cookies[0],
+			Path:     "/",
+			HttpOnly: true,
+		}
+		http.SetCookie(w, cookie)
+	}
+
+	if location := md.HeaderMD.Get("Location"); len(location) > 0 {
 		w.Header().Set("Location", location[0])
 		w.WriteHeader(http.StatusFound)
 	}
-
 	return nil
 }

@@ -29,7 +29,7 @@ type ApiKeysAuthenticator interface {
 type OAuthProvider interface {
 	GetAuthCodeURL(state string) string
 	Exchange(ctx context.Context, code string) (*oauth2.Token, error)
-	GenerateState() (string, error)
-	VerifyState(rawToken string) error
+	GenerateState(redirectURL string) (string, error)
+	VerifyState(rawToken string) (string, error)
 	Verify(rawToken string) (jwt.StandardClaims, error)
 }
