@@ -20,7 +20,7 @@ import (
 )
 
 const (
-	defaultTokenExpiry = time.Hour * 12
+	defaultTokenExpiry = time.Minute * 15
 )
 
 type OAuthConfig struct {
