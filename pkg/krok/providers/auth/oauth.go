@@ -52,7 +52,6 @@ func NewOAuthProvider(cfg OAuthConfig, deps OAuthProviderDependencies) *OAuthPro
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
 			RedirectURL:  "http://localhost:8081/auth.v1.AuthService/Callback",
-			// RedirectURL: "http://localhost:3000", // Set to the frontend URL as the authorization code originates from there.
 			Scopes: []string{
 				"https://www.googleapis.com/auth/userinfo.email",
 				"https://www.googleapis.com/auth/userinfo.profile",
