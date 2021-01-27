@@ -101,7 +101,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger: log,
 		Storer: fv,
 	})
-	a, _ := auth.NewKrokAuth(auth.AuthConfig{}, auth.AuthDependencies{
+	a, _ := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: log,
 		Vault:  v,
 	})

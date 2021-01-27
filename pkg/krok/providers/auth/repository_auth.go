@@ -17,36 +17,37 @@ const (
 	usernameFormat = prefixFormat + "_REPO_USERNAME"
 	passwordFormat = prefixFormat + "_REPO_PASSWORD"
 	sshKeyFormat   = prefixFormat + "_REPO_SSH_KEY"
+	secretFormat   = prefixFormat + "_REPO_SECRET"
 )
 
-// AuthConfig has the configuration options for the vault.
-type AuthConfig struct {
+// RepositoryAuthConfig has the configuration options for the repository auth.
+type RepositoryAuthConfig struct {
 }
 
-// AuthDependencies defines the dependencies for the auth provider.
-type AuthDependencies struct {
+// RepositoryAuthDependencies defines the dependencies for the repository auth provider.
+type RepositoryAuthDependencies struct {
 	Logger zerolog.Logger
 	Vault  providers.Vault
 }
 
-// KrokAuth is the authentication provider for Krok.
-type KrokAuth struct {
-	AuthConfig
-	AuthDependencies
+// RepoAuth is the authentication provider for Krok repositories.
+type RepoAuth struct {
+	RepositoryAuthConfig
+	RepositoryAuthDependencies
 }
 
-// NewKrokAuth creates a new Krok authentication provider.
-func NewKrokAuth(cfg AuthConfig, deps AuthDependencies) (*KrokAuth, error) {
-	return &KrokAuth{
-		AuthConfig:       cfg,
-		AuthDependencies: deps,
+// NewKrokAuth creates a new repository authentication provider.
+func NewKrokAuth(cfg RepositoryAuthConfig, deps RepositoryAuthDependencies) (*RepoAuth, error) {
+	return &RepoAuth{
+		RepositoryAuthConfig:       cfg,
+		RepositoryAuthDependencies: deps,
 	}, nil
 }
 
-var _ providers.Auth = &KrokAuth{}
+var _ providers.RepositoryAuth = &RepoAuth{}
 
 // CreateRepositoryAuth creates auth data for a repository in vault.
-func (a *KrokAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, info *models.Auth) error {
+func (a *RepoAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, info *models.Auth) error {
 	log := a.Logger.With().Str("func", "CreateRepositoryAuth").Int("repository_id", repositoryID).Logger()
 	if info == nil {
 		log.Debug().Msg("No auth information for repository. Skip storing anything.")
@@ -68,13 +69,20 @@ func (a *KrokAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, i
 		log.Debug().Msg("Store ssh key")
 		a.Vault.AddSecret(fmt.Sprintf(sshKeyFormat, repositoryID), []byte(info.SSH))
 	}
-
+	if info.Secret != "" {
+		log.Debug().Msg("Store hook secret")
+		a.Vault.AddSecret(fmt.Sprintf(secretFormat, repositoryID), []byte(info.Secret))
+	}
+	if err := a.Vault.SaveSecrets(); err != nil {
+		log.Debug().Err(err).Msg("Failed to save secrets")
+		return fmt.Errorf("failed to save secrets: %w", err)
+	}
 	return nil
 }
 
 // GetRepositoryAuth returns auth data for a repository. Returns ErrNotFound if there is no
 // auth info for a repository.
-func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth, error) {
+func (a *RepoAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth, error) {
 	log := a.Logger.With().Int("id", id).Logger()
 	if err := a.Vault.LoadSecrets(); err != nil {
 		log.Debug().Err(err).Msg("Failed to load secrets")
@@ -98,7 +106,13 @@ func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth,
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
 
-	if username == nil && password == nil && sshKey == nil {
+	secret, err := a.Vault.GetSecret(fmt.Sprintf(secretFormat, id))
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
+		log.Debug().Err(err).Msg("GetSecret failed secret")
+		return nil, fmt.Errorf("failed to get repository auth: %w", err)
+	}
+
+	if username == nil && password == nil && sshKey == nil && secret == nil {
 		log.Debug().Msg("No auth information for given id.")
 		return nil, nil
 	}
@@ -106,6 +120,7 @@ func (a *KrokAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth,
 		SSH:      string(sshKey),
 		Username: string(username),
 		Password: string(password),
+		Secret:   string(secret),
 	}
 	return result, nil
 }

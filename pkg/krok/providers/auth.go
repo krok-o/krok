@@ -6,8 +6,8 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-// Auth defines the capabilities of a repository authentication storage framework.
-type Auth interface {
+// RepositoryAuth defines the capabilities of a repository authentication storage framework.
+type RepositoryAuth interface {
 	// GetRepositoryAuth returns auth data for a repository.
 	GetRepositoryAuth(ctx context.Context, id int) (*models.Auth, error)
 	// CreateRepositoryAuth creates auth data for a repository in vault.

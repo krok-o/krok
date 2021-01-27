@@ -49,6 +49,12 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov
 		Name: request.Name,
 		URL:  request.Url,
 		VCS:  int(request.Vcs),
+		Auth: &models.Auth{
+			Secret:   request.GetAuth().GetSecret(),
+			Username: request.GetAuth().GetUsername(),
+			Password: request.GetAuth().GetPassword(),
+			SSH:      request.GetAuth().GetSsh(),
+		},
 	})
 	if err != nil {
 		log.Err(err).Msg("error creating repo in store")
@@ -62,12 +68,20 @@ func (s *RepositoryService) CreateRepository(ctx context.Context, request *repov
 	}
 	repository.UniqueURL = uurl
 
+	auth := &repov1.Auth{}
+	if repository.Auth != nil {
+		auth.Secret = repository.Auth.Secret
+		auth.Ssh = repository.Auth.SSH
+		auth.Username = repository.Auth.Username
+		auth.Password = repository.Auth.Password
+	}
 	return &repov1.Repository{
 		Id:        int32(repository.ID),
 		Name:      repository.Name,
 		Url:       repository.URL,
 		Vcs:       int32(repository.VCS),
 		UniqueUrl: repository.UniqueURL,
+		Auth:      auth,
 	}, nil
 }
 
@@ -130,12 +144,21 @@ func (s *RepositoryService) GetRepository(ctx context.Context, request *repov1.G
 	}
 	repository.UniqueURL = uurl
 
+	auth := &repov1.Auth{}
+	if repository.Auth != nil {
+		auth.Secret = repository.Auth.Secret
+		auth.Ssh = repository.Auth.SSH
+		auth.Username = repository.Auth.Username
+		auth.Password = repository.Auth.Password
+	}
+
 	response := &repov1.Repository{
 		Id:        int32(repository.ID),
 		Name:      repository.Name,
 		Url:       repository.URL,
 		Vcs:       int32(repository.VCS),
 		UniqueUrl: repository.UniqueURL,
+		Auth:      auth,
 	}
 	return response, nil
 }
@@ -190,6 +213,6 @@ func (s *RepositoryService) generateURL(repo *models.Repository) (string, error)
 		return "", fmt.Errorf("url parse: %w", err)
 	}
 
-	u.Path = path.Join(u.Path, strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
+	u.Path = path.Join(u.Path, "hooks", strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
 	return u.String(), nil
 }

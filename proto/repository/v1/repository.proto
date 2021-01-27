@@ -8,12 +8,22 @@ import "google/api/annotations.proto";
 import "google/protobuf/empty.proto";
 import "google/protobuf/wrappers.proto";
 
+// Repository defines the main type for a repository.
 message Repository {
   int32 id = 1;
   string name = 2;
   string url = 3;
   int32 vcs = 4;
   string unique_url = 5;
+  Auth auth = 6;
+}
+
+// Auth information for the repository.
+message Auth {
+  string ssh = 1;
+  string username = 2;
+  string password = 3;
+  string secret = 4;
 }
 
 message Repositories {
@@ -24,6 +34,7 @@ message CreateRepositoryRequest {
   string name = 1;
   string url = 2;
   int32 vcs = 3;
+  Auth auth = 4;
 }
 
 message GetRepositoryRequest {
