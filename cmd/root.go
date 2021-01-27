@@ -9,17 +9,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok"
-	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
+	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
-	"github.com/krok-o/krok/pkg/krok/providers/service"
-	"github.com/krok-o/krok/pkg/krok/providers/vault"
-
-	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
 	"github.com/krok-o/krok/pkg/krok/providers/mailgun"
 	"github.com/krok-o/krok/pkg/krok/providers/plugins"
+	"github.com/krok-o/krok/pkg/krok/providers/vault"
 	"github.com/krok-o/krok/pkg/server"
 )
 
@@ -194,33 +191,13 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// ************************
 	// Set up the server
 	// ************************
-
-	uuidGenerator := providers.NewUUIDGenerator()
-	clock := providers.NewClock()
-
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:            log,
 		Krok:              krokHandler,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
 		ApiKeyHandler:     apiKeysHandler,
-
-		TokenProvider: tp,
-		// RepositoryService
-		RepositoryService: service.NewRepositoryService(service.RepositoryServiceConfig{
-			Hostname: krokArgs.server.Hostname,
-		}, service.RepositoryServiceDependencies{
-			Logger: log,
-			Storer: repoStore,
-		}),
-		// UserApiKeyService
-		UserApiKeyService: service.NewUserAPIKeyService(service.UserAPIKeyServiceDependencies{
-			Logger:        log,
-			Storer:        apiKeyStore,
-			Clock:         clock,
-			Authenticator: authMatcher,
-			UUID:          uuidGenerator,
-		}),
+		TokenProvider:     tp,
 	})
 
 	// Run service & server
@@ -228,10 +205,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	g.Go(func() error {
 		return sv.Run(ctx)
-	})
-
-	g.Go(func() error {
-		return sv.RunGRPC(ctx)
 	})
 
 	if err := g.Wait(); err != nil {
