@@ -28,7 +28,7 @@ type RepositoryDependencies struct {
 	Dependencies
 	Connector *Connector
 	Vault     providers.Vault
-	Auth      providers.Auth
+	Auth      providers.RepositoryAuth
 }
 
 // NewRepositoryStore creates a new RepositoryStore

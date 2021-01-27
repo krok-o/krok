@@ -40,14 +40,11 @@ func NewHookHandler(cfg Config, deps Dependencies) *HookHandler {
 // HandleHooks creates a hook handler.
 func (k *HookHandler) HandleHooks(ctx context.Context) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
-			return c.String(http.StatusBadRequest, "hook id missing")
-		}
-		// Get the right type based on the saved data.
-		// Fire off the handler for this event.
-		// Return result.
-		// switch based on Model Type and use the appropriate provider
+		// Get what repository that links to
+		// Get the VCS type for that repository
+		// Instantiate the right platform providers
+		// Validate the request
+		// Send the data to all linked commands
 		return c.String(http.StatusOK, "successfully processed event")
 	}
 }

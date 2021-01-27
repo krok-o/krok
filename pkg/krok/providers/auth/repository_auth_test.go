@@ -26,7 +26,7 @@ func TestKrokAuth_CreateRepositoryAuth(t *testing.T) {
 	assert.NoError(t, err)
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
-	auth, err := NewKrokAuth(AuthConfig{}, AuthDependencies{
+	auth, err := NewKrokAuth(RepositoryAuthConfig{}, RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})
@@ -36,6 +36,7 @@ func TestKrokAuth_CreateRepositoryAuth(t *testing.T) {
 		SSH:      "testssh",
 		Username: "testusername",
 		Password: "testpassword",
+		Secret:   "testsecret",
 	}
 	ctx := context.Background()
 	err = auth.CreateRepositoryAuth(ctx, 1, info)
@@ -59,7 +60,7 @@ func TestKrokAuth_CreateRepositoryAuthPartialAuth(t *testing.T) {
 	assert.NoError(t, err)
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
-	auth, err := NewKrokAuth(AuthConfig{}, AuthDependencies{
+	auth, err := NewKrokAuth(RepositoryAuthConfig{}, RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})

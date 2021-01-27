@@ -91,8 +91,10 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	e.Use(middleware.Recover())
 
 	// Routes
-	// The route will include a UUID with which we can use to identify this hook.
-	e.POST("/hook/:id", s.Dependencies.Krok.HandleHooks(ctx))
+	// This is the general format of a hook callback url for a repository.
+	// @rid repository id
+	// @vid vcs id
+	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
 
 	// Admin related actions
 
@@ -138,7 +140,9 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	go func() {
 		<-ctx.Done()
-		e.Shutdown(ctx)
+		if err := e.Shutdown(ctx); err != nil {
+			s.Logger.Debug().Err(err).Msg("Failed to shutdown the server nicely.")
+		}
 	}()
 
 	// Start regular server
