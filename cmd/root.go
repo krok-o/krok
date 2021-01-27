@@ -160,6 +160,15 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		log.Fatal().Err(err).Msg("Failed to create token handler.")
 	}
 
+	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
+		Hostname:       krokArgs.server.Hostname,
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, handlers.RepoHandlerDependencies{
+		RepositoryStorer: repoStore,
+		TokenProvider:    tp,
+		Logger:           log,
+	})
+
 	commandHandler, _ := handlers.NewCommandsHandler(handlers.Config{
 		Hostname:       krokArgs.server.Hostname,
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
@@ -181,9 +190,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	clock := providers.NewClock()
 
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
-		Logger:         log,
-		Krok:           krokHandler,
-		CommandHandler: commandHandler,
+		Logger:            log,
+		Krok:              krokHandler,
+		CommandHandler:    commandHandler,
+		RepositoryHandler: repoHandler,
 
 		TokenProvider: tp,
 		// RepositoryService

@@ -7,9 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -17,89 +15,6 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
-
-type mockApiKeyAuth struct {
-	providers.ApiKeysAuthenticator
-}
-
-func (maka *mockApiKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
-	return nil
-}
-
-func (maka *mockApiKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
-	return nil, nil
-}
-
-func generateTestToken(email string) (string, error) {
-	// Create token
-	token := jwt.New(jwt.SigningMethodHS256)
-
-	// Set claims
-	claims := token.Claims.(jwt.MapClaims)
-	claims["email"] = email // from context
-	claims["admin"] = true
-	claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-
-	// Generate encoded token and send it as response.
-	t, err := token.SignedString([]byte("secret"))
-	if err != nil {
-		return "", err
-	}
-	return t, nil
-}
-
-type mockUserStorer struct {
-	providers.UserStorer
-}
-
-func (mus *mockUserStorer) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	return &models.User{
-		DisplayName: "testUser",
-		Email:       email,
-		ID:          0,
-		LastLogin:   time.Now(),
-		APIKeys: []*models.APIKey{
-			{
-				ID:           0,
-				Name:         "test",
-				UserID:       0,
-				APIKeyID:     "apikeyid",
-				APIKeySecret: []byte("secret"),
-				TTL:          time.Now().Add(10 * time.Minute),
-			},
-		},
-	}, nil
-}
-
-type mockRepositoryStorer struct {
-	providers.RepositoryStorer
-	id        int
-	getRepo   *models.Repository
-	deleteErr error
-	listRepo  []*models.Repository
-}
-
-func (mrs *mockRepositoryStorer) Create(ctx context.Context, repo *models.Repository) (*models.Repository, error) {
-	repo.ID = mrs.id
-	mrs.id++
-	return repo, nil
-}
-
-func (mrs *mockRepositoryStorer) Update(ctx context.Context, repo *models.Repository) (*models.Repository, error) {
-	return repo, nil
-}
-
-func (mrs *mockRepositoryStorer) Get(ctx context.Context, id int) (*models.Repository, error) {
-	return mrs.getRepo, nil
-}
-
-func (mrs *mockRepositoryStorer) List(ctx context.Context, opts *models.ListOptions) ([]*models.Repository, error) {
-	return mrs.listRepo, nil
-}
-
-func (mrs *mockRepositoryStorer) Delete(ctx context.Context, id int) error {
-	return mrs.deleteErr
-}
 
 type mockCommandStorer struct {
 	providers.CommandStorer
