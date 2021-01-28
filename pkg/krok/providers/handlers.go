@@ -5,6 +5,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// RepositoryHandler defines the handler's capabilities.
+// The handler is a front wrapper for database operations, but also provides
+// additional abilities, i.e.: generate a unique url
+type RepositoryHandler interface {
+	CreateRepository() echo.HandlerFunc
+	DeleteRepository() echo.HandlerFunc
+	GetRepository() echo.HandlerFunc
+	ListRepositories() echo.HandlerFunc
+	UpdateRepository() echo.HandlerFunc
+}
+
 // CommandHandler defines the actions of commands.
 type CommandHandler interface {
 	DeleteCommand() echo.HandlerFunc

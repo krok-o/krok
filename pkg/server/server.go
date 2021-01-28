@@ -6,22 +6,14 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"net"
-	"net/http"
 
-	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/acme/autocert"
-	"golang.org/x/sync/errgroup"
-	"google.golang.org/grpc"
 
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
-	grpcmiddleware "github.com/krok-o/krok/pkg/server/middleware"
-	repov1 "github.com/krok-o/krok/proto/repository/v1"
-	userv1 "github.com/krok-o/krok/proto/user/v1"
 )
 
 const (
@@ -47,19 +39,18 @@ type KrokServer struct {
 
 // Dependencies defines needed dependencies for the krok server.
 type Dependencies struct {
-	Logger         zerolog.Logger
-	Krok           krok.Handler
-	CommandHandler providers.CommandHandler
+	Logger            zerolog.Logger
+	Krok              krok.Handler
+	CommandHandler    providers.CommandHandler
+	RepositoryHandler providers.RepositoryHandler
+	ApiKeyHandler     providers.ApiKeysHandler
 
-	TokenProvider     providers.TokenProvider
-	RepositoryService repov1.RepositoryServiceServer
-	UserApiKeyService userv1.APIKeyServiceServer
+	TokenProvider providers.TokenProvider
 }
 
 // Server defines a server which runs and accepts requests.
 type Server interface {
 	Run(context.Context) error
-	RunGRPC(context.Context) error
 }
 
 // NewKrokServer creates a new krok server.
@@ -98,6 +89,11 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// Repository related actions.
 	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
+	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
+	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
+	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())
+	auth.POST("/repositories", s.Dependencies.RepositoryHandler.ListRepositories())
+	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.UpdateRepository())
 
 	// command related actions.
 	auth.GET("/command/:id", s.Dependencies.CommandHandler.GetCommand())
@@ -106,6 +102,12 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/update", s.Dependencies.CommandHandler.UpdateCommand())
 	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
+
+	// api keys related actions
+	auth.POST("/user/:uid/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
+	auth.DELETE("/user/:uid/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
+	auth.POST("/user/:uid/apikeys", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
+	auth.GET("/user/:uid/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
 
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 
@@ -134,42 +136,4 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// Start regular server
 	return e.Start(hostPort)
-}
-
-// RunGRPC runs grpc and grpc-gateway.
-func (s *KrokServer) RunGRPC(ctx context.Context) error {
-	// TODO: Use SSL/TLS
-	gs := grpc.NewServer(
-		grpc.UnaryInterceptor(grpcmiddleware.JwtAuthInterceptor(s.TokenProvider)),
-	)
-
-	repov1.RegisterRepositoryServiceServer(gs, s.RepositoryService)
-	userv1.RegisterAPIKeyServiceServer(gs, s.UserApiKeyService)
-
-	mux := runtime.NewServeMux()
-	opts := []grpc.DialOption{grpc.WithInsecure()}
-
-	if err := repov1.RegisterRepositoryServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
-		return fmt.Errorf("register repository service: %w", err)
-	}
-	if err := userv1.RegisterAPIKeyServiceHandlerFromEndpoint(ctx, mux, ":9090", opts); err != nil {
-		return fmt.Errorf("register user apikey service: %w", err)
-	}
-
-	listener, err := net.Listen("tcp", ":9090")
-	if err != nil {
-		return fmt.Errorf("net listen: %w", err)
-	}
-
-	g, ctx := errgroup.WithContext(ctx)
-
-	g.Go(func() error {
-		return gs.Serve(listener)
-	})
-
-	g.Go(func() error {
-		return http.ListenAndServe(":8081", mux)
-	})
-
-	return g.Wait()
 }
