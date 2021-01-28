@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -34,8 +33,16 @@ func (h *AuthHandler) Login() echo.HandlerFunc {
 func (h *AuthHandler) Callback() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
+
 		state := c.QueryParam("state")
+		if state == "" {
+			return c.String(http.StatusUnauthorized, "invalid state")
+		}
+
 		code := c.QueryParam("code")
+		if code == "" {
+			return c.String(http.StatusUnauthorized, "invalid code")
+		}
 
 		redirectURL, err := h.oauthProvider.VerifyState(state)
 		if err != nil {
@@ -47,7 +54,13 @@ func (h *AuthHandler) Callback() echo.HandlerFunc {
 			return c.String(http.StatusUnauthorized, "")
 		}
 
-		fmt.Println(token)
+		c.SetCookie(&http.Cookie{
+			Path:     "/",
+			Name:     "_token_",
+			Value:    token.AccessToken,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
+		})
 
 		return c.Redirect(http.StatusPermanentRedirect, redirectURL)
 	}
