@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -69,6 +70,7 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -171,6 +173,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "https://testHost",
@@ -282,6 +285,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -356,6 +360,7 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -445,6 +450,7 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "https://testHost",
@@ -566,6 +572,7 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "https://testHost",

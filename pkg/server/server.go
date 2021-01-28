@@ -22,13 +22,15 @@ const (
 
 // Config is the configuration of the server
 type Config struct {
-	Port           string
-	Hostname       string
-	ServerKeyPath  string
-	ServerCrtPath  string
-	AutoTLS        bool
-	CacheDir       string
-	GlobalTokenKey string
+	Port               string
+	Hostname           string
+	ServerKeyPath      string
+	ServerCrtPath      string
+	AutoTLS            bool
+	CacheDir           string
+	GlobalTokenKey     string
+	GoogleClientID     string
+	GoogleClientSecret string
 }
 
 // KrokServer is a server.
@@ -44,8 +46,9 @@ type Dependencies struct {
 	CommandHandler    providers.CommandHandler
 	RepositoryHandler providers.RepositoryHandler
 	ApiKeyHandler     providers.ApiKeysHandler
+	AuthHandler       providers.AuthHandler
 
-	TokenProvider providers.TokenProvider
+	// TokenProvider providers.TokenProvider
 }
 
 // Server defines a server which runs and accepts requests.
@@ -78,6 +81,10 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+
+	// Public endpoints for authentication.
+	e.GET("/auth/login", s.AuthHandler.Login())
+	e.GET("/auth/callback", s.AuthHandler.Callback())
 
 	// Routes
 	// This is the general format of a hook callback url for a repository.

@@ -3,13 +3,16 @@ package cmd
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok"
+	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
+	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
@@ -64,6 +67,10 @@ func init() {
 
 	// VaultStorer config
 	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
+
+	// OAuth
+	flag.StringVar(&krokArgs.server.GoogleClientID, "krok-auth-google-client-id", "", "--krok-auth-google-client-id my-client-id}")
+	flag.StringVar(&krokArgs.server.GoogleClientSecret, "krok-auth-google-client-secret", "", "--krok-auth-google-client-secre my-client-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -134,6 +141,20 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		APIKeys:      apiKeyStore,
 	})
 
+	userCache := cache.NewUserCache()
+	go func() {
+		interval := 1 * time.Minute
+		for {
+			userCache.ClearTTL()
+
+			// nolint:gosimple
+			select {
+			case <-time.After(interval):
+				log.Debug().Msg("Running user cache cleanup...")
+			}
+		}
+	}()
+
 	// ************************
 	// Set up handlers
 	// ************************
@@ -150,8 +171,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		ApiKeyAuth: authMatcher,
 	}
 	tp, err := handlers.NewTokenProvider(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+		Hostname:           krokArgs.server.Hostname,
+		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
+		GoogleClientID:     krokArgs.server.GoogleClientID,
+		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
 	}, handlerDeps)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create token handler.")
@@ -188,16 +211,30 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger: log,
 	})
 
+	uuidGenerator := providers.NewUUIDGenerator()
+	oauthProvider := auth.NewOAuthProvider(auth.OAuthConfig{
+		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
+		GoogleClientID:     krokArgs.server.GoogleClientID,
+		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
+	}, auth.OAuthProviderDependencies{
+		Store:     userStore,
+		UUID:      uuidGenerator,
+		UserCache: userCache,
+	})
+
+	authHandler := handlers.NewAuthHandler(oauthProvider)
+
 	// ************************
 	// Set up the server
 	// ************************
+
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:            log,
 		Krok:              krokHandler,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
 		ApiKeyHandler:     apiKeysHandler,
-		TokenProvider:     tp,
+		AuthHandler:       authHandler,
 	})
 
 	// Run service & server
