@@ -2,6 +2,8 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"os"
 	"time"
 
@@ -82,6 +84,18 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	log := zerolog.New(out).With().
 		Timestamp().
 		Logger()
+
+	// Setup Global Token Key
+	if krokArgs.server.GlobalTokenKey == "" {
+		log.Info().Msg("Please set a global secret key... Randomly generating one for now...")
+		b := make([]byte, 32)
+		_, err := rand.Read(b)
+		if err != nil {
+			log.Fatal().Msg("failed to generate global token key")
+		}
+		state := base64.StdEncoding.EncodeToString(b)
+		krokArgs.server.GlobalTokenKey = state
+	}
 
 	// ************************
 	// Set up db connection, vault and auth handlers.
@@ -211,6 +225,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger: log,
 	})
 
+	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	})
+
 	uuidGenerator := providers.NewUUIDGenerator()
 	oauthProvider := auth.NewOAuthProvider(auth.OAuthConfig{
 		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
@@ -220,9 +238,13 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Store:     userStore,
 		UUID:      uuidGenerator,
 		UserCache: userCache,
+		Issuer:    tokenIssuer,
 	})
 
-	authHandler := handlers.NewAuthHandler(oauthProvider)
+	authHandler := &handlers.AuthHandler{
+		OAuthProvider: oauthProvider,
+		TokenIssuer:   tokenIssuer,
+	}
 
 	// ************************
 	// Set up the server

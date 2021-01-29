@@ -2,10 +2,9 @@ package server
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -63,26 +62,22 @@ func NewKrokServer(cfg Config, deps Dependencies) *KrokServer {
 
 // Run starts up listening.
 func (s *KrokServer) Run(ctx context.Context) error {
-	// Setup Global Token Key
-	if s.Config.GlobalTokenKey == "" {
-		s.Logger.Info().Msg("Please set a global secret key... Randomly generating one for now...")
-		b := make([]byte, 32)
-		_, err := rand.Read(b)
-		if err != nil {
-			return err
-		}
-		state := base64.StdEncoding.EncodeToString(b)
-		s.Config.GlobalTokenKey = state
-	}
 	s.Dependencies.Logger.Info().Msg("Start listening...")
+
 	// Echo instance
 	e := echo.New()
 
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		AllowCredentials: true,
+	}))
 
 	// Public endpoints for authentication.
+	e.POST("/auth/refresh", s.AuthHandler.Refresh())
 	e.GET("/auth/login", s.AuthHandler.Login())
 	e.GET("/auth/callback", s.AuthHandler.Callback())
 
@@ -92,10 +87,17 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// @vid vcs id
 	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
 
-	// Admin related actions
+	userTokenMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
+		SigningKey:  []byte(s.Config.GlobalTokenKey),
+		TokenLookup: "cookie:_a_token_",
+	})
+	auth := e.Group(api+"/krok", userTokenMiddleware)
+
+	auth.GET("/test", func(c echo.Context) error {
+		return c.String(http.StatusOK, "")
+	})
 
 	// Repository related actions.
-	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
 	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
 	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
 	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())

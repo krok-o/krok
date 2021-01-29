@@ -41,4 +41,5 @@ type ApiKeysHandler interface {
 type AuthHandler interface {
 	Login() echo.HandlerFunc
 	Callback() echo.HandlerFunc
+	Refresh() echo.HandlerFunc
 }

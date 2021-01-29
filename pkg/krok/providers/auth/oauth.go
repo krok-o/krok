@@ -19,10 +19,6 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-const (
-	defaultTokenExpiry = time.Minute * 15
-)
-
 type OAuthConfig struct {
 	GoogleClientID     string
 	GoogleClientSecret string
@@ -33,6 +29,7 @@ type OAuthProviderDependencies struct {
 	Store     providers.UserStorer
 	UUID      providers.UUIDGenerator
 	UserCache *cache.UserCache
+	Issuer    providers.TokenIssuer
 }
 
 // OAuthProvider is the OAuth provider.
@@ -85,8 +82,8 @@ func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Tok
 		if err != nil {
 			var qe *kerr.QueryError
 			if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
-				dname := fmt.Sprintf("%s %s", gu.FirstName, gu.LastName)
-				user, err = op.Store.Create(ctx, &models.User{Email: gu.Email, DisplayName: dname})
+				// dname := fmt.Sprintf("%s %s", gu.FirstName, gu.LastName)
+				user, err = op.Store.Create(ctx, &models.User{Email: gu.Email, DisplayName: "dname"})
 				if err != nil {
 					return nil, err
 				}
@@ -98,21 +95,7 @@ func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Tok
 	}
 	op.UserCache.Add(gu.Email, userID)
 
-	claims := jwt.StandardClaims{
-		Subject:   strconv.Itoa(userID),
-		ExpiresAt: time.Now().Add(defaultTokenExpiry).Unix(),
-	}
-
-	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(op.GlobalTokenKey))
-	if err != nil {
-		return nil, err
-	}
-
-	return &oauth2.Token{
-		AccessToken: accessToken,
-		Expiry:      time.Unix(claims.ExpiresAt, 0),
-		TokenType:   "Bearer",
-	}, nil
+	return op.Issuer.Create(providers.TokenProfile{UserID: strconv.Itoa(userID)})
 }
 
 type stateClaims struct {
@@ -160,30 +143,13 @@ func (op *OAuthProvider) VerifyState(rawToken string) (string, error) {
 	return claims.RedirectURL, nil
 }
 
-// Verify verifies the provided raw JWT token string.
-func (op *OAuthProvider) Verify(rawToken string) (jwt.StandardClaims, error) {
-	var claims jwt.StandardClaims
-	_, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {
-		return []byte(op.GlobalTokenKey), nil
-	})
-	if err != nil {
-		return claims, err
-	}
-
-	if err := claims.Valid(); err != nil {
-		return claims, err
-	}
-
-	return claims, nil
-}
-
 type googleUser struct {
 	Email     string `json:"email"`
 	FirstName string `json:"given_name"`
 	LastName  string `json:"family_name"`
 }
 
-func (op *OAuthProvider) getGoogleUser(accessToken string) (*googleUser, error) {
+func (op *OAuthProvider) getGoogleUser(accessToken string) (*models.User, error) {
 	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + accessToken)
 	if err != nil {
 		return nil, fmt.Errorf("get user info: %s", err.Error())
@@ -195,5 +161,7 @@ func (op *OAuthProvider) getGoogleUser(accessToken string) (*googleUser, error) 
 		return nil, err
 	}
 
-	return user, nil
+	return &models.User{
+		Email: user.Email,
+	}, nil
 }
