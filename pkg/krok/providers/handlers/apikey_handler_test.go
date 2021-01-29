@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -53,6 +54,7 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "https://testHost",
@@ -154,6 +156,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "https://testHost",
@@ -247,6 +250,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "https://testHost",
@@ -379,6 +383,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "https://testHost",

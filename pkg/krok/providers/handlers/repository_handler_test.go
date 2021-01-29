@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -92,6 +93,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -164,6 +166,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -242,6 +245,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -343,6 +347,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -396,6 +401,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
+		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
