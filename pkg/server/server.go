@@ -13,6 +13,8 @@ import (
 
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/handlers"
+	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
 )
 
 const (
@@ -87,11 +89,11 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// @vid vcs id
 	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
 
-	userTokenMiddleware := middleware.JWTWithConfig(middleware.JWTConfig{
-		SigningKey:  []byte(s.Config.GlobalTokenKey),
-		TokenLookup: "cookie:_a_token_",
+	userAuthMiddleware := krokmiddleware.JWTAuthentication(&krokmiddleware.JWTAuthConfig{
+		CookieName:     handlers.AccessTokenCookie,
+		GlobalTokenKey: s.GlobalTokenKey,
 	})
-	auth := e.Group(api+"/krok", userTokenMiddleware)
+	auth := e.Group(api+"/krok", userAuthMiddleware)
 
 	auth.GET("/test", func(c echo.Context) error {
 		return c.String(http.StatusOK, "")

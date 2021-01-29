@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	accessTokenCookie  = "_a_token_"
-	refreshTokenCookie = "_r_token_"
+	AccessTokenCookie  = "_a_token_"
+	RefreshTokenCookie = "_r_token_"
 )
 
 type AuthHandler struct {
@@ -22,6 +22,9 @@ type AuthHandler struct {
 func (h *AuthHandler) Login() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		redirectURL := c.QueryParam("redirect_url")
+		if redirectURL == "" {
+			return c.String(http.StatusBadRequest, "error invalid redirect_url")
+		}
 
 		state, err := h.OAuthProvider.GenerateState(redirectURL)
 		if err != nil {
@@ -39,22 +42,22 @@ func (h *AuthHandler) Callback() echo.HandlerFunc {
 
 		state := c.QueryParam("state")
 		if state == "" {
-			return c.String(http.StatusUnauthorized, "invalid state")
+			return c.String(http.StatusBadRequest, "error invalid state")
 		}
 
 		code := c.QueryParam("code")
 		if code == "" {
-			return c.String(http.StatusUnauthorized, "invalid code")
+			return c.String(http.StatusBadRequest, "error invalid code")
 		}
 
 		redirectURL, err := h.OAuthProvider.VerifyState(state)
 		if err != nil {
-			return c.String(http.StatusUnauthorized, "")
+			return c.String(http.StatusUnauthorized, "error verifying state")
 		}
 
 		token, err := h.OAuthProvider.Exchange(ctx, code)
 		if err != nil {
-			return c.String(http.StatusUnauthorized, "")
+			return c.String(http.StatusUnauthorized, "error during token exchange")
 		}
 		setCookies(c, token)
 
@@ -64,14 +67,14 @@ func (h *AuthHandler) Callback() echo.HandlerFunc {
 
 func (h *AuthHandler) Refresh() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		rtoken, err := c.Cookie(refreshTokenCookie)
+		rtoken, err := c.Cookie(RefreshTokenCookie)
 		if err != nil {
 			return c.String(http.StatusUnauthorized, "error getting refresh token")
 		}
 
 		token, err := h.TokenIssuer.Refresh(rtoken.Value)
 		if err != nil {
-			return c.String(http.StatusUnauthorized, "error getting access token")
+			return c.String(http.StatusUnauthorized, "error refreshing tokens")
 		}
 		setCookies(c, token)
 
@@ -82,14 +85,14 @@ func (h *AuthHandler) Refresh() echo.HandlerFunc {
 func setCookies(c echo.Context, token *oauth2.Token) {
 	c.SetCookie(&http.Cookie{
 		Path:     "/",
-		Name:     accessTokenCookie,
+		Name:     AccessTokenCookie,
 		Value:    token.AccessToken,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,
 	})
 	c.SetCookie(&http.Cookie{
 		Path:     "/",
-		Name:     refreshTokenCookie,
+		Name:     RefreshTokenCookie,
 		Value:    token.RefreshToken,
 		HttpOnly: true,
 		SameSite: http.SameSiteStrictMode,

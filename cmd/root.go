@@ -71,8 +71,8 @@ func init() {
 	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
 
 	// OAuth
-	flag.StringVar(&krokArgs.server.GoogleClientID, "krok-auth-google-client-id", "", "--krok-auth-google-client-id my-client-id}")
-	flag.StringVar(&krokArgs.server.GoogleClientSecret, "krok-auth-google-client-secret", "", "--krok-auth-google-client-secre my-client-secret}")
+	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
+	flag.StringVar(&krokArgs.server.GoogleClientSecret, "google-client-secret", "", "--google-client-secret my-client-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
