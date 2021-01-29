@@ -227,21 +227,22 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, auth.TokenIssuerDependencies{
+		UserCache: userCache,
+		UserStore: userStore,
 	})
 
 	uuidGenerator := providers.NewUUIDGenerator()
-	oauthProvider := auth.NewOAuthProvider(auth.OAuthConfig{
+	oauthProvider := auth.NewOAuthProvider(auth.OAuthAuthenticatorConfig{
 		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
 		GoogleClientID:     krokArgs.server.GoogleClientID,
 		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
-	}, auth.OAuthProviderDependencies{
-		Store:     userStore,
-		UUID:      uuidGenerator,
-		UserCache: userCache,
-		Issuer:    tokenIssuer,
+	}, auth.OAuthAuthenticatorDependencies{
+		UUID:   uuidGenerator,
+		Issuer: tokenIssuer,
 	})
 
-	authHandler := &handlers.AuthHandler{
+	authHandler := &handlers.UserAuthHandler{
 		OAuthProvider: oauthProvider,
 		TokenIssuer:   tokenIssuer,
 	}

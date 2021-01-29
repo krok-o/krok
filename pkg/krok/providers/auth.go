@@ -24,19 +24,16 @@ type ApiKeysAuthenticator interface {
 	Encrypt(ctx context.Context, secret []byte) ([]byte, error)
 }
 
-// OAuthProvider handles user authentication via OAuth2.
-type OAuthProvider interface {
+// OAuthAuthenticator handles user authentication via OAuth2.
+type OAuthAuthenticator interface {
 	GetAuthCodeURL(state string) string
 	Exchange(ctx context.Context, code string) (*oauth2.Token, error)
 	GenerateState(redirectURL string) (string, error)
 	VerifyState(rawToken string) (string, error)
 }
 
-type TokenProfile struct {
-	UserID string
-}
-
-type TokenIssuer interface {
-	Create(token TokenProfile) (*oauth2.Token, error)
-	Refresh(refreshToken string) (*oauth2.Token, error)
+// UserTokenIssuer handles creation of user authentication tokens.
+type UserTokenIssuer interface {
+	Create(ctx context.Context, token *models.UserAuthDetails) (*oauth2.Token, error)
+	Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error)
 }

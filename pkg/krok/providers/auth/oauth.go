@@ -3,46 +3,44 @@ package auth
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
-	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
-	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/models"
 )
 
-type OAuthConfig struct {
+// OAuthAuthenticatorConfig contains the config for the OAuthAuthenticator.
+type OAuthAuthenticatorConfig struct {
 	GoogleClientID     string
 	GoogleClientSecret string
 	GlobalTokenKey     string
 }
 
-type OAuthProviderDependencies struct {
-	Store     providers.UserStorer
-	UUID      providers.UUIDGenerator
-	UserCache *cache.UserCache
-	Issuer    providers.TokenIssuer
+// OAuthAuthenticatorDependencies contains the dependencies for the OAuthAuthenticator.
+type OAuthAuthenticatorDependencies struct {
+	UUID   providers.UUIDGenerator
+	Issuer providers.UserTokenIssuer
 }
 
-// OAuthProvider is the OAuth provider.
-type OAuthProvider struct {
-	OAuthConfig
-	OAuthProviderDependencies
+// OAuthAuthenticator is the OAuthAuthenticator that uses OAuth2 to authenticate the user.
+type OAuthAuthenticator struct {
+	OAuthAuthenticatorConfig
+	OAuthAuthenticatorDependencies
+
+	// TODO: Have a map of configs and support multiple providers.
 	oauthCfg *oauth2.Config
 }
 
-func NewOAuthProvider(cfg OAuthConfig, deps OAuthProviderDependencies) *OAuthProvider {
-	return &OAuthProvider{
-		OAuthConfig:               cfg,
-		OAuthProviderDependencies: deps,
+func NewOAuthProvider(cfg OAuthAuthenticatorConfig, deps OAuthAuthenticatorDependencies) *OAuthAuthenticator {
+	return &OAuthAuthenticator{
+		OAuthAuthenticatorConfig:       cfg,
+		OAuthAuthenticatorDependencies: deps,
 
 		// For now, just support Google.
 		oauthCfg: &oauth2.Config{
@@ -59,52 +57,35 @@ func NewOAuthProvider(cfg OAuthConfig, deps OAuthProviderDependencies) *OAuthPro
 }
 
 // GetAuthCodeURL gets the OAuth2 authentication URL.
-func (op *OAuthProvider) GetAuthCodeURL(state string) string {
+func (op *OAuthAuthenticator) GetAuthCodeURL(state string) string {
 	return op.oauthCfg.AuthCodeURL(state, []oauth2.AuthCodeOption{oauth2.AccessTypeOffline}...)
 }
 
 // Exchange exchanges the code returned from the OAuth2 authentication URL for a valid token.
-// We attempt to get an internal user and create it if it doesn't exist.
-func (op *OAuthProvider) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
+// We then call the TokenIssuer to get an internal JWT.
+func (op *OAuthAuthenticator) Exchange(ctx context.Context, code string) (*oauth2.Token, error) {
 	token, err := op.oauthCfg.Exchange(ctx, code)
 	if err != nil {
 		return nil, err
 	}
 
-	gu, err := op.getGoogleUser(token.AccessToken)
+	userAuthDetails, err := op.getGoogleUser(token.AccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	var userID int
-	if _, exists := op.UserCache.Has(gu.Email); !exists {
-		user, err := op.Store.GetByEmail(ctx, gu.Email)
-		if err != nil {
-			var qe *kerr.QueryError
-			if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
-				// dname := fmt.Sprintf("%s %s", gu.FirstName, gu.LastName)
-				user, err = op.Store.Create(ctx, &models.User{Email: gu.Email, DisplayName: "dname"})
-				if err != nil {
-					return nil, err
-				}
-			} else {
-				return nil, err
-			}
-		}
-		userID = user.ID
-	}
-	op.UserCache.Add(gu.Email, userID)
-
-	return op.Issuer.Create(providers.TokenProfile{UserID: strconv.Itoa(userID)})
+	return op.Issuer.Create(ctx, userAuthDetails)
 }
 
+// stateClaims are used when creating a temporary JWT state nonce that has an expiry.
+// This is used for CSRF protection when logging in via an OAuth2 provider.
 type stateClaims struct {
 	jwt.StandardClaims
 	RedirectURL string `json:"redirect_url"`
 }
 
 // GenerateState generates the state nonce JWT with expiry.
-func (op *OAuthProvider) GenerateState(redirectURL string) (string, error) {
+func (op *OAuthAuthenticator) GenerateState(redirectURL string) (string, error) {
 	uuid, err := op.UUID.Generate()
 	if err != nil {
 		return "", err
@@ -127,7 +108,7 @@ func (op *OAuthProvider) GenerateState(redirectURL string) (string, error) {
 }
 
 // VerifyState verifies the state nonce JWT.
-func (op *OAuthProvider) VerifyState(rawToken string) (string, error) {
+func (op *OAuthAuthenticator) VerifyState(rawToken string) (string, error) {
 	var claims stateClaims
 	_, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(op.GlobalTokenKey), nil
@@ -149,7 +130,7 @@ type googleUser struct {
 	LastName  string `json:"family_name"`
 }
 
-func (op *OAuthProvider) getGoogleUser(accessToken string) (*models.User, error) {
+func (op *OAuthAuthenticator) getGoogleUser(accessToken string) (*models.UserAuthDetails, error) {
 	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + accessToken)
 	if err != nil {
 		return nil, fmt.Errorf("get user info: %s", err.Error())
@@ -161,7 +142,9 @@ func (op *OAuthProvider) getGoogleUser(accessToken string) (*models.User, error)
 		return nil, err
 	}
 
-	return &models.User{
-		Email: user.Email,
+	return &models.UserAuthDetails{
+		Email:     user.Email,
+		FirstName: user.FirstName,
+		LastName:  user.LastName,
 	}, nil
 }

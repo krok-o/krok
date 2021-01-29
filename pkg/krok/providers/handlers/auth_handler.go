@@ -14,12 +14,14 @@ const (
 	RefreshTokenCookie = "_r_token_"
 )
 
-type AuthHandler struct {
-	OAuthProvider providers.OAuthProvider
-	TokenIssuer   providers.TokenIssuer
+// UserAuthHandler handles user authentication.
+type UserAuthHandler struct {
+	OAuthProvider providers.OAuthAuthenticator
+	TokenIssuer   providers.UserTokenIssuer
 }
 
-func (h *AuthHandler) Login() echo.HandlerFunc {
+// Login handles a user login.
+func (h *UserAuthHandler) Login() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		redirectURL := c.QueryParam("redirect_url")
 		if redirectURL == "" {
@@ -36,7 +38,8 @@ func (h *AuthHandler) Login() echo.HandlerFunc {
 	}
 }
 
-func (h *AuthHandler) Callback() echo.HandlerFunc {
+// Callback handles the user login callback.
+func (h *UserAuthHandler) Callback() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 
@@ -65,14 +68,17 @@ func (h *AuthHandler) Callback() echo.HandlerFunc {
 	}
 }
 
-func (h *AuthHandler) Refresh() echo.HandlerFunc {
+// Refresh handles user token refreshing.
+func (h *UserAuthHandler) Refresh() echo.HandlerFunc {
 	return func(c echo.Context) error {
+		ctx := c.Request().Context()
+
 		rtoken, err := c.Cookie(RefreshTokenCookie)
 		if err != nil {
 			return c.String(http.StatusUnauthorized, "error getting refresh token")
 		}
 
-		token, err := h.TokenIssuer.Refresh(rtoken.Value)
+		token, err := h.TokenIssuer.Refresh(ctx, rtoken.Value)
 		if err != nil {
 			return c.String(http.StatusUnauthorized, "error refreshing tokens")
 		}
