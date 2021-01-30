@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -89,15 +88,11 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// @vid vcs id
 	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
 
-	userAuthMiddleware := krokmiddleware.JWTAuthentication(&krokmiddleware.JWTAuthConfig{
+	userMiddleware := krokmiddleware.UserAuthentication(&krokmiddleware.UserAuthenticationConfig{
 		CookieName:     handlers.AccessTokenCookie,
 		GlobalTokenKey: s.GlobalTokenKey,
 	})
-	auth := e.Group(api+"/krok", userAuthMiddleware)
-
-	auth.GET("/test", func(c echo.Context) error {
-		return c.String(http.StatusOK, "")
-	})
+	auth := e.Group(api+"/krok", userMiddleware)
 
 	// Repository related actions.
 	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
@@ -115,10 +110,10 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
 
 	// api keys related actions
-	auth.POST("/user/:uid/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
-	auth.DELETE("/user/:uid/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
-	auth.POST("/user/:uid/apikeys", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
-	auth.GET("/user/:uid/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
+	auth.POST("/user/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
+	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
+	auth.GET("/user/apikey", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
+	auth.GET("/user/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
 
 	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
 

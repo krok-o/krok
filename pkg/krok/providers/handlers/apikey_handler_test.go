@@ -17,6 +17,7 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/models"
+	"github.com/krok-o/krok/pkg/server/middleware"
 )
 
 type mockApiKeysStore struct {
@@ -70,17 +71,14 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("create happy path", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		rec := httptest.NewRecorder()
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/generate/:name")
-		c.SetParamNames("uid", "name")
-		c.SetParamValues("0", "test-key")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/generate/:name")
+		c.SetParamNames("name")
+		c.SetParamValues("test-key")
 		err = akh.CreateApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
@@ -94,17 +92,12 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		assert.Equal(tt, "test-key", key.Name)
 	})
 	t.Run("create happy path without name", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		rec := httptest.NewRecorder()
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/generate")
-		c.SetParamNames("uid")
-		c.SetParamValues("0")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/generate")
 		err = akh.CreateApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
@@ -117,33 +110,15 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		assert.True(tt, key.TTL.After(time.Now()))
 		assert.Equal(tt, "My Api Key", key.Name)
 	})
-	t.Run("create no token", func(tt *testing.T) {
+	t.Run("create no user context", func(tt *testing.T) {
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/generate/:name")
-		c.SetParamNames("uid")
-		c.SetParamValues("0")
+		c.SetPath("/user/apikey/generate/:name")
 		err = akh.CreateApiKeyPair()(c)
 		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
-	t.Run("create invalid user ID", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		rec := httptest.NewRecorder()
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
-		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/generate/:name")
-		c.SetParamNames("uid")
-		c.SetParamValues("invalid")
-		err = akh.CreateApiKeyPair()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
 	})
 }
 
@@ -172,60 +147,51 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("delete happy path", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodDelete, "/", nil)
 		rec := httptest.NewRecorder()
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/delete/:keyid")
-		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("0", "0")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/delete/:keyid")
+		c.SetParamNames("keyid")
+		c.SetParamValues("0")
 		err = akh.DeleteApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 	})
 
-	t.Run("delete no token", func(tt *testing.T) {
+	t.Run("delete no user context", func(tt *testing.T) {
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodDelete, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
-		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("0", "0")
+		c.SetPath("/user/apikey/:keyid")
+		c.SetParamNames("keyid")
+		c.SetParamValues("0")
 		err = akh.DeleteApiKeyPair()(c)
 		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
+		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
 	})
 
 	t.Run("delete invalid id", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodDelete, "/", nil)
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
-		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("invalid", "0")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/:keyid")
 		err = akh.DeleteApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
 
 	t.Run("delete empty id", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodDelete, "/", nil)
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/:keyid")
 		err = akh.DeleteApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
@@ -266,9 +232,6 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("get apikey happy path", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-
 		ekey := &models.APIKey{
 			ID:           0,
 			Name:         "test-key",
@@ -279,11 +242,11 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
-		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("0", "0")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/:keyid")
+		c.SetParamNames("keyid")
+		c.SetParamValues("0")
 		err = akh.GetApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
@@ -297,58 +260,47 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		assert.Equal(tt, ekey.ID, gotKey.ID)
 	})
 
-	t.Run("no token", func(tt *testing.T) {
+	t.Run("no user context", func(tt *testing.T) {
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
-		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("0", "0")
+		c.SetPath("/user/apikey/:keyid")
 		err = akh.GetApiKeyPair()(c)
 		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
+		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
 	})
+
 	t.Run("get invalid id", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
-		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("invalid", "0")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/:keyid")
 		err = akh.GetApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
 	t.Run("get invalid user id", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
-		c.SetParamNames("uid", "keyid")
-		c.SetParamValues("0", "invalid")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/:keyid")
 		err = akh.GetApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
 
 	t.Run("get empty id", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikey/:keyid")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey/:keyid")
 		err = akh.GetApiKeyPair()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
@@ -399,17 +351,12 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 	assert.NoError(t, err)
 
 	t.Run("list apikey happy path", func(tt *testing.T) {
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
 		rec := httptest.NewRecorder()
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
-		c.SetPath("/user/:uid/apikeys")
-		c.SetParamNames("uid")
-		c.SetParamValues("0")
+		c.Set("user", &middleware.UserContext{UserID: 1})
+		c.SetPath("/user/apikey")
 		err = akh.ListApiKeyPairs()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
@@ -418,5 +365,4 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Len(tt, gotKey, 2)
 	})
-
 }
