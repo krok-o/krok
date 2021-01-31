@@ -27,6 +27,7 @@ type TokenIssuerConfig struct {
 type TokenIssuerDependencies struct {
 	UserCache providers.UserCache
 	UserStore providers.UserStorer
+	Clock     providers.Clock
 }
 
 type TokenIssuer struct {
@@ -48,11 +49,13 @@ func (ti *TokenIssuer) Create(ctx context.Context, ud *models.UserAuthDetails) (
 }
 
 func (ti *TokenIssuer) createToken(userID string) (*oauth2.Token, error) {
+	now := ti.Clock.Now()
+
 	// Create the new access token
 	newAccessClaims := jwt.StandardClaims{
 		Subject:   userID,
-		ExpiresAt: time.Now().Add(defaultTokenExpiry).Unix(),
-		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: now.Add(defaultTokenExpiry).Unix(),
+		IssuedAt:  now.Unix(),
 	}
 	accessToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, newAccessClaims).SignedString([]byte(ti.GlobalTokenKey))
 	if err != nil {
@@ -62,8 +65,8 @@ func (ti *TokenIssuer) createToken(userID string) (*oauth2.Token, error) {
 	// Create the new refresh token
 	newRefreshClaims := jwt.StandardClaims{
 		Subject:   userID,
-		ExpiresAt: time.Now().Add(defaultRefreshTokenExpiry).Unix(),
-		IssuedAt:  time.Now().Unix(),
+		ExpiresAt: now.Add(defaultRefreshTokenExpiry).Unix(),
+		IssuedAt:  now.Unix(),
 	}
 	refreshToken, err := jwt.NewWithClaims(jwt.SigningMethodHS256, newRefreshClaims).SignedString([]byte(ti.GlobalTokenKey))
 	if err != nil {
@@ -99,11 +102,11 @@ func (ti *TokenIssuer) getOrCreateUser(ctx context.Context, ud *models.UserAuthD
 			dname := fmt.Sprintf("%s %s", ud.FirstName, ud.LastName)
 			user, err = ti.UserStore.Create(ctx, &models.User{Email: ud.Email, DisplayName: dname})
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("create user: %w", err)
 			}
 			return user, nil
 		} else {
-			return nil, err
+			return nil, fmt.Errorf("get user: %w", err)
 		}
 	}
 
