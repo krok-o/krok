@@ -9,14 +9,17 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok"
+	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
+	"github.com/krok-o/krok/pkg/krok/providers/github"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
 	"github.com/krok-o/krok/pkg/krok/providers/mailgun"
 	"github.com/krok-o/krok/pkg/krok/providers/plugins"
 	"github.com/krok-o/krok/pkg/krok/providers/vault"
+	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/pkg/server"
 )
 
@@ -98,7 +101,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger: log,
 		Storer: fv,
 	})
-	a, _ := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
+	a, _ := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: log,
 		Vault:  v,
 	})
@@ -135,6 +138,23 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	// ************************
+	// Set up platforms
+	// ************************
+
+	platformTokenProvider, err := auth.NewPlatformTokenProvider(auth.TokenProviderConfig{}, auth.TokenProviderDependencies{
+		Logger: log,
+		Vault:  v,
+	})
+
+	githubProvider := github.NewGithubPlatformProvider(github.Config{
+		Hostname: krokArgs.server.Hostname,
+	}, github.Dependencies{
+		Logger:                log,
+		AuthProvider:          a,
+		PlatformTokenProvider: platformTokenProvider,
+	})
+
+	// ************************
 	// Set up handlers
 	// ************************
 	authMatcher, err := auth.NewApiKeysProvider(auth.ApiKeysConfig{}, auth.ApiKeysDependencies{
@@ -157,13 +177,16 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		log.Fatal().Err(err).Msg("Failed to create token handler.")
 	}
 
+	platformProviders := make(map[int]providers.Platform)
+	platformProviders[models.GITHUB] = githubProvider
 	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
 		Hostname:       krokArgs.server.Hostname,
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 	}, handlers.RepoHandlerDependencies{
-		RepositoryStorer: repoStore,
-		TokenProvider:    tp,
-		Logger:           log,
+		RepositoryStorer:  repoStore,
+		TokenProvider:     tp,
+		Logger:            log,
+		PlatformProviders: platformProviders,
 	})
 
 	apiKeysHandler, _ := handlers.NewApiKeysHandler(handlers.Config{

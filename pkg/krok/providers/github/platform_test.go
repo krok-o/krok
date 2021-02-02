@@ -61,7 +61,7 @@ func TestGithub_CreateHook(t *testing.T) {
 		},
 	}
 	mptp := &mockPlatformTokenProvider{}
-	npp, _ := NewGithubPlatformProvider(Config{Hostname: "https://krok.com"}, Dependencies{
+	npp := NewGithubPlatformProvider(Config{Hostname: "https://krok.com"}, Dependencies{
 		Logger:                cliLogger,
 		PlatformTokenProvider: mptp,
 		AuthProvider:          mp,
@@ -86,6 +86,7 @@ func TestGithub_CreateHook(t *testing.T) {
 		VCS:       models.GITHUB,
 		Auth:      &models.Auth{Secret: "secret"},
 		UniqueURL: "https://krok.com/hooks/0/0/callback",
-	}, []string{"push"})
+		Events:    []string{"push"},
+	})
 	assert.NoError(t, err)
 }

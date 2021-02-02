@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -18,9 +19,10 @@ import (
 
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
-	RepositoryStorer providers.RepositoryStorer
-	TokenProvider    *TokenProvider
-	Logger           zerolog.Logger
+	RepositoryStorer  providers.RepositoryStorer
+	TokenProvider     *TokenProvider
+	Logger            zerolog.Logger
+	PlatformProviders map[int]providers.Platform
 }
 
 // RepoHandler is a handler taking care of repository related api calls.
@@ -67,11 +69,26 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to generate unique call back url", http.StatusBadRequest, err))
 		}
 		created.UniqueURL = uurl
+		// Look for the right providers in the list of providers for the given VCS type.
+		// If it's not found, throw an error.
+		var (
+			provider providers.Platform
+			ok       bool
+		)
+		if provider, ok = r.PlatformProviders[repo.VCS]; !ok {
+			err := fmt.Errorf("vcs provider with id %d is not supported", repo.VCS)
+			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
+		}
+		if err := provider.CreateHook(ctx, repo); err != nil {
+			r.Logger.Debug().Err(err).Msg("Failed to create Hook")
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create hook", http.StatusInternalServerError, err))
+		}
 		return c.JSON(http.StatusCreated, created)
 	}
 }
 
 // DeleteRepository handles the Delete rest event.
+// TODO: Delete the hook here as well?
 func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		_, err := r.TokenProvider.GetToken(c)

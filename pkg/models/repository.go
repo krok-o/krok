@@ -22,4 +22,6 @@ type Repository struct {
 	// This field is not saved in the DB but generated every time the repository
 	// details needs to be displayed.
 	UniqueURL string `json:"unique_url,omitempty"`
+	// TODO: Think about storing this
+	Events []string `json:"events,omitempty"`
 }
