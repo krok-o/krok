@@ -83,10 +83,19 @@ func (maka *mockApiKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte,
 	return nil, nil
 }
 
+type mockGithubPlatformProvider struct {
+	providers.Platform
+}
+
+func (g *mockGithubPlatformProvider) CreateHook(ctx context.Context, repo *models.Repository) error {
+	return nil
+}
+
 func TestRepoHandler_CreateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
 	maka := &mockApiKeyAuth{}
+	mg := &mockGithubPlatformProvider{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
@@ -103,6 +112,9 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
+		PlatformProviders: map[int]providers.Platform{
+			models.GITHUB: mg,
+		},
 	})
 
 	assert.NoError(t, err)

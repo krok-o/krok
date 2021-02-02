@@ -178,7 +178,7 @@ func (g *Github) CreateHook(ctx context.Context, repo *models.Repository) error 
 	}
 	if len(repo.Events) == 0 {
 		log.Error().Msg("No events provided to subscribe to.")
-		return errors.New("no events provided to subscribe to")
+		return errors.New("no events provided to subscribe torepository_handler_test")
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
