@@ -48,6 +48,7 @@ func TestTokenIssuer_Create(t *testing.T) {
 
 		token, err := ti.Create(context.Background(), createInput)
 		mockUserCache.AssertExpectations(t)
+		mockClock.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, token, expectedTokenResponse)
 	})
@@ -73,6 +74,8 @@ func TestTokenIssuer_Create(t *testing.T) {
 
 		token, err := ti.Create(context.Background(), createInput)
 		mockUserCache.AssertExpectations(t)
+		mockClock.AssertExpectations(t)
+		mockUserStorer.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, token, expectedTokenResponse)
 	})
@@ -107,14 +110,13 @@ func TestTokenIssuer_Create(t *testing.T) {
 
 		token, err := ti.Create(context.Background(), createInput)
 		mockUserCache.AssertExpectations(t)
+		mockClock.AssertExpectations(t)
+		mockUserStorer.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, token, expectedTokenResponse)
 	})
 
 	t.Run("get user returns an unexpected error", func(t *testing.T) {
-		mockClock := &mocks.Clock{}
-		mockClock.On("Now").Return(now)
-
 		mockUserCache := &mocks.UserCache{}
 		mockUserCache.On("Has", testEmail).Return(nil, false)
 
@@ -124,21 +126,18 @@ func TestTokenIssuer_Create(t *testing.T) {
 		ti := NewTokenIssuer(TokenIssuerConfig{
 			GlobalTokenKey: "test",
 		}, TokenIssuerDependencies{
-			Clock:     mockClock,
 			UserCache: mockUserCache,
 			UserStore: mockUserStorer,
 		})
 
 		token, err := ti.Create(context.Background(), createInput)
 		mockUserCache.AssertExpectations(t)
+		mockUserStorer.AssertExpectations(t)
 		assert.EqualError(t, err, "get user: unexpected error")
 		assert.Nil(t, token)
 	})
 
 	t.Run("create user returns an unexpected error", func(t *testing.T) {
-		mockClock := &mocks.Clock{}
-		mockClock.On("Now").Return(now)
-
 		mockUserCache := &mocks.UserCache{}
 		mockUserCache.On("Has", testEmail).Return(nil, false)
 
@@ -151,13 +150,13 @@ func TestTokenIssuer_Create(t *testing.T) {
 		ti := NewTokenIssuer(TokenIssuerConfig{
 			GlobalTokenKey: "test",
 		}, TokenIssuerDependencies{
-			Clock:     mockClock,
 			UserCache: mockUserCache,
 			UserStore: mockUserStorer,
 		})
 
 		token, err := ti.Create(context.Background(), createInput)
 		mockUserCache.AssertExpectations(t)
+		mockUserStorer.AssertExpectations(t)
 		assert.EqualError(t, err, "create user: unexpected error")
 		assert.Nil(t, token)
 	})

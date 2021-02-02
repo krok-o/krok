@@ -25,6 +25,7 @@ type OAuthAuthenticatorConfig struct {
 // OAuthAuthenticatorDependencies contains the dependencies for the OAuthAuthenticator.
 type OAuthAuthenticatorDependencies struct {
 	UUID   providers.UUIDGenerator
+	Clock  providers.Clock
 	Issuer providers.UserTokenIssuer
 }
 
@@ -37,7 +38,8 @@ type OAuthAuthenticator struct {
 	oauthCfg *oauth2.Config
 }
 
-func NewOAuthProvider(cfg OAuthAuthenticatorConfig, deps OAuthAuthenticatorDependencies) *OAuthAuthenticator {
+// NewOAuthAuthenticator creates a new OAuthAuthenticator.
+func NewOAuthAuthenticator(cfg OAuthAuthenticatorConfig, deps OAuthAuthenticatorDependencies) *OAuthAuthenticator {
 	return &OAuthAuthenticator{
 		OAuthAuthenticatorConfig:       cfg,
 		OAuthAuthenticatorDependencies: deps,
@@ -88,20 +90,21 @@ type stateClaims struct {
 func (op *OAuthAuthenticator) GenerateState(redirectURL string) (string, error) {
 	uuid, err := op.UUID.Generate()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("uuid generate: %w", err)
 	}
 
+	now := op.Clock.Now()
 	claims := stateClaims{
 		StandardClaims: jwt.StandardClaims{
 			Subject:   uuid,
-			ExpiresAt: time.Now().Add(time.Minute * 2).Unix(),
-			IssuedAt:  time.Now().Unix(),
+			ExpiresAt: now.Add(time.Minute * 2).Unix(),
+			IssuedAt:  now.Unix(),
 		},
 		RedirectURL: redirectURL,
 	}
 	state, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte(op.GlobalTokenKey))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("new signed token: %w", err)
 	}
 
 	return state, nil
@@ -114,11 +117,7 @@ func (op *OAuthAuthenticator) VerifyState(rawToken string) (string, error) {
 		return []byte(op.GlobalTokenKey), nil
 	})
 	if err != nil {
-		return "", err
-	}
-
-	if err := claims.Valid(); err != nil {
-		return "", err
+		return "", fmt.Errorf("parse token: %w", err)
 	}
 
 	return claims.RedirectURL, nil
