@@ -249,10 +249,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Clock:  providers.NewClock(),
 	})
 
-	authHandler := &handlers.UserAuthHandler{
+	authHandler := handlers.NewUserAuthHandler(handlers.UserAuthHandlerDeps{
 		OAuthProvider: oauthProvider,
 		TokenIssuer:   tokenIssuer,
-	}
+		Logger:        log,
+	})
 
 	// ************************
 	// Set up the server

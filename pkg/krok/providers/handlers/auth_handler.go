@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 	"golang.org/x/oauth2"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -16,10 +17,21 @@ const (
 	RefreshTokenCookie = "_r_token_"
 )
 
-// UserAuthHandler handles user authentication.
-type UserAuthHandler struct {
+// UserAuthHandlerDeps contains the UserAuthHandler dependencies.
+type UserAuthHandlerDeps struct {
+	Logger        zerolog.Logger
 	OAuthProvider providers.OAuthAuthenticator
 	TokenIssuer   providers.UserTokenIssuer
+}
+
+// UserAuthHandler handles user authentication.
+type UserAuthHandler struct {
+	UserAuthHandlerDeps
+}
+
+// NewUserAuthHandler creates a new UserAuthHandler.
+func NewUserAuthHandler(deps UserAuthHandlerDeps) *UserAuthHandler {
+	return &UserAuthHandler{UserAuthHandlerDeps: deps}
 }
 
 // Login handles a user login.
@@ -27,11 +39,15 @@ func (h *UserAuthHandler) Login() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		redirectURL := c.QueryParam("redirect_url")
 		if redirectURL == "" {
+			h.Logger.Warn().Msg("missing redirect url")
 			return c.String(http.StatusBadRequest, "error invalid redirect_url")
 		}
 
+		log := h.Logger.With().Str("redirect_url", redirectURL).Logger()
+
 		state, err := h.OAuthProvider.GenerateState(redirectURL)
 		if err != nil {
+			log.Debug().Err(err).Msg("failed to generate state")
 			return c.String(http.StatusUnauthorized, "")
 		}
 
@@ -44,24 +60,29 @@ func (h *UserAuthHandler) Login() echo.HandlerFunc {
 func (h *UserAuthHandler) Callback() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
+		log := h.Logger.With().Logger()
 
 		state := c.QueryParam("state")
 		if state == "" {
+			log.Warn().Msg("error verifying state")
 			return c.String(http.StatusBadRequest, "error invalid state")
 		}
 
 		code := c.QueryParam("code")
 		if code == "" {
+			log.Warn().Msg("error verifying state")
 			return c.String(http.StatusBadRequest, "error invalid code")
 		}
 
 		redirectURL, err := h.OAuthProvider.VerifyState(state)
 		if err != nil {
+			log.Error().Err(err).Msg("error verifying state")
 			return c.String(http.StatusUnauthorized, "error verifying state")
 		}
 
 		token, err := h.OAuthProvider.Exchange(ctx, code)
 		if err != nil {
+			log.Error().Err(err).Msg("error during token exchange")
 			return c.String(http.StatusUnauthorized, "error during token exchange")
 		}
 		setCookies(c, token)
@@ -74,15 +95,18 @@ func (h *UserAuthHandler) Callback() echo.HandlerFunc {
 func (h *UserAuthHandler) Refresh() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
+		log := h.Logger.With().Logger()
 
 		rtoken, err := c.Cookie(RefreshTokenCookie)
 		if err != nil {
+			log.Error().Err(err).Msg("refresh token cookie not found")
 			return c.String(http.StatusUnauthorized, "error getting refresh token")
 		}
 
 		token, err := h.TokenIssuer.Refresh(ctx, rtoken.Value)
 		if err != nil {
-			return c.String(http.StatusUnauthorized, "error refreshing tokens")
+			log.Error().Err(err).Msg("error refreshing token")
+			return c.String(http.StatusUnauthorized, "error refreshing token")
 		}
 		setCookies(c, token)
 
