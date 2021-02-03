@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -22,8 +21,9 @@ const (
 
 // Config is the configuration of the server
 type Config struct {
-	Port               string
+	Proto              string
 	Hostname           string
+	Addr               string
 	ServerKeyPath      string
 	ServerCrtPath      string
 	AutoTLS            bool
@@ -115,12 +115,10 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.GET("/user/apikey", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
 	auth.GET("/user/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
 
-	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
-
 	// Start TLS with certificate paths
 	if len(s.Config.ServerKeyPath) > 0 && len(s.Config.ServerCrtPath) > 0 {
 		e.Pre(middleware.HTTPSRedirect())
-		return e.StartTLS(hostPort, s.Config.ServerCrtPath, s.Config.ServerKeyPath)
+		return e.StartTLS(s.Config.Hostname, s.Config.ServerCrtPath, s.Config.ServerKeyPath)
 	}
 
 	// Start Auto TLS server
@@ -130,7 +128,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 		}
 		e.Pre(middleware.HTTPSRedirect())
 		e.AutoTLSManager.Cache = autocert.DirCache(s.Config.CacheDir)
-		return e.StartAutoTLS(hostPort)
+		return e.StartAutoTLS(s.Config.Hostname)
 	}
 
 	go func() {
@@ -141,5 +139,5 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	}()
 
 	// Start regular server
-	return e.Start(hostPort)
+	return e.Start(s.Config.Hostname)
 }

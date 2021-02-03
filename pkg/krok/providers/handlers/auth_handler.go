@@ -10,7 +10,9 @@ import (
 )
 
 const (
-	AccessTokenCookie  = "_a_token_"
+	// AccessTokenCookie is the name of the access token cookie.
+	AccessTokenCookie = "_a_token_"
+	// RefreshTokenCookie is the name of the refresh token cookie.
 	RefreshTokenCookie = "_r_token_"
 )
 

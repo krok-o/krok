@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"os"
 	"time"
 
@@ -51,7 +52,8 @@ func init() {
 	flag.StringVar(&krokArgs.server.CacheDir, "cache-dir", "", "--cache-dir /home/user/.server/.cache")
 	flag.StringVar(&krokArgs.server.ServerKeyPath, "server-key-path", "", "--server-key-path /home/user/.server/server.key")
 	flag.StringVar(&krokArgs.server.ServerCrtPath, "server-crt-path", "", "--server-crt-path /home/user/.server/server.crt")
-	flag.StringVar(&krokArgs.server.Port, "port", "9998", "--port 443")
+	flag.StringVar(&krokArgs.server.Proto, "proto", "http", "--proto http")
+	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost:9998", "--hostname localhost:9998")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
 
 	// Store config
@@ -77,6 +79,8 @@ func init() {
 
 // runKrokCmd builds up all the components and starts the krok server.
 func runKrokCmd(cmd *cobra.Command, args []string) {
+	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
+
 	ctx := context.Background()
 	out := zerolog.ConsoleWriter{
 		Out: os.Stderr,
@@ -235,6 +239,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	uuidGenerator := providers.NewUUIDGenerator()
 	oauthProvider := auth.NewOAuthAuthenticator(auth.OAuthAuthenticatorConfig{
+		BaseURL:            krokArgs.server.Addr,
 		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
 		GoogleClientID:     krokArgs.server.GoogleClientID,
 		GoogleClientSecret: krokArgs.server.GoogleClientSecret,

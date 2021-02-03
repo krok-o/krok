@@ -17,6 +17,7 @@ import (
 
 // OAuthAuthenticatorConfig contains the config for the OAuthAuthenticator.
 type OAuthAuthenticatorConfig struct {
+	BaseURL            string
 	GoogleClientID     string
 	GoogleClientSecret string
 	GlobalTokenKey     string
@@ -34,7 +35,6 @@ type OAuthAuthenticator struct {
 	OAuthAuthenticatorConfig
 	OAuthAuthenticatorDependencies
 
-	// TODO: Have a map of configs and support multiple providers.
 	oauthCfg *oauth2.Config
 }
 
@@ -44,11 +44,11 @@ func NewOAuthAuthenticator(cfg OAuthAuthenticatorConfig, deps OAuthAuthenticator
 		OAuthAuthenticatorConfig:       cfg,
 		OAuthAuthenticatorDependencies: deps,
 
-		// For now, just support Google.
+		// TODO: Support multiple providers.
 		oauthCfg: &oauth2.Config{
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
-			RedirectURL:  "http://localhost:9998/auth/callback",
+			RedirectURL:  fmt.Sprintf("%s/auth/callback", cfg.BaseURL),
 			Scopes: []string{
 				"https://www.googleapis.com/auth/userinfo.email",
 				"https://www.googleapis.com/auth/userinfo.profile",
