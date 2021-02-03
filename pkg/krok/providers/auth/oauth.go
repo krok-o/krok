@@ -113,10 +113,9 @@ func (op *OAuthAuthenticator) GenerateState(redirectURL string) (string, error) 
 // VerifyState verifies the state nonce JWT.
 func (op *OAuthAuthenticator) VerifyState(rawToken string) (string, error) {
 	var claims stateClaims
-	_, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {
+	if _, err := jwt.ParseWithClaims(rawToken, &claims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(op.GlobalTokenKey), nil
-	})
-	if err != nil {
+	}); err != nil {
 		return "", fmt.Errorf("parse token: %w", err)
 	}
 
