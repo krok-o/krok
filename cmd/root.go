@@ -79,8 +79,6 @@ func init() {
 
 // runKrokCmd builds up all the components and starts the krok server.
 func runKrokCmd(cmd *cobra.Command, args []string) {
-	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
-
 	ctx := context.Background()
 	out := zerolog.ConsoleWriter{
 		Out: os.Stderr,
@@ -88,6 +86,14 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	log := zerolog.New(out).With().
 		Timestamp().
 		Logger()
+
+	if krokArgs.server.GoogleClientID == "" {
+		log.Fatal().Msg("must provide --google-client-id flag")
+	}
+	if krokArgs.server.GoogleClientSecret == "" {
+		log.Fatal().Msg("must provide --google-client-secret flag")
+	}
+	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
 
 	// Setup Global Token Key
 	if krokArgs.server.GlobalTokenKey == "" {
