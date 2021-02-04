@@ -42,4 +42,5 @@ type ApiKeysHandler interface {
 // TokenProvider provides operations to get and validation JWT tokens.
 type TokenProvider interface {
 	GetTokenRaw(raw string) (*jwt.Token, error)
+	TokenHandler() echo.HandlerFunc
 }

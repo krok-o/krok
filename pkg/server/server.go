@@ -84,7 +84,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// @rid repository id
 	// @vid vcs id
 	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
-
+	e.POST("/get-token", s.Dependencies.TokenProvider.TokenHandler())
 	// Admin related actions
 
 	// Repository related actions.
