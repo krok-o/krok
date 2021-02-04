@@ -55,7 +55,7 @@ func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		if err := ch.CommandStorer.Delete(ctx, n); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command Delete failed.")
@@ -80,7 +80,7 @@ func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
 			opts = nil
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		list, err := ch.CommandStorer.List(ctx, opts)
 		if err != nil {
@@ -109,7 +109,7 @@ func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		repo, err := ch.CommandStorer.Get(ctx, n)
 		if err != nil {
@@ -135,7 +135,7 @@ func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind command", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		updated, err := ch.CommandStorer.Update(ctx, command)
 		if err != nil {
@@ -174,7 +174,7 @@ func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert repository id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		if err := ch.CommandStorer.AddCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("AddCommandRelForRepository failed.")
@@ -212,7 +212,7 @@ func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert repository id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		if err := ch.CommandStorer.RemoveCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("RemoveCommandRelForRepository failed.")

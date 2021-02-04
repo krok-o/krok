@@ -65,7 +65,7 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 		if name == "" {
 			name = "My Api Key"
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 
 		// generate the key secret
@@ -140,7 +140,7 @@ func (a *ApiKeysHandler) DeleteApiKeyPair() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		if err := a.APIKeysStore.Delete(ctx, kn, un); err != nil {
 			a.Logger.Debug().Err(err).Msg("ApiKey Delete failed.")
@@ -169,7 +169,7 @@ func (a *ApiKeysHandler) ListApiKeyPairs() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		list, err := a.APIKeysStore.List(ctx, un)
 		if err != nil {
@@ -208,7 +208,7 @@ func (a *ApiKeysHandler) GetApiKeyPair() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		key, err := a.APIKeysStore.Get(ctx, kn, un)
 		if err != nil {

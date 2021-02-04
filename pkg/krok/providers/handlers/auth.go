@@ -150,7 +150,8 @@ func (p *TokenProvider) TokenHandler() echo.HandlerFunc {
 			return err
 		}
 		log := p.Logger.With().Str("email", request.Email).Logger()
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 
 		// Assert Api Key, then Get the request if the api key has matched successfully.

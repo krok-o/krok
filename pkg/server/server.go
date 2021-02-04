@@ -83,8 +83,8 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// This is the general format of a hook callback url for a repository.
 	// @rid repository id
 	// @vid vcs id
-	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
-	e.POST("/get-token", s.Dependencies.TokenProvider.TokenHandler())
+	e.POST(api+"/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
+	e.POST(api+"/get-token", s.Dependencies.TokenProvider.TokenHandler())
 	// Admin related actions
 
 	// Repository related actions.

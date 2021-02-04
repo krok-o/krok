@@ -56,7 +56,7 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		created, err := r.RepositoryStorer.Create(ctx, repo)
 		if err != nil {
@@ -106,7 +106,7 @@ func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		if err := r.RepositoryStorer.Delete(ctx, n); err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository Delete failed.")
@@ -134,7 +134,7 @@ func (r *RepoHandler) GetRepository() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		repo, err := r.RepositoryStorer.Get(ctx, n)
 		if err != nil {
@@ -166,7 +166,7 @@ func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
 			opts = nil
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 
 		list, err := r.RepositoryStorer.List(ctx, opts)
@@ -193,7 +193,7 @@ func (r *RepoHandler) UpdateRepository() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 		updated, err := r.RepositoryStorer.Update(ctx, repo)
 		if err != nil {
