@@ -20,7 +20,7 @@ func TestTokenIssuer_Create(t *testing.T) {
 	now, _ := time.Parse(time.RFC3339, "2020-01-31T15:00:00Z")
 
 	testEmail := "test@test.com"
-	createInput := &models.UserAuthDetails{UserID: "1", Email: testEmail, FirstName: "Test", LastName: "Name"}
+	createInput := &models.UserAuthDetails{Email: testEmail, FirstName: "Test", LastName: "Name"}
 	expectedTokenResponse := &oauth2.Token{
 		TokenType:    "Bearer",
 		AccessToken:  `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1ODA0ODM3MDAsImlhdCI6MTU4MDQ4MjgwMCwic3ViIjoiMSJ9.apom8FiBl_QEfRYVkp-PDETLFzAdEFzVZLVMqrkj6Uc`,

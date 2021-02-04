@@ -1,11 +1,7 @@
 package models
 
-type UserTokenProfile struct {
-	UserID string
-}
-
+// UserAuthDetails represents the authenticated user details.
 type UserAuthDetails struct {
-	UserID    string
 	Email     string
 	FirstName string
 	LastName  string
