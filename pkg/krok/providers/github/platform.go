@@ -200,6 +200,10 @@ func (g *Github) CreateHook(ctx context.Context, repo *models.Repository) error 
 		log.Debug().Str("repo_name", repoName).Str("url", repo.URL).Msg("Failed to extract url parameters.")
 		return errors.New("failed to extract url parameters from git url")
 	}
+	if len(m[0]) < 5 {
+		log.Debug().Str("repo_name", repoName).Str("url", repo.URL).Msg("Couldn't find the repo user from the URL.")
+		return errors.New("failed to extract repo user from the url")
+	}
 	repoUser := m[0][4]
 	hook, resp, err := githubClient.Repositories.CreateHook(context.Background(), repoUser, repoName, &ggithub.Hook{
 		Events: repo.Events,

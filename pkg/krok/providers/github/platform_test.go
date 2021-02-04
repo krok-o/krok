@@ -90,3 +90,44 @@ func TestGithub_CreateHook(t *testing.T) {
 	})
 	assert.NoError(t, err)
 }
+
+func TestGithub_CreateHook_InvalidURL(t *testing.T) {
+	cliLogger := zerolog.New(os.Stderr)
+	mp := &mockAuthProvider{
+		getAuth: &models.Auth{
+			SSH:      "ssh",
+			Username: "username",
+			Password: "password",
+			Secret:   "secret",
+		},
+	}
+	mptp := &mockPlatformTokenProvider{}
+	npp := NewGithubPlatformProvider(Config{Hostname: "https://krok.com"}, Dependencies{
+		Logger:                cliLogger,
+		PlatformTokenProvider: mptp,
+		AuthProvider:          mp,
+	})
+	mock := &mockGithubRepositoryService{}
+	mock.Hook = &github.Hook{
+		Name: github.String("test hook"),
+		URL:  github.String("https://api.github.com/repos/krok-o/krok/hooks/44321286/test"),
+	}
+	mock.Response = &github.Response{
+		Response: &http.Response{
+			Status: "Ok",
+		},
+	}
+	mock.Owner = "krok-o"
+	mock.Repo = "krok"
+	npp.repoMock = mock
+	err := npp.CreateHook(context.Background(), &models.Repository{
+		Name:      "test",
+		ID:        0,
+		URL:       "https://github.com/krok-o",
+		VCS:       models.GITHUB,
+		Auth:      &models.Auth{Secret: "secret"},
+		UniqueURL: "https://krok.com/hooks/0/0/callback",
+		Events:    []string{"push"},
+	})
+	assert.Error(t, err)
+}
