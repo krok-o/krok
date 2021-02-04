@@ -30,11 +30,11 @@ type TokenProvider struct {
 }
 
 // NewPlatformTokenProvider creates a new Token provider for the platforms.
-func NewPlatformTokenProvider(cfg TokenProviderConfig, deps TokenProviderDependencies) (*TokenProvider, error) {
+func NewPlatformTokenProvider(cfg TokenProviderConfig, deps TokenProviderDependencies) *TokenProvider {
 	return &TokenProvider{
 		TokenProviderConfig:       cfg,
 		TokenProviderDependencies: deps,
-	}, nil
+	}
 }
 
 var _ providers.PlatformTokenProvider = &TokenProvider{}

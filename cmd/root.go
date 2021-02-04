@@ -50,6 +50,7 @@ func init() {
 	flag.StringVar(&krokArgs.server.ServerKeyPath, "server-key-path", "", "--server-key-path /home/user/.server/server.key")
 	flag.StringVar(&krokArgs.server.ServerCrtPath, "server-crt-path", "", "--server-crt-path /home/user/.server/server.crt")
 	flag.StringVar(&krokArgs.server.Port, "port", "9998", "--port 443")
+	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost", "--hostname localhost")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
 
 	// Store config
@@ -141,7 +142,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// Set up platforms
 	// ************************
 
-	platformTokenProvider, err := auth.NewPlatformTokenProvider(auth.TokenProviderConfig{}, auth.TokenProviderDependencies{
+	platformTokenProvider := auth.NewPlatformTokenProvider(auth.TokenProviderConfig{}, auth.TokenProviderDependencies{
 		Logger: log,
 		Vault:  v,
 	})
