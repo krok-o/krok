@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -9,6 +12,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok"
+	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
@@ -46,7 +50,8 @@ func init() {
 	flag.StringVar(&krokArgs.server.CacheDir, "cache-dir", "", "--cache-dir /home/user/.server/.cache")
 	flag.StringVar(&krokArgs.server.ServerKeyPath, "server-key-path", "", "--server-key-path /home/user/.server/server.key")
 	flag.StringVar(&krokArgs.server.ServerCrtPath, "server-crt-path", "", "--server-crt-path /home/user/.server/server.crt")
-	flag.StringVar(&krokArgs.server.Port, "port", "9998", "--port 443")
+	flag.StringVar(&krokArgs.server.Proto, "proto", "http", "--proto http")
+	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost:9998", "--hostname localhost:9998")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
 
 	// Store config
@@ -64,6 +69,10 @@ func init() {
 
 	// VaultStorer config
 	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
+
+	// OAuth
+	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
+	flag.StringVar(&krokArgs.server.GoogleClientSecret, "google-client-secret", "", "--google-client-secret my-client-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -75,6 +84,26 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	log := zerolog.New(out).With().
 		Timestamp().
 		Logger()
+
+	if krokArgs.server.GoogleClientID == "" {
+		log.Fatal().Msg("must provide --google-client-id flag")
+	}
+	if krokArgs.server.GoogleClientSecret == "" {
+		log.Fatal().Msg("must provide --google-client-secret flag")
+	}
+	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
+
+	// Setup Global Token Key
+	if krokArgs.server.GlobalTokenKey == "" {
+		log.Info().Msg("Please set a global secret key... Randomly generating one for now...")
+		b := make([]byte, 32)
+		_, err := rand.Read(b)
+		if err != nil {
+			log.Fatal().Msg("failed to generate global token key")
+		}
+		state := base64.StdEncoding.EncodeToString(b)
+		krokArgs.server.GlobalTokenKey = state
+	}
 
 	// ************************
 	// Set up db connection, vault and auth handlers.
@@ -150,8 +179,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		ApiKeyAuth: authMatcher,
 	}
 	tp, err := handlers.NewTokenProvider(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+		Hostname:           krokArgs.server.Hostname,
+		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
+		GoogleClientID:     krokArgs.server.GoogleClientID,
+		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
 	}, handlerDeps)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create token handler.")
@@ -188,16 +219,42 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger: log,
 	})
 
+	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, auth.TokenIssuerDependencies{
+		UserStore: userStore,
+		Clock:     providers.NewClock(),
+	})
+
+	uuidGenerator := providers.NewUUIDGenerator()
+	oauthProvider := auth.NewOAuthAuthenticator(auth.OAuthAuthenticatorConfig{
+		BaseURL:            krokArgs.server.Addr,
+		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
+		GoogleClientID:     krokArgs.server.GoogleClientID,
+		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
+	}, auth.OAuthAuthenticatorDependencies{
+		UUID:   uuidGenerator,
+		Issuer: tokenIssuer,
+		Clock:  providers.NewClock(),
+	})
+
+	authHandler := handlers.NewUserAuthHandler(handlers.UserAuthHandlerDeps{
+		OAuthProvider: oauthProvider,
+		TokenIssuer:   tokenIssuer,
+		Logger:        log,
+	})
+
 	// ************************
 	// Set up the server
 	// ************************
+
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:            log,
 		Krok:              krokHandler,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
 		ApiKeyHandler:     apiKeysHandler,
-		TokenProvider:     tp,
+		AuthHandler:       authHandler,
 	})
 
 	// Run service & server

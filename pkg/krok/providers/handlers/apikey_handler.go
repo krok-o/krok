@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"context"
 	"crypto/md5"
 	"fmt"
 	"net/http"
@@ -14,6 +13,7 @@ import (
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
+	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
 )
 
 const (
@@ -46,27 +46,16 @@ func NewApiKeysHandler(cfg Config, deps ApiKeysHandlerDependencies) (*ApiKeysHan
 // CreateApiKeyPair creates an api key pair for a given user.
 func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := a.TokenProvider.GetToken(c)
+		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
+			a.Logger.Debug().Err(err).Msg("error getting user context")
+			return c.String(http.StatusInternalServerError, "failed to get user context")
 		}
-		id := c.Param("uid")
-		if id == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		uid, err := strconv.Atoi(id)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
+
 		name := c.Param("name")
 		if name == "" {
 			name = "My Api Key"
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
 
 		// generate the key secret
 		// this will be displayed once, then never shown again, ever.
@@ -84,6 +73,7 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
+		ctx := c.Request().Context()
 		encrypted, err := a.ApiKeyAuth.Encrypt(ctx, []byte(secret))
 		if err != nil {
 			apiError := kerr.APIError("failed to encrypt key", http.StatusBadRequest, err)
@@ -92,7 +82,7 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 
 		key := &models.APIKey{
 			Name:         name,
-			UserID:       uid,
+			UserID:       uc.UserID,
 			APIKeyID:     keyID,
 			APIKeySecret: encrypted,
 			TTL:          time.Now().Add(keyTTL),
@@ -114,38 +104,30 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 // DeleteApiKeyPair deletes a set of api keys for a given user with a given id.
 func (a *ApiKeysHandler) DeleteApiKeyPair() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// TODO: make sure other users, can't brute force delete other user's keys.
-		_, err := a.TokenProvider.GetToken(c)
+		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
+			a.Logger.Debug().Err(err).Msg("error getting user context")
+			return c.String(http.StatusInternalServerError, "failed to get user context")
 		}
-		uid := c.Param("uid")
-		if uid == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		un, err := strconv.Atoi(uid)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
+
 		kid := c.Param("keyid")
 		if kid == "" {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		kn, err := strconv.Atoi(kid)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
-		if err := a.APIKeysStore.Delete(ctx, kn, un); err != nil {
+
+		ctx := c.Request().Context()
+		if err := a.APIKeysStore.Delete(ctx, kn, uc.UserID); err != nil {
 			a.Logger.Debug().Err(err).Msg("ApiKey Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete api key", http.StatusBadRequest, err))
 		}
+
 		return c.NoContent(http.StatusOK)
 	}
 }
@@ -153,29 +135,19 @@ func (a *ApiKeysHandler) DeleteApiKeyPair() echo.HandlerFunc {
 // ListApiKeyPairs lists all api keys for a given user.
 func (a *ApiKeysHandler) ListApiKeyPairs() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// TODO: Consider getting the user from the token. But that would require a call to the cache or the DB.
-		_, err := a.TokenProvider.GetToken(c)
+		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
+			a.Logger.Debug().Err(err).Msg("error getting user context")
+			return c.String(http.StatusInternalServerError, "failed to get user context")
 		}
-		uid := c.Param("uid")
-		if uid == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		un, err := strconv.Atoi(uid)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
-		list, err := a.APIKeysStore.List(ctx, un)
+
+		ctx := c.Request().Context()
+		list, err := a.APIKeysStore.List(ctx, uc.UserID)
 		if err != nil {
 			a.Logger.Debug().Err(err).Msg("ApiKeys List failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list api keys", http.StatusBadRequest, err))
 		}
+
 		return c.JSON(http.StatusOK, list)
 	}
 }
@@ -183,38 +155,31 @@ func (a *ApiKeysHandler) ListApiKeyPairs() echo.HandlerFunc {
 // GetApiKeyPair returns a given api key.
 func (a *ApiKeysHandler) GetApiKeyPair() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := a.TokenProvider.GetToken(c)
+		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
+			a.Logger.Debug().Err(err).Msg("error getting user context")
+			return c.String(http.StatusInternalServerError, "failed to get user context")
 		}
-		uid := c.Param("uid")
-		if uid == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		un, err := strconv.Atoi(uid)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
+
 		kid := c.Param("keyid")
 		if kid == "" {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		kn, err := strconv.Atoi(kid)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
-		key, err := a.APIKeysStore.Get(ctx, kn, un)
+
+		ctx := c.Request().Context()
+		key, err := a.APIKeysStore.Get(ctx, kn, uc.UserID)
 		if err != nil {
 			apiError := kerr.APIError("failed to get api key", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		return c.JSON(http.StatusOK, key)
 	}
 }

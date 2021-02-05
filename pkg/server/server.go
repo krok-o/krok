@@ -2,10 +2,7 @@ package server
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/base64"
 	"errors"
-	"fmt"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,6 +11,8 @@ import (
 
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/handlers"
+	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
 )
 
 const (
@@ -22,13 +21,16 @@ const (
 
 // Config is the configuration of the server
 type Config struct {
-	Port           string
-	Hostname       string
-	ServerKeyPath  string
-	ServerCrtPath  string
-	AutoTLS        bool
-	CacheDir       string
-	GlobalTokenKey string
+	Proto              string
+	Hostname           string
+	Addr               string
+	ServerKeyPath      string
+	ServerCrtPath      string
+	AutoTLS            bool
+	CacheDir           string
+	GlobalTokenKey     string
+	GoogleClientID     string
+	GoogleClientSecret string
 }
 
 // KrokServer is a server.
@@ -44,8 +46,9 @@ type Dependencies struct {
 	CommandHandler    providers.CommandHandler
 	RepositoryHandler providers.RepositoryHandler
 	ApiKeyHandler     providers.ApiKeysHandler
+	AuthHandler       providers.AuthHandler
 
-	TokenProvider providers.TokenProvider
+	// TokenProvider providers.TokenProvider
 }
 
 // Server defines a server which runs and accepts requests.
@@ -60,24 +63,24 @@ func NewKrokServer(cfg Config, deps Dependencies) *KrokServer {
 
 // Run starts up listening.
 func (s *KrokServer) Run(ctx context.Context) error {
-	// Setup Global Token Key
-	if s.Config.GlobalTokenKey == "" {
-		s.Logger.Info().Msg("Please set a global secret key... Randomly generating one for now...")
-		b := make([]byte, 32)
-		_, err := rand.Read(b)
-		if err != nil {
-			return err
-		}
-		state := base64.StdEncoding.EncodeToString(b)
-		s.Config.GlobalTokenKey = state
-	}
 	s.Dependencies.Logger.Info().Msg("Start listening...")
+
 	// Echo instance
 	e := echo.New()
 
 	// Middleware
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
+	e.Use(middleware.CORSWithConfig(middleware.CORSConfig{
+		AllowOrigins:     []string{"http://localhost:3000"},
+		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
+		AllowCredentials: true,
+	}))
+
+	// Public endpoints for authentication.
+	e.POST("/auth/refresh", s.AuthHandler.Refresh())
+	e.GET("/auth/login", s.AuthHandler.Login())
+	e.GET("/auth/callback", s.AuthHandler.Callback())
 
 	// Routes
 	// This is the general format of a hook callback url for a repository.
@@ -85,10 +88,13 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// @vid vcs id
 	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
 
-	// Admin related actions
+	userMiddleware := krokmiddleware.UserAuthentication(&krokmiddleware.UserAuthenticationConfig{
+		CookieName:     handlers.AccessTokenCookie,
+		GlobalTokenKey: s.GlobalTokenKey,
+	})
+	auth := e.Group(api+"/krok", userMiddleware)
 
 	// Repository related actions.
-	auth := e.Group(api+"/krok", middleware.JWT([]byte(s.Config.GlobalTokenKey)))
 	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
 	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
 	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())
@@ -104,17 +110,15 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
 
 	// api keys related actions
-	auth.POST("/user/:uid/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
-	auth.DELETE("/user/:uid/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
-	auth.POST("/user/:uid/apikeys", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
-	auth.GET("/user/:uid/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
-
-	hostPort := fmt.Sprintf("%s:%s", s.Config.Hostname, s.Config.Port)
+	auth.POST("/user/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
+	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
+	auth.GET("/user/apikey", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
+	auth.GET("/user/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
 
 	// Start TLS with certificate paths
 	if len(s.Config.ServerKeyPath) > 0 && len(s.Config.ServerCrtPath) > 0 {
 		e.Pre(middleware.HTTPSRedirect())
-		return e.StartTLS(hostPort, s.Config.ServerCrtPath, s.Config.ServerKeyPath)
+		return e.StartTLS(s.Config.Hostname, s.Config.ServerCrtPath, s.Config.ServerKeyPath)
 	}
 
 	// Start Auto TLS server
@@ -124,7 +128,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 		}
 		e.Pre(middleware.HTTPSRedirect())
 		e.AutoTLSManager.Cache = autocert.DirCache(s.Config.CacheDir)
-		return e.StartAutoTLS(hostPort)
+		return e.StartAutoTLS(s.Config.Hostname)
 	}
 
 	go func() {
@@ -135,5 +139,5 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	}()
 
 	// Start regular server
-	return e.Start(hostPort)
+	return e.Start(s.Config.Hostname)
 }
