@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	"time"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -15,7 +14,6 @@ import (
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
-	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
@@ -165,20 +163,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		APIKeys:      apiKeyStore,
 	})
 
-	userCache := cache.NewUserCache()
-	go func() {
-		interval := 1 * time.Minute
-		for {
-			userCache.ClearTTL()
-
-			// nolint:gosimple
-			select {
-			case <-time.After(interval):
-				log.Debug().Msg("Running user cache cleanup...")
-			}
-		}
-	}()
-
 	// ************************
 	// Set up handlers
 	// ************************
@@ -238,7 +222,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 	}, auth.TokenIssuerDependencies{
-		UserCache: userCache,
 		UserStore: userStore,
 		Clock:     providers.NewClock(),
 	})

@@ -40,27 +40,26 @@ func NewCommandsHandler(cfg Config, deps CommandsHandlerDependencies) (*Commands
 // DeleteCommand deletes a command.
 func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := ch.TokenProvider.GetToken(c)
-		if err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		id := c.Param("id")
 		if id == "" {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		n, err := strconv.Atoi(id)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
 		defer cancel()
+
 		if err := ch.CommandStorer.Delete(ctx, n); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete command", http.StatusBadRequest, err))
 		}
+
 		return c.NoContent(http.StatusOK)
 	}
 }
@@ -68,12 +67,6 @@ func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
 // ListCommands lists commands.
 func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := ch.TokenProvider.GetToken(c)
-		if err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
-
 		opts := &models.ListOptions{}
 		if err := c.Bind(opts); err != nil {
 			// if we don't have anything to bind, just ignore opts.
@@ -82,11 +75,13 @@ func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
 
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
 		defer cancel()
+
 		list, err := ch.CommandStorer.List(ctx, opts)
 		if err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command List failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list commands", http.StatusBadRequest, err))
 		}
+
 		return c.JSON(http.StatusOK, list)
 	}
 }
@@ -94,28 +89,27 @@ func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
 // GetCommand returns a specific command.
 func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := ch.TokenProvider.GetToken(c)
-		if err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		id := c.Param("id")
 		if id == "" {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		n, err := strconv.Atoi(id)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
 		defer cancel()
+
 		repo, err := ch.CommandStorer.Get(ctx, n)
 		if err != nil {
 			apiError := kerr.APIError("failed to get command", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		return c.JSON(http.StatusOK, repo)
 	}
 }
@@ -123,25 +117,21 @@ func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
 // UpdateCommand updates a command.
 func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := ch.TokenProvider.GetToken(c)
-		if err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		command := &models.Command{}
-		err = c.Bind(command)
-		if err != nil {
+		if err := c.Bind(command); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Failed to bind command.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind command", http.StatusBadRequest, err))
 		}
 
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
 		defer cancel()
+
 		updated, err := ch.CommandStorer.Update(ctx, command)
 		if err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command Update failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update command", http.StatusBadRequest, err))
 		}
+
 		return c.JSON(http.StatusOK, updated)
 	}
 }
@@ -149,21 +139,18 @@ func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
 // AddCommandRelForRepository adds a command relationship to a repository.
 func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := ch.TokenProvider.GetToken(c)
-		if err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		cmdID := c.Param("cmdid")
 		if cmdID == "" {
 			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		repoID := c.Param("repoid")
 		if repoID == "" {
 			apiError := kerr.APIError("invalid repository id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		cn, err := strconv.Atoi(cmdID)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert command id to number", http.StatusBadRequest, err)
@@ -187,37 +174,38 @@ func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 // RemoveCommandRelForRepository removes a relationship of a command from a repository.
 func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := ch.TokenProvider.GetToken(c)
-		if err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		cmdID := c.Param("cmdid")
 		if cmdID == "" {
 			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		repoID := c.Param("repoid")
 		if repoID == "" {
 			apiError := kerr.APIError("invalid repository id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		cn, err := strconv.Atoi(cmdID)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert command id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		rn, err := strconv.Atoi(repoID)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert repository id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
 		defer cancel()
+
 		if err := ch.CommandStorer.RemoveCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("RemoveCommandRelForRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to remove command relationship to repository", http.StatusBadRequest, err))
 		}
+
 		return c.NoContent(http.StatusOK)
 	}
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
-	"github.com/krok-o/krok/pkg/krok/providers/cache"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -93,7 +92,6 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
-		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -143,18 +141,6 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
-
-	t.Run("no token", func(tt *testing.T) {
-		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1}`
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		err = rh.CreateRepository()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
 }
 
 func TestRepoHandler_UpdateRepository(t *testing.T) {
@@ -166,7 +152,6 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
-		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -215,18 +200,6 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
-
-	t.Run("update with no token", func(tt *testing.T) {
-		repositoryPost := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1}`
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/repository/update", strings.NewReader(repositoryPost))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		err = rh.UpdateRepository()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
 }
 
 func TestRepoHandler_GetRepository(t *testing.T) {
@@ -245,7 +218,6 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
-		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -279,18 +251,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
 	})
-	t.Run("get no token flow", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/repository/:id")
-		c.SetParamNames("id")
-		c.SetParamValues("0")
-		err = rh.GetRepository()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
+
 	t.Run("get invalid id", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
@@ -307,6 +268,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
+
 	t.Run("empty id", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
@@ -347,7 +309,6 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
-		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -379,17 +340,6 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
 	})
-
-	t.Run("list no token flow", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/repositories")
-		err = rh.ListRepositories()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
 }
 
 func TestRepoHandler_DeleteRepository(t *testing.T) {
@@ -401,7 +351,6 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		Logger:     logger,
 		UserStore:  mus,
 		ApiKeyAuth: maka,
-		UserCache:  cache.NewUserCache(),
 	}
 	cfg := Config{
 		Hostname:       "http://testHost",
@@ -431,19 +380,6 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		err = rh.DeleteRepository()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
-	})
-
-	t.Run("delete no token", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodDelete, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/repository/:id")
-		c.SetParamNames("id")
-		c.SetParamValues("0")
-		err = rh.DeleteRepository()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
 	})
 
 	t.Run("delete invalid id", func(tt *testing.T) {

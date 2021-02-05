@@ -25,7 +25,6 @@ type TokenIssuerConfig struct {
 }
 
 type TokenIssuerDependencies struct {
-	UserCache providers.UserCache
 	UserStore providers.UserStorer
 	Clock     providers.Clock
 }
@@ -82,18 +81,6 @@ func (ti *TokenIssuer) createToken(userID string) (*oauth2.Token, error) {
 }
 
 func (ti *TokenIssuer) getOrCreateUser(ctx context.Context, ud *models.UserAuthDetails) (user *models.User, err error) {
-	defer func() {
-		if user != nil {
-			ti.UserCache.Add(ud.Email, user.ID)
-		}
-	}()
-
-	// Check the cache for the user.
-	if u, exists := ti.UserCache.Has(ud.Email); exists {
-		return u.User, nil
-	}
-
-	// Not in the cache, check the database.
 	u, err := ti.UserStore.GetByEmail(ctx, ud.Email)
 	if err != nil {
 		var qe *kerr.QueryError
@@ -105,14 +92,14 @@ func (ti *TokenIssuer) getOrCreateUser(ctx context.Context, ud *models.UserAuthD
 				return nil, fmt.Errorf("create user: %w", err)
 			}
 			return user, nil
-		} else {
-			return nil, fmt.Errorf("get user: %w", err)
 		}
+		return nil, fmt.Errorf("get user: %w", err)
 	}
 
 	return u, nil
 }
 
+// Refresh refreshes the users JWT tokens.
 func (ti *TokenIssuer) Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error) {
 	var refreshClaims jwt.StandardClaims
 	// Parse & verify the refreshToken. Returns an error if the token has expired.
@@ -132,7 +119,6 @@ func (ti *TokenIssuer) Refresh(ctx context.Context, refreshToken string) (*oauth
 	if err != nil {
 		return nil, err
 	}
-	ti.UserCache.Add(user.Email, user.ID)
 
 	newToken, err := ti.createToken(strconv.Itoa(user.ID))
 	if err != nil {
