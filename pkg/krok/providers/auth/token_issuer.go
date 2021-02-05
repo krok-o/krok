@@ -20,24 +20,30 @@ const (
 	defaultRefreshTokenExpiry = (time.Hour * 24) * 7
 )
 
+// TokenIssuerConfig contains the config for the TokenIssuer.
 type TokenIssuerConfig struct {
 	GlobalTokenKey string
 }
 
+// TokenIssuerDependencies contains the TokenIssuer dependencies.
 type TokenIssuerDependencies struct {
 	UserStore providers.UserStorer
 	Clock     providers.Clock
 }
 
+// TokenIssuer represents the auth JWT token issuer.
 type TokenIssuer struct {
 	TokenIssuerConfig
 	TokenIssuerDependencies
 }
 
+// NewTokenIssuer creates a new TokenIssuer.
 func NewTokenIssuer(cfg TokenIssuerConfig, deps TokenIssuerDependencies) *TokenIssuer {
 	return &TokenIssuer{TokenIssuerConfig: cfg, TokenIssuerDependencies: deps}
 }
 
+// Create creates a JWT access_token and refresh_token with the given user details.
+// It will attempt to get or create the user in the database.
 func (ti *TokenIssuer) Create(ctx context.Context, ud *models.UserAuthDetails) (*oauth2.Token, error) {
 	user, err := ti.getOrCreateUser(ctx, ud)
 	if err != nil {
@@ -80,12 +86,12 @@ func (ti *TokenIssuer) createToken(userID string) (*oauth2.Token, error) {
 	}, nil
 }
 
-func (ti *TokenIssuer) getOrCreateUser(ctx context.Context, ud *models.UserAuthDetails) (user *models.User, err error) {
-	u, err := ti.UserStore.GetByEmail(ctx, ud.Email)
+func (ti *TokenIssuer) getOrCreateUser(ctx context.Context, ud *models.UserAuthDetails) (*models.User, error) {
+	user, err := ti.UserStore.GetByEmail(ctx, ud.Email)
 	if err != nil {
 		var qe *kerr.QueryError
 		if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
-			// Not in the database, createToken them.
+			// Not in the database, create them.
 			dname := fmt.Sprintf("%s %s", ud.FirstName, ud.LastName)
 			user, err = ti.UserStore.Create(ctx, &models.User{Email: ud.Email, DisplayName: dname})
 			if err != nil {
@@ -96,7 +102,7 @@ func (ti *TokenIssuer) getOrCreateUser(ctx context.Context, ud *models.UserAuthD
 		return nil, fmt.Errorf("get user: %w", err)
 	}
 
-	return u, nil
+	return user, nil
 }
 
 // Refresh refreshes the users JWT tokens.

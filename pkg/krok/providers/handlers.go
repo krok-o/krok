@@ -38,6 +38,7 @@ type ApiKeysHandler interface {
 	GetApiKeyPair() echo.HandlerFunc
 }
 
+// AuthHandler provides the handler functions for the authentication flow.
 type AuthHandler interface {
 	Login() echo.HandlerFunc
 	Callback() echo.HandlerFunc
