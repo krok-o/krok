@@ -19,9 +19,9 @@ const (
 
 // UserAuthHandlerDeps contains the UserAuthHandler dependencies.
 type UserAuthHandlerDeps struct {
-	Logger        zerolog.Logger
-	OAuthProvider providers.OAuthAuthenticator
-	TokenIssuer   providers.UserTokenIssuer
+	Logger      zerolog.Logger
+	OAuth       providers.OAuthAuthenticator
+	TokenIssuer providers.TokenIssuer
 }
 
 // UserAuthHandler handles user authentication.
@@ -34,8 +34,8 @@ func NewUserAuthHandler(deps UserAuthHandlerDeps) *UserAuthHandler {
 	return &UserAuthHandler{UserAuthHandlerDeps: deps}
 }
 
-// Login handles a user login.
-func (h *UserAuthHandler) Login() echo.HandlerFunc {
+// OAuthLogin handles a user login.
+func (h *UserAuthHandler) OAuthLogin() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		redirectURL := c.QueryParam("redirect_url")
 		if redirectURL == "" {
@@ -45,19 +45,19 @@ func (h *UserAuthHandler) Login() echo.HandlerFunc {
 
 		log := h.Logger.With().Str("redirect_url", redirectURL).Logger()
 
-		state, err := h.OAuthProvider.GenerateState(redirectURL)
+		state, err := h.OAuth.GenerateState(redirectURL)
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to generate state")
-			return c.String(http.StatusUnauthorized, "")
+			return c.String(http.StatusUnauthorized, "error generating state")
 		}
 
-		url := h.OAuthProvider.GetAuthCodeURL(state)
+		url := h.OAuth.GetAuthCodeURL(state)
 		return c.Redirect(http.StatusTemporaryRedirect, url)
 	}
 }
 
-// Callback handles the user login callback.
-func (h *UserAuthHandler) Callback() echo.HandlerFunc {
+// OAuthCallback handles the user login callback.
+func (h *UserAuthHandler) OAuthCallback() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		log := h.Logger.With().Logger()
@@ -74,13 +74,13 @@ func (h *UserAuthHandler) Callback() echo.HandlerFunc {
 			return c.String(http.StatusBadRequest, "error invalid code")
 		}
 
-		redirectURL, err := h.OAuthProvider.VerifyState(state)
+		redirectURL, err := h.OAuth.VerifyState(state)
 		if err != nil {
 			log.Error().Err(err).Msg("error verifying state")
 			return c.String(http.StatusUnauthorized, "error verifying state")
 		}
 
-		token, err := h.OAuthProvider.Exchange(ctx, code)
+		token, err := h.OAuth.Exchange(ctx, code)
 		if err != nil {
 			log.Error().Err(err).Msg("error during token exchange")
 			return c.String(http.StatusUnauthorized, "error during token exchange")

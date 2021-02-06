@@ -14,13 +14,71 @@ import (
 	"golang.org/x/oauth2"
 	"gopkg.in/h2non/gock.v1"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 )
 
 func TestOAuthAuthenticator_Exchange(t *testing.T) {
-	defer gock.Off()
+	t.Run("exchange token for existing user", func(t *testing.T) {
+		setupGock()
+		defer gock.Off()
 
+		mockUserStore := &mocks.UserStorer{}
+		mockUserStore.On("GetByEmail", mock.Anything, "test@test.com").Return(&models.User{ID: 1, Email: "test@test.com"}, nil)
+
+		mockTokenIssuer := &mocks.TokenIssuer{}
+		mockTokenIssuer.On("Create", &models.User{ID: 1, Email: "test@test.com"}).Return(&oauth2.Token{}, nil)
+
+		auth := NewOAuthAuthenticator(OAuthAuthenticatorConfig{
+			BaseURL: "https://test.com",
+		}, OAuthAuthenticatorDependencies{
+			Issuer:    mockTokenIssuer,
+			UserStore: mockUserStore,
+		})
+
+		token, err := auth.Exchange(context.Background(), "1234")
+		assert.NoError(t, err)
+		assert.Equal(t, &oauth2.Token{}, token)
+		mockUserStore.AssertExpectations(t)
+		mockTokenIssuer.AssertExpectations(t)
+	})
+
+	t.Run("exchange token for a new user", func(t *testing.T) {
+		setupGock()
+		defer gock.Off()
+
+		mockUserStore := &mocks.UserStorer{}
+		qerr := &kerr.QueryError{Err: kerr.ErrNotFound}
+		mockUserStore.On("GetByEmail", mock.Anything, "test@test.com").Return(nil, qerr)
+		mockUserStore.On("Create", mock.Anything, &models.User{
+			Email:       "test@test.com",
+			DisplayName: "Test User",
+		}).Return(&models.User{
+			ID:          1,
+			Email:       "test@test.com",
+			DisplayName: "Test User",
+		}, nil)
+
+		mockTokenIssuer := &mocks.TokenIssuer{}
+		mockTokenIssuer.On("Create", &models.User{ID: 1, Email: "test@test.com", DisplayName: "Test User"}).Return(&oauth2.Token{}, nil)
+
+		auth := NewOAuthAuthenticator(OAuthAuthenticatorConfig{
+			BaseURL: "https://test.com",
+		}, OAuthAuthenticatorDependencies{
+			Issuer:    mockTokenIssuer,
+			UserStore: mockUserStore,
+		})
+
+		token, err := auth.Exchange(context.Background(), "1234")
+		assert.NoError(t, err)
+		assert.Equal(t, &oauth2.Token{}, token)
+		mockUserStore.AssertExpectations(t)
+		mockTokenIssuer.AssertExpectations(t)
+	})
+}
+
+func setupGock() {
 	gock.New("https://oauth2.googleapis.com").
 		Post("/token").
 		MatchHeader("Content-Type", "application/x-www-form-urlencoded").
@@ -51,24 +109,6 @@ func TestOAuthAuthenticator_Exchange(t *testing.T) {
 			LastName:  "User",
 			Email:     "test@test.com",
 		})
-
-	userTokenIssuer := &mocks.UserTokenIssuer{}
-	userTokenIssuer.On("Create", mock.Anything, &models.UserAuthDetails{
-		FirstName: "Test",
-		LastName:  "User",
-		Email:     "test@test.com",
-	}).Return(&oauth2.Token{}, nil)
-
-	auth := NewOAuthAuthenticator(OAuthAuthenticatorConfig{
-		BaseURL: "https://test.com",
-	}, OAuthAuthenticatorDependencies{
-		Issuer: userTokenIssuer,
-	})
-
-	token, err := auth.Exchange(context.Background(), "1234")
-	assert.NoError(t, err)
-	assert.Equal(t, &oauth2.Token{}, token)
-	userTokenIssuer.AssertExpectations(t)
 }
 
 func TestOAuthAuthenticator_GenerateAndVerifyState(t *testing.T) {
