@@ -191,10 +191,19 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create new Api keys provider.")
 	}
+
+	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, auth.TokenIssuerDependencies{
+		UserStore: userStore,
+		Clock:     providers.NewClock(),
+	})
+
 	handlerDeps := handlers.Dependencies{
-		Logger:     log,
-		UserStore:  userStore,
-		ApiKeyAuth: authMatcher,
+		Logger:      log,
+		UserStore:   userStore,
+		ApiKeyAuth:  authMatcher,
+		TokenIssuer: tokenIssuer,
 	}
 	tp, err := handlers.NewTokenHandler(handlers.Config{
 		Hostname:           krokArgs.server.Hostname,
@@ -238,13 +247,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	krokHandler := krok.NewHookHandler(krok.Config{}, krok.Dependencies{
 		Logger: log,
-	})
-
-	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
-	}, auth.TokenIssuerDependencies{
-		UserStore: userStore,
-		Clock:     providers.NewClock(),
 	})
 
 	uuidGenerator := providers.NewUUIDGenerator()

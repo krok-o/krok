@@ -24,7 +24,7 @@ type Dependencies struct {
 	Logger      zerolog.Logger
 	UserStore   providers.UserStorer
 	ApiKeyAuth  providers.ApiKeysAuthenticator
-	TokenIssuer providers.UserTokenIssuer
+	TokenIssuer providers.TokenIssuer
 }
 
 // TokenHandler is a token provider for the handlers.
@@ -76,7 +76,7 @@ func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("Failed to get user", http.StatusInternalServerError, err))
 		}
 
-		t, err := p.TokenIssuer.Create(ctx, nil)
+		t, err := p.TokenIssuer.Create(u)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to generate token", http.StatusInternalServerError, err))
 		}
