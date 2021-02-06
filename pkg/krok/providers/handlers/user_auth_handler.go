@@ -19,9 +19,9 @@ const (
 
 // UserAuthHandlerDeps contains the UserAuthHandler dependencies.
 type UserAuthHandlerDeps struct {
-	Logger        zerolog.Logger
-	OAuthProvider providers.OAuthAuthenticator
-	TokenIssuer   providers.UserTokenIssuer
+	Logger      zerolog.Logger
+	OAuth       providers.OAuthAuthenticator
+	TokenIssuer providers.UserTokenIssuer
 }
 
 // UserAuthHandler handles user authentication.
@@ -45,13 +45,13 @@ func (h *UserAuthHandler) Login() echo.HandlerFunc {
 
 		log := h.Logger.With().Str("redirect_url", redirectURL).Logger()
 
-		state, err := h.OAuthProvider.GenerateState(redirectURL)
+		state, err := h.OAuth.GenerateState(redirectURL)
 		if err != nil {
 			log.Debug().Err(err).Msg("failed to generate state")
-			return c.String(http.StatusUnauthorized, "")
+			return c.String(http.StatusUnauthorized, "error generating state")
 		}
 
-		url := h.OAuthProvider.GetAuthCodeURL(state)
+		url := h.OAuth.GetAuthCodeURL(state)
 		return c.Redirect(http.StatusTemporaryRedirect, url)
 	}
 }
@@ -74,13 +74,13 @@ func (h *UserAuthHandler) Callback() echo.HandlerFunc {
 			return c.String(http.StatusBadRequest, "error invalid code")
 		}
 
-		redirectURL, err := h.OAuthProvider.VerifyState(state)
+		redirectURL, err := h.OAuth.VerifyState(state)
 		if err != nil {
 			log.Error().Err(err).Msg("error verifying state")
 			return c.String(http.StatusUnauthorized, "error verifying state")
 		}
 
-		token, err := h.OAuthProvider.Exchange(ctx, code)
+		token, err := h.OAuth.Exchange(ctx, code)
 		if err != nil {
 			log.Error().Err(err).Msg("error during token exchange")
 			return c.String(http.StatusUnauthorized, "error during token exchange")

@@ -239,9 +239,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	authHandler := handlers.NewUserAuthHandler(handlers.UserAuthHandlerDeps{
-		OAuthProvider: oauthProvider,
-		TokenIssuer:   tokenIssuer,
-		Logger:        log,
+		OAuth:       oauthProvider,
+		TokenIssuer: tokenIssuer,
+		Logger:      log,
 	})
 
 	// ************************

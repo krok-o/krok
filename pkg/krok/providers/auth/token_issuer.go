@@ -112,23 +112,23 @@ func (ti *TokenIssuer) Refresh(ctx context.Context, refreshToken string) (*oauth
 	if _, err := jwt.ParseWithClaims(refreshToken, &refreshClaims, func(token *jwt.Token) (interface{}, error) {
 		return []byte(ti.GlobalTokenKey), nil
 	}); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("parse jwt: %w", err)
 	}
 
 	userID, err := strconv.Atoi(refreshClaims.Subject)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("convert id: %w", err)
 	}
 
 	// Get the user. Allows us to check this person is still valid.
 	user, err := ti.UserStore.Get(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("user store get: %w", err)
 	}
 
 	newToken, err := ti.createToken(strconv.Itoa(user.ID))
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create token: %w", err)
 	}
 
 	return newToken, nil
