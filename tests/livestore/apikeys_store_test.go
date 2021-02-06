@@ -37,7 +37,7 @@ func TestApiKeys_Flow(t *testing.T) {
 		Name:         "Main",
 		UserID:       1,
 		APIKeyID:     "keyid",
-		APIKeySecret: []byte("secret"),
+		APIKeySecret: "secret",
 		TTL:          time.Now(),
 	})
 	assert.NoError(t, err)
