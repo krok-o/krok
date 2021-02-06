@@ -84,7 +84,7 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 			Name:         name,
 			UserID:       uc.UserID,
 			APIKeyID:     keyID,
-			APIKeySecret: encrypted,
+			APIKeySecret: string(encrypted),
 			TTL:          time.Now().Add(keyTTL),
 		}
 
@@ -95,8 +95,7 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 		}
 		// We will display the ID and the secret unencrypted so the user can save it.
 		key.ID = generatedKey.ID
-		key.APIKeySecret = []byte(secret)
-
+		key.APIKeySecret = secret
 		return c.JSON(http.StatusOK, key)
 	}
 }

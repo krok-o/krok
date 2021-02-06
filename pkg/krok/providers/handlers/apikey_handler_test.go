@@ -204,7 +204,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 			Name:         "test-key",
 			UserID:       0,
 			APIKeyID:     "api-key-id",
-			APIKeySecret: []byte("secret"),
+			APIKeySecret: "secret",
 			TTL:          time.Now().Add(10 * time.Minute),
 		},
 	}
@@ -233,7 +233,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 			Name:         "test-key",
 			UserID:       0,
 			APIKeyID:     "api-key-id",
-			APIKeySecret: []byte("secret"),
+			APIKeySecret: "secret",
 		}
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -313,7 +313,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 				Name:         "test-key-1",
 				UserID:       0,
 				APIKeyID:     "test-key-id-1",
-				APIKeySecret: []byte("secret1"),
+				APIKeySecret: "secret1",
 				TTL:          time.Now().Add(10 * time.Minute),
 			},
 			{
@@ -321,7 +321,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 				Name:         "test-key-2",
 				UserID:       1,
 				APIKeyID:     "test-key-id-2",
-				APIKeySecret: []byte("secret2"),
+				APIKeySecret: "secret2",
 				TTL:          time.Now().Add(10 * time.Minute),
 			},
 		},

@@ -46,7 +46,7 @@ func (a *ApiKeysProvider) Match(ctx context.Context, key *models.APIKey) error {
 		log.Debug().Err(err).Msg("ApiKeys Get failed.")
 		return fmt.Errorf("failed to get api key: %w", err)
 	}
-	return bcrypt.CompareHashAndPassword(storedKey.APIKeySecret, key.APIKeySecret)
+	return bcrypt.CompareHashAndPassword([]byte(storedKey.APIKeySecret), []byte(key.APIKeySecret))
 }
 
 // Encrypt takes an api key secret and encrypts it for storage.

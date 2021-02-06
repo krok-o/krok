@@ -35,7 +35,7 @@ func TestMatch(t *testing.T) {
 			Name:         "test-key",
 			UserID:       1,
 			APIKeyID:     "api-key-id",
-			APIKeySecret: []byte("secret"),
+			APIKeySecret: "secret",
 			TTL:          time.Now(),
 		},
 	}
@@ -45,10 +45,10 @@ func TestMatch(t *testing.T) {
 		Logger:       zerolog.New(os.Stderr),
 	})
 	assert.NoError(t, err)
-	secret := []byte("secret")
-	encrypted, err := p.Encrypt(context.Background(), secret)
+	secret := "secret"
+	encrypted, err := p.Encrypt(context.Background(), []byte(secret))
 	assert.NoError(t, err)
-	mak.key.APIKeySecret = encrypted
+	mak.key.APIKeySecret = string(encrypted)
 	err = p.Match(context.Background(), &models.APIKey{
 		ID:           0,
 		Name:         "test-key",
@@ -62,7 +62,7 @@ func TestMatch(t *testing.T) {
 		Name:         "test-key",
 		UserID:       1,
 		APIKeyID:     "api-key-id",
-		APIKeySecret: []byte("secret2"),
+		APIKeySecret: "secret2",
 	})
 	assert.Error(t, err)
 	mak.err = kerr.ErrNotFound

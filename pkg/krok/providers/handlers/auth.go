@@ -1,11 +1,8 @@
 package handlers
 
 import (
-	"context"
 	"net/http"
-	"time"
 
-	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 
@@ -24,9 +21,10 @@ type Config struct {
 
 // Dependencies defines the dependencies for the repository handler provider.
 type Dependencies struct {
-	Logger     zerolog.Logger
-	UserStore  providers.UserStorer
-	ApiKeyAuth providers.ApiKeysAuthenticator
+	Logger      zerolog.Logger
+	UserStore   providers.UserStorer
+	ApiKeyAuth  providers.ApiKeysAuthenticator
+	TokenIssuer providers.UserTokenIssuer
 }
 
 // TokenHandler is a token provider for the handlers.
@@ -62,13 +60,12 @@ func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 		}
 		log := p.Logger.With().Str("email", request.Email).Logger()
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		// Assert Api Key, then Get the request if the api key has matched successfully.
 		if err := p.ApiKeyAuth.Match(ctx, &models.APIKey{
 			APIKeyID:     request.APIKeyID,
-			APIKeySecret: []byte(request.APIKeySecret),
+			APIKeySecret: request.APIKeySecret,
 		}); err != nil {
 			log.Debug().Err(err).Msg("Failed to match api keys.")
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("Failed to match api keys", http.StatusInternalServerError, err))
@@ -79,24 +76,13 @@ func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("Failed to get user", http.StatusInternalServerError, err))
 		}
 
-		// Create token
-		token := jwt.New(jwt.SigningMethodHS256)
-
-		// Set claims
-		claims := token.Claims.(jwt.MapClaims)
-		claims["email"] = u.Email // from context
-		claims["admin"] = true
-		claims["exp"] = time.Now().Add(time.Hour * 72).Unix()
-
-		// Generate encoded token and send it as response.
-		t, err := token.SignedString([]byte(p.Config.GlobalTokenKey))
+		t, err := p.TokenIssuer.Create(ctx, nil)
 		if err != nil {
-			log.Error().Err(err).Msg("Failed to generate token.")
-			return c.JSON(http.StatusInternalServerError, kerr.APIError("Failed to generate token", http.StatusInternalServerError, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to generate token", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusOK, map[string]string{
-			"token": t,
+			"token": t.AccessToken,
 		})
 	}
 }

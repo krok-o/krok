@@ -148,15 +148,16 @@ func (a *APIKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, 
 func (a *APIKeysStore) Get(ctx context.Context, id int, userID int) (*models.APIKey, error) {
 	log := a.Logger.With().Int("id", id).Logger()
 	var (
-		storedID       int
-		storedName     string
-		storedAPIKeyID string
-		storedUserID   int
-		storedTTL      time.Time
+		storedID           int
+		storedName         string
+		storedAPIKeyID     string
+		storedAPIKeySecret string
+		storedUserID       int
+		storedTTL          time.Time
 	)
 	f := func(tx pgx.Tx) error {
-		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, user_id, ttl from %s where id = $1 and user_id = $2", apiKeysTable), id, userID).
-			Scan(&storedID, &storedName, &storedAPIKeyID, &storedUserID, &storedTTL)
+		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, api_key_secret, user_id, ttl from %s where id = $1 and user_id = $2", apiKeysTable), id, userID).
+			Scan(&storedID, &storedName, &storedAPIKeyID, &storedAPIKeySecret, &storedUserID, &storedTTL)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
@@ -174,11 +175,12 @@ func (a *APIKeysStore) Get(ctx context.Context, id int, userID int) (*models.API
 	}
 
 	return &models.APIKey{
-		ID:       storedID,
-		Name:     storedName,
-		UserID:   storedUserID,
-		APIKeyID: storedAPIKeyID,
-		TTL:      storedTTL,
+		ID:           storedID,
+		Name:         storedName,
+		UserID:       storedUserID,
+		APIKeyID:     storedAPIKeyID,
+		APIKeySecret: storedAPIKeySecret,
+		TTL:          storedTTL,
 	}, nil
 }
 
@@ -186,15 +188,16 @@ func (a *APIKeysStore) Get(ctx context.Context, id int, userID int) (*models.API
 func (a *APIKeysStore) GetByApiKeyID(ctx context.Context, id string) (*models.APIKey, error) {
 	log := a.Logger.With().Str("id", id).Logger()
 	var (
-		storedID       int
-		storedName     string
-		storedAPIKeyID string
-		storedUserID   int
-		storedTTL      time.Time
+		storedID           int
+		storedName         string
+		storedAPIKeyID     string
+		storedAPIKeySecret string
+		storedUserID       int
+		storedTTL          time.Time
 	)
 	f := func(tx pgx.Tx) error {
-		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, user_id, ttl from %s where api_key_id = $1", apiKeysTable), id).
-			Scan(&storedID, &storedName, &storedAPIKeyID, &storedUserID, &storedTTL)
+		err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, api_key_id, api_key_secret, user_id, ttl from %s where api_key_id = $1", apiKeysTable), id).
+			Scan(&storedID, &storedName, &storedAPIKeyID, &storedAPIKeySecret, &storedUserID, &storedTTL)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
@@ -212,10 +215,11 @@ func (a *APIKeysStore) GetByApiKeyID(ctx context.Context, id string) (*models.AP
 	}
 
 	return &models.APIKey{
-		ID:       storedID,
-		Name:     storedName,
-		UserID:   storedUserID,
-		APIKeyID: storedAPIKeyID,
-		TTL:      storedTTL,
+		ID:           storedID,
+		Name:         storedName,
+		UserID:       storedUserID,
+		APIKeyID:     storedAPIKeyID,
+		APIKeySecret: storedAPIKeySecret,
+		TTL:          storedTTL,
 	}, nil
 }
