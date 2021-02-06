@@ -29,7 +29,7 @@ type OAuthAuthenticatorConfig struct {
 type OAuthAuthenticatorDependencies struct {
 	UUID      providers.UUIDGenerator
 	Clock     providers.Clock
-	Issuer    providers.UserTokenIssuer
+	Issuer    providers.TokenIssuer
 	UserStore providers.UserStorer
 }
 

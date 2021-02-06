@@ -236,7 +236,7 @@ func TestUserAuthHandler_Refresh(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		mockTokenIssuer := &mocks.UserTokenIssuer{}
+		mockTokenIssuer := &mocks.TokenIssuer{}
 		mockTokenIssuer.On("Refresh", mock.Anything, "fake_token").Return(nil, errors.New("err"))
 
 		handler := NewUserAuthHandler(UserAuthHandlerDeps{
@@ -257,7 +257,7 @@ func TestUserAuthHandler_Refresh(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 
-		mockTokenIssuer := &mocks.UserTokenIssuer{}
+		mockTokenIssuer := &mocks.TokenIssuer{}
 		mockTokenIssuer.On("Refresh", mock.Anything, "fake_token").Return(&oauth2.Token{
 			AccessToken:  "fake_access_token",
 			RefreshToken: "fake_refresh_token",

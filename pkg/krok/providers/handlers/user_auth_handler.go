@@ -21,7 +21,7 @@ const (
 type UserAuthHandlerDeps struct {
 	Logger      zerolog.Logger
 	OAuth       providers.OAuthAuthenticator
-	TokenIssuer providers.UserTokenIssuer
+	TokenIssuer providers.TokenIssuer
 }
 
 // UserAuthHandler handles user authentication.

@@ -27,7 +27,7 @@ func TestOAuthAuthenticator_Exchange(t *testing.T) {
 		mockUserStore := &mocks.UserStorer{}
 		mockUserStore.On("GetByEmail", mock.Anything, "test@test.com").Return(&models.User{ID: 1, Email: "test@test.com"}, nil)
 
-		mockTokenIssuer := &mocks.UserTokenIssuer{}
+		mockTokenIssuer := &mocks.TokenIssuer{}
 		mockTokenIssuer.On("Create", &models.User{ID: 1, Email: "test@test.com"}).Return(&oauth2.Token{}, nil)
 
 		auth := NewOAuthAuthenticator(OAuthAuthenticatorConfig{
@@ -60,7 +60,7 @@ func TestOAuthAuthenticator_Exchange(t *testing.T) {
 			DisplayName: "Test User",
 		}, nil)
 
-		mockTokenIssuer := &mocks.UserTokenIssuer{}
+		mockTokenIssuer := &mocks.TokenIssuer{}
 		mockTokenIssuer.On("Create", &models.User{ID: 1, Email: "test@test.com", DisplayName: "Test User"}).Return(&oauth2.Token{}, nil)
 
 		auth := NewOAuthAuthenticator(OAuthAuthenticatorConfig{
