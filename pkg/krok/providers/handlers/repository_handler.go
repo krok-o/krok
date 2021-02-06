@@ -44,30 +44,27 @@ func NewRepositoryHandler(cfg Config, deps RepoHandlerDependencies) (*RepoHandle
 // CreateRepository handles the Create rest event.
 func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := r.TokenProvider.GetToken(c)
-		if err != nil {
-			r.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		repo := &models.Repository{}
-		err = c.Bind(repo)
-		if err != nil {
+		if err := c.Bind(repo); err != nil {
 			r.Logger.Debug().Err(err).Msg("Failed to bind repository.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
 		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
+
 		created, err := r.RepositoryStorer.Create(ctx, repo)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository", http.StatusBadRequest, err))
 		}
+
 		uurl, err := r.generateUniqueCallBackURL(created)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Failed to generate unique url.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to generate unique call back url", http.StatusBadRequest, err))
 		}
+
 		created.UniqueURL = uurl
 		// Look for the right providers in the list of providers for the given VCS type.
 		// If it's not found, throw an error.
@@ -91,27 +88,24 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 // TODO: Delete the hook here as well?
 func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := r.TokenProvider.GetToken(c)
-		if err != nil {
-			r.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		id := c.Param("id")
 		if id == "" {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		n, err := strconv.Atoi(id)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
-		defer cancel()
+		ctx := c.Request().Context()
+
 		if err := r.RepositoryStorer.Delete(ctx, n); err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete repository", http.StatusBadRequest, err))
 		}
+
 		return c.NoContent(http.StatusOK)
 	}
 }
@@ -119,33 +113,31 @@ func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
 // GetRepository retrieves a repository and displays the unique URL for which this repo is responsible for.
 func (r *RepoHandler) GetRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := r.TokenProvider.GetToken(c)
-		if err != nil {
-			r.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		id := c.Param("id")
 		if id == "" {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		n, err := strconv.Atoi(id)
 		if err != nil {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
-		defer cancel()
+		ctx := c.Request().Context()
+
 		repo, err := r.RepositoryStorer.Get(ctx, n)
 		if err != nil {
 			apiError := kerr.APIError("failed to get repository", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		uurl, err := r.generateUniqueCallBackURL(repo)
 		if err != nil {
 			apiError := kerr.APIError("failed to generate unique callback url for repository", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		repo.UniqueURL = uurl
 		return c.JSON(http.StatusOK, repo)
 	}
@@ -154,26 +146,20 @@ func (r *RepoHandler) GetRepository() echo.HandlerFunc {
 // ListRepositories handles the List rest event.
 func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := r.TokenProvider.GetToken(c)
-		if err != nil {
-			r.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
-
 		opts := &models.ListOptions{}
 		if err := c.Bind(opts); err != nil {
 			// if we don't have anything to bind, just ignore opts.
 			opts = nil
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		list, err := r.RepositoryStorer.List(ctx, opts)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository List failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list repository", http.StatusBadRequest, err))
 		}
+
 		return c.JSON(http.StatusOK, list)
 	}
 }
@@ -181,25 +167,20 @@ func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
 // UpdateRepository handles the update rest event.
 func (r *RepoHandler) UpdateRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		_, err := r.TokenProvider.GetToken(c)
-		if err != nil {
-			r.Logger.Debug().Err(err).Msg("Failed to get Token.")
-			return c.JSON(http.StatusUnauthorized, kerr.APIError("failed to get token", http.StatusUnauthorized, err))
-		}
 		repo := &models.Repository{}
-		err = c.Bind(repo)
-		if err != nil {
+		if err := c.Bind(repo); err != nil {
 			r.Logger.Debug().Err(err).Msg("Failed to bind repository.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
-		defer cancel()
+		ctx := c.Request().Context()
+
 		updated, err := r.RepositoryStorer.Update(ctx, repo)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository UpdateRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update repository", http.StatusBadRequest, err))
 		}
+
 		uurl, err := r.generateUniqueCallBackURL(updated)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository generateUniqueCallBackURL failed.")

@@ -44,3 +44,10 @@ type TokenProvider interface {
 	GetTokenRaw(raw string) (*jwt.Token, error)
 	TokenHandler() echo.HandlerFunc
 }
+
+// AuthHandler provides the handler functions for the authentication flow.
+type AuthHandler interface {
+	Login() echo.HandlerFunc
+	Callback() echo.HandlerFunc
+	Refresh() echo.HandlerFunc
+}

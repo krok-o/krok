@@ -100,19 +100,6 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		assert.Equal(tt, http.StatusOK, rec.Code)
 	})
 
-	t.Run("delete no token", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodDelete, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/command/:id")
-		c.SetParamNames("id")
-		c.SetParamValues("0")
-		err = ch.DeleteCommand()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
-
 	t.Run("delete invalid id", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
@@ -204,19 +191,6 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, commandExpected, rec.Body.String())
-	})
-
-	t.Run("get no token", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/command/:id")
-		c.SetParamNames("id")
-		c.SetParamValues("0")
-		err = ch.GetCommand()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
 	})
 
 	t.Run("get invalid id", func(tt *testing.T) {
@@ -314,17 +288,6 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		assert.Equal(tt, expectedCommandsResponse, rec.Body.String())
 	})
 
-	t.Run("list no token flow", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/repositories")
-		err = ch.ListCommands()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
-
 	t.Run("list normal flow with filters", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
@@ -404,18 +367,6 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
-
-	t.Run("update with no token", func(tt *testing.T) {
-		commandPost := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1}`
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/repository/update", strings.NewReader(commandPost))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		err = ch.UpdateCommand()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
-	})
 }
 
 func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
@@ -474,19 +425,6 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 		err = ch.AddCommandRelForRepository()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
-	})
-
-	t.Run("add relation no token", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/command/add-command-rel-for-repository/:cmdid/:repoid")
-		c.SetParamNames("cmdid", "repoid")
-		c.SetParamValues("0", "0")
-		err = ch.AddCommandRelForRepository()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
 	})
 
 	t.Run("add relation invalid command id", func(tt *testing.T) {
@@ -595,19 +533,6 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 		err = ch.RemoveCommandRelForRepository()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
-	})
-
-	t.Run("remove relation no token", func(tt *testing.T) {
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.SetPath("/command/remove-command-rel-for-repository/:cmdid/:repoid")
-		c.SetParamNames("cmdid", "repoid")
-		c.SetParamValues("0", "0")
-		err = ch.RemoveCommandRelForRepository()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusUnauthorized, rec.Code)
 	})
 
 	t.Run("remove relation invalid command id", func(tt *testing.T) {
