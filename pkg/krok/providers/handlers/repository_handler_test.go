@@ -106,7 +106,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -169,7 +169,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -235,7 +235,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -326,7 +326,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -368,7 +368,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,

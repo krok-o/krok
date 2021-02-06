@@ -74,7 +74,7 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -163,7 +163,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -261,7 +261,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -324,7 +324,7 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -401,7 +401,7 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -509,7 +509,7 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,

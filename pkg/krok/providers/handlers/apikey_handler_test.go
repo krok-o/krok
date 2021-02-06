@@ -59,7 +59,7 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,
@@ -134,7 +134,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,
@@ -218,7 +218,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,
@@ -336,7 +336,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,

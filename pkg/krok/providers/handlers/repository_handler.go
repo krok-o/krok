@@ -20,7 +20,7 @@ import (
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
 	RepositoryStorer  providers.RepositoryStorer
-	TokenProvider     *TokenProvider
+	TokenProvider     *TokenHandler
 	Logger            zerolog.Logger
 	PlatformProviders map[int]providers.Platform
 }

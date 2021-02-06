@@ -1,7 +1,6 @@
 package providers
 
 import (
-	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 )
 
@@ -39,9 +38,8 @@ type ApiKeysHandler interface {
 	GetApiKeyPair() echo.HandlerFunc
 }
 
-// TokenProvider provides operations to get and validation JWT tokens.
-type TokenProvider interface {
-	GetTokenRaw(raw string) (*jwt.Token, error)
+// TokenHandler provides operations to get and validation JWT tokens.
+type TokenHandler interface {
 	TokenHandler() echo.HandlerFunc
 }
 

@@ -24,7 +24,7 @@ const (
 type ApiKeysHandlerDependencies struct {
 	Dependencies
 	APIKeysStore  providers.APIKeysStorer
-	TokenProvider *TokenProvider
+	TokenProvider *TokenHandler
 }
 
 // ApiKeysHandler is a handler taking care of api keys related api calls.

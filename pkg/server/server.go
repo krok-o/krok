@@ -47,8 +47,7 @@ type Dependencies struct {
 	RepositoryHandler providers.RepositoryHandler
 	ApiKeyHandler     providers.ApiKeysHandler
 	AuthHandler       providers.AuthHandler
-
-	TokenProvider providers.TokenProvider
+	TokenHandler      providers.TokenHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -87,7 +86,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// @rid repository id
 	// @vid vcs id
 	e.POST(api+"/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
-	e.POST(api+"/get-token", s.Dependencies.TokenProvider.TokenHandler())
+	e.POST(api+"/get-token", s.Dependencies.TokenHandler.TokenHandler())
 	// Admin related actions
 
 	userMiddleware := krokmiddleware.UserAuthentication(&krokmiddleware.UserAuthenticationConfig{

@@ -16,7 +16,7 @@ import (
 type CommandsHandlerDependencies struct {
 	Logger        zerolog.Logger
 	CommandStorer providers.CommandStorer
-	TokenProvider *TokenProvider
+	TokenProvider *TokenHandler
 }
 
 // CommandsHandler is a handler taking care of commands related api calls.

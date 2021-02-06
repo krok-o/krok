@@ -29,15 +29,15 @@ type Dependencies struct {
 	ApiKeyAuth providers.ApiKeysAuthenticator
 }
 
-// TokenProvider is a token provider for the handlers.
-type TokenProvider struct {
+// TokenHandler is a token provider for the handlers.
+type TokenHandler struct {
 	Config
 	Dependencies
 }
 
-// NewTokenProvider creates a new token provider which deals with generating and handling tokens.
-func NewTokenProvider(cfg Config, deps Dependencies) (*TokenProvider, error) {
-	tp := &TokenProvider{
+// NewTokenHandler creates a new token handler which deals with generating and handling tokens.
+func NewTokenHandler(cfg Config, deps Dependencies) (*TokenHandler, error) {
+	tp := &TokenHandler{
 		Config:       cfg,
 		Dependencies: deps,
 	}
@@ -52,7 +52,7 @@ type ApiKeyAuthRequest struct {
 }
 
 // TokenHandler creates a JWT token for a given api key pair.
-func (p *TokenProvider) TokenHandler() echo.HandlerFunc {
+func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		request := &ApiKeyAuthRequest{}
 		err := c.Bind(request)

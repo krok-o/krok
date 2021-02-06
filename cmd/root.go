@@ -55,6 +55,9 @@ func init() {
 	flag.StringVar(&krokArgs.server.Proto, "proto", "http", "--proto http")
 	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost:9998", "--hostname localhost:9998")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
+	// OAuth
+	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
+	flag.StringVar(&krokArgs.server.GoogleClientSecret, "google-client-secret", "", "--google-client-secret my-client-secret}")
 
 	// Store config
 	flag.StringVar(&krokArgs.store.Database, "krok-db-dbname", "krok", "--krok-db-dbname krok")
@@ -71,10 +74,6 @@ func init() {
 
 	// VaultStorer config
 	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
-
-	// OAuth
-	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
-	flag.StringVar(&krokArgs.server.GoogleClientSecret, "google-client-secret", "", "--google-client-secret my-client-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -197,7 +196,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		UserStore:  userStore,
 		ApiKeyAuth: authMatcher,
 	}
-	tp, err := handlers.NewTokenProvider(handlers.Config{
+	tp, err := handlers.NewTokenHandler(handlers.Config{
 		Hostname:           krokArgs.server.Hostname,
 		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
 		GoogleClientID:     krokArgs.server.GoogleClientID,
@@ -265,7 +264,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		TokenIssuer:   tokenIssuer,
 		Logger:        log,
 	})
-
 	// ************************
 	// Set up the server
 	// ************************
@@ -277,6 +275,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		RepositoryHandler: repoHandler,
 		ApiKeyHandler:     apiKeysHandler,
 		AuthHandler:       authHandler,
+		TokenHandler:      tp,
 	})
 
 	// Run service & server
