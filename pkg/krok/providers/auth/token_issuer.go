@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"strconv"
 	"time"
@@ -10,7 +9,6 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"golang.org/x/oauth2"
 
-	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
@@ -44,17 +42,10 @@ func NewTokenIssuer(cfg TokenIssuerConfig, deps TokenIssuerDependencies) *TokenI
 
 // Create creates a JWT access_token and refresh_token with the given user details.
 // It will attempt to get or create the user in the database.
-func (ti *TokenIssuer) Create(ctx context.Context, ud *models.UserAuthDetails) (*oauth2.Token, error) {
-	user, err := ti.getOrCreateUser(ctx, ud)
-	if err != nil {
-		return nil, err
-	}
-
-	return ti.createToken(strconv.Itoa(user.ID))
-}
-
-func (ti *TokenIssuer) createToken(userID string) (*oauth2.Token, error) {
+func (ti *TokenIssuer) Create(user *models.User) (*oauth2.Token, error) {
 	now := ti.Clock.Now()
+
+	userID := strconv.Itoa(user.ID)
 
 	// Create the new access token
 	newAccessClaims := jwt.StandardClaims{
@@ -86,25 +77,6 @@ func (ti *TokenIssuer) createToken(userID string) (*oauth2.Token, error) {
 	}, nil
 }
 
-func (ti *TokenIssuer) getOrCreateUser(ctx context.Context, ud *models.UserAuthDetails) (*models.User, error) {
-	user, err := ti.UserStore.GetByEmail(ctx, ud.Email)
-	if err != nil {
-		var qe *kerr.QueryError
-		if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
-			// Not in the database, create them.
-			dname := fmt.Sprintf("%s %s", ud.FirstName, ud.LastName)
-			user, err = ti.UserStore.Create(ctx, &models.User{Email: ud.Email, DisplayName: dname})
-			if err != nil {
-				return nil, fmt.Errorf("create user: %w", err)
-			}
-			return user, nil
-		}
-		return nil, fmt.Errorf("get user: %w", err)
-	}
-
-	return user, nil
-}
-
 // Refresh refreshes the users JWT tokens.
 func (ti *TokenIssuer) Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error) {
 	var refreshClaims jwt.StandardClaims
@@ -126,7 +98,7 @@ func (ti *TokenIssuer) Refresh(ctx context.Context, refreshToken string) (*oauth
 		return nil, fmt.Errorf("user store get: %w", err)
 	}
 
-	newToken, err := ti.createToken(strconv.Itoa(user.ID))
+	newToken, err := ti.Create(user)
 	if err != nil {
 		return nil, fmt.Errorf("create token: %w", err)
 	}

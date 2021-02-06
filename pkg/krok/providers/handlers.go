@@ -40,7 +40,7 @@ type ApiKeysHandler interface {
 
 // AuthHandler provides the handler functions for the authentication flow.
 type AuthHandler interface {
-	Login() echo.HandlerFunc
-	Callback() echo.HandlerFunc
+	OAuthLogin() echo.HandlerFunc
+	OAuthCallback() echo.HandlerFunc
 	Refresh() echo.HandlerFunc
 }
