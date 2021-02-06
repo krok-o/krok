@@ -34,6 +34,6 @@ type OAuthAuthenticator interface {
 
 // UserTokenIssuer handles creation of user authentication tokens.
 type UserTokenIssuer interface {
-	Create(ctx context.Context, token *models.UserAuthDetails) (*oauth2.Token, error)
+	Create(token *models.User) (*oauth2.Token, error)
 	Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error)
 }

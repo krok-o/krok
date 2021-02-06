@@ -79,8 +79,8 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// Public endpoints for authentication.
 	e.POST("/auth/refresh", s.AuthHandler.Refresh())
-	e.GET("/auth/login", s.AuthHandler.Login())
-	e.GET("/auth/callback", s.AuthHandler.Callback())
+	e.GET("/auth/login", s.AuthHandler.OAuthLogin())
+	e.GET("/auth/callback", s.AuthHandler.OAuthCallback())
 
 	// Routes
 	// This is the general format of a hook callback url for a repository.

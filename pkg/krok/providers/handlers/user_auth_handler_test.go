@@ -26,7 +26,7 @@ func TestUserAuthHandler_Login(t *testing.T) {
 		c := e.NewContext(req, rec)
 
 		handler := NewUserAuthHandler(UserAuthHandlerDeps{})
-		err := handler.Login()(c)
+		err := handler.OAuthLogin()(c)
 		assert.NoError(t, err)
 		assert.Equal(t, "error invalid redirect_url", rec.Body.String())
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
@@ -44,7 +44,7 @@ func TestUserAuthHandler_Login(t *testing.T) {
 			Logger: zerolog.New(os.Stderr),
 			OAuth:  mockOAuth,
 		})
-		err := handler.Login()(c)
+		err := handler.OAuthLogin()(c)
 		mockOAuth.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
@@ -64,7 +64,7 @@ func TestUserAuthHandler_Login(t *testing.T) {
 			Logger: zerolog.New(os.Stderr),
 			OAuth:  mockOAuth,
 		})
-		err := handler.Login()(c)
+		err := handler.OAuthLogin()(c)
 		mockOAuth.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusTemporaryRedirect, rec.Code)
@@ -83,7 +83,7 @@ func TestUserAuthHandler_Callback(t *testing.T) {
 		handler := NewUserAuthHandler(UserAuthHandlerDeps{
 			Logger: zerolog.New(os.Stderr),
 		})
-		err := handler.Callback()(c)
+		err := handler.OAuthCallback()(c)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		assert.Equal(t, "error invalid state", rec.Body.String())
@@ -99,7 +99,7 @@ func TestUserAuthHandler_Callback(t *testing.T) {
 		handler := NewUserAuthHandler(UserAuthHandlerDeps{
 			Logger: zerolog.New(os.Stderr),
 		})
-		err := handler.Callback()(c)
+		err := handler.OAuthCallback()(c)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		assert.Equal(t, "error invalid code", rec.Body.String())
@@ -120,7 +120,7 @@ func TestUserAuthHandler_Callback(t *testing.T) {
 			Logger: zerolog.New(os.Stderr),
 			OAuth:  mockOAuth,
 		})
-		err := handler.Callback()(c)
+		err := handler.OAuthCallback()(c)
 		mockOAuth.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
@@ -143,7 +143,7 @@ func TestUserAuthHandler_Callback(t *testing.T) {
 			Logger: zerolog.New(os.Stderr),
 			OAuth:  mockOAuth,
 		})
-		err := handler.Callback()(c)
+		err := handler.OAuthCallback()(c)
 		mockOAuth.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
@@ -166,7 +166,7 @@ func TestUserAuthHandler_Callback(t *testing.T) {
 			Logger: zerolog.New(os.Stderr),
 			OAuth:  mockOAuth,
 		})
-		err := handler.Callback()(c)
+		err := handler.OAuthCallback()(c)
 		mockOAuth.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusUnauthorized, rec.Code)
@@ -192,7 +192,7 @@ func TestUserAuthHandler_Callback(t *testing.T) {
 			Logger: zerolog.New(os.Stderr),
 			OAuth:  mockOAuth,
 		})
-		err := handler.Callback()(c)
+		err := handler.OAuthCallback()(c)
 		mockOAuth.AssertExpectations(t)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusPermanentRedirect, rec.Code)

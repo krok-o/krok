@@ -34,8 +34,8 @@ func NewUserAuthHandler(deps UserAuthHandlerDeps) *UserAuthHandler {
 	return &UserAuthHandler{UserAuthHandlerDeps: deps}
 }
 
-// Login handles a user login.
-func (h *UserAuthHandler) Login() echo.HandlerFunc {
+// OAuthLogin handles a user login.
+func (h *UserAuthHandler) OAuthLogin() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		redirectURL := c.QueryParam("redirect_url")
 		if redirectURL == "" {
@@ -56,8 +56,8 @@ func (h *UserAuthHandler) Login() echo.HandlerFunc {
 	}
 }
 
-// Callback handles the user login callback.
-func (h *UserAuthHandler) Callback() echo.HandlerFunc {
+// OAuthCallback handles the user login callback.
+func (h *UserAuthHandler) OAuthCallback() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		log := h.Logger.With().Logger()

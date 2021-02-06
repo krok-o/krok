@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -11,6 +12,7 @@ import (
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
 )
@@ -25,9 +27,10 @@ type OAuthAuthenticatorConfig struct {
 
 // OAuthAuthenticatorDependencies contains the dependencies for the OAuthAuthenticator.
 type OAuthAuthenticatorDependencies struct {
-	UUID   providers.UUIDGenerator
-	Clock  providers.Clock
-	Issuer providers.UserTokenIssuer
+	UUID      providers.UUIDGenerator
+	Clock     providers.Clock
+	Issuer    providers.UserTokenIssuer
+	UserStore providers.UserStorer
 }
 
 // OAuthAuthenticator is the OAuthAuthenticator that uses OAuth2 to authenticate the user.
@@ -71,12 +74,37 @@ func (op *OAuthAuthenticator) Exchange(ctx context.Context, code string) (*oauth
 		return nil, err
 	}
 
-	userAuthDetails, err := op.getGoogleUser(token.AccessToken)
+	ud, err := op.getGoogleUser(token.AccessToken)
 	if err != nil {
 		return nil, err
 	}
 
-	return op.Issuer.Create(ctx, userAuthDetails)
+	// TODO: In future we may want a constraint where users must be created first, rather than automatically.
+	user, err := op.getOrCreateUser(ctx, ud)
+	if err != nil {
+		return nil, err
+	}
+
+	return op.Issuer.Create(user)
+}
+
+func (op *OAuthAuthenticator) getOrCreateUser(ctx context.Context, ud *models.UserAuthDetails) (*models.User, error) {
+	user, err := op.UserStore.GetByEmail(ctx, ud.Email)
+	if err != nil {
+		var qe *kerr.QueryError
+		if errors.As(err, &qe) && errors.Is(qe.Err, kerr.ErrNotFound) {
+			// Not in the database, create them.
+			dname := fmt.Sprintf("%s %s", ud.FirstName, ud.LastName)
+			user, err = op.UserStore.Create(ctx, &models.User{Email: ud.Email, DisplayName: dname})
+			if err != nil {
+				return nil, fmt.Errorf("create user: %w", err)
+			}
+			return user, nil
+		}
+		return nil, fmt.Errorf("get user: %w", err)
+	}
+
+	return user, nil
 }
 
 // stateClaims are used when creating a temporary JWT state nonce that has an expiry.

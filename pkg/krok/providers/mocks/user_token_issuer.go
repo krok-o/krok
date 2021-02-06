@@ -16,13 +16,13 @@ type UserTokenIssuer struct {
 	mock.Mock
 }
 
-// Create provides a mock function with given fields: ctx, token
-func (_m *UserTokenIssuer) Create(ctx context.Context, token *models.UserAuthDetails) (*oauth2.Token, error) {
-	ret := _m.Called(ctx, token)
+// Create provides a mock function with given fields: token
+func (_m *UserTokenIssuer) Create(token *models.User) (*oauth2.Token, error) {
+	ret := _m.Called(token)
 
 	var r0 *oauth2.Token
-	if rf, ok := ret.Get(0).(func(context.Context, *models.UserAuthDetails) *oauth2.Token); ok {
-		r0 = rf(ctx, token)
+	if rf, ok := ret.Get(0).(func(*models.User) *oauth2.Token); ok {
+		r0 = rf(token)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*oauth2.Token)
@@ -30,8 +30,8 @@ func (_m *UserTokenIssuer) Create(ctx context.Context, token *models.UserAuthDet
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, *models.UserAuthDetails) error); ok {
-		r1 = rf(ctx, token)
+	if rf, ok := ret.Get(1).(func(*models.User) error); ok {
+		r1 = rf(token)
 	} else {
 		r1 = ret.Error(1)
 	}
