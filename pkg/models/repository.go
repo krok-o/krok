@@ -14,7 +14,7 @@ type Repository struct {
 	Name string `json:"name"`
 	ID   int    `json:"id"`
 	URL  string `json:"url"`
-	// Defines which handler will be used. For values, see handlers.go.
+	// Defines which handler will be used. For values, see platforms.go.
 	VCS int `json:"vcs"`
 	// Auth an command are all dynamically generated.
 	Auth     *Auth      `json:"auth,omitempty"`

@@ -41,8 +41,8 @@ func NewRepositoryHandler(cfg Config, deps RepoHandlerDependencies) (*RepoHandle
 	}, nil
 }
 
-// CreateRepository handles the Create rest event.
-func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
+// Create handles the Create rest event.
+func (r *RepoHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		repo := &models.Repository{}
 		if err := c.Bind(repo); err != nil {
@@ -84,9 +84,9 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 	}
 }
 
-// DeleteRepository handles the Delete rest event.
+// Delete handles the Delete rest event.
 // TODO: Delete the hook here as well?
-func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
+func (r *RepoHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -110,8 +110,8 @@ func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
 	}
 }
 
-// GetRepository retrieves a repository and displays the unique URL for which this repo is responsible for.
-func (r *RepoHandler) GetRepository() echo.HandlerFunc {
+// Get retrieves a repository and displays the unique URL for which this repo is responsible for.
+func (r *RepoHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -143,8 +143,8 @@ func (r *RepoHandler) GetRepository() echo.HandlerFunc {
 	}
 }
 
-// ListRepositories handles the List rest event.
-func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
+// List handles the List rest event.
+func (r *RepoHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
 		if err := c.Bind(opts); err != nil {
@@ -164,8 +164,8 @@ func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
 	}
 }
 
-// UpdateRepository handles the update rest event.
-func (r *RepoHandler) UpdateRepository() echo.HandlerFunc {
+// Update handles the update rest event.
+func (r *RepoHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		repo := &models.Repository{}
 		if err := c.Bind(repo); err != nil {

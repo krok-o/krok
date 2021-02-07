@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 
@@ -35,8 +36,8 @@ func NewCommandsHandler(cfg Config, deps CommandsHandlerDependencies) (*Commands
 	}, nil
 }
 
-// DeleteCommand deletes a command.
-func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
+// Delete deletes a command.
+func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -61,8 +62,8 @@ func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
 	}
 }
 
-// ListCommands lists commands.
-func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
+// List lists commands.
+func (ch *CommandsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
 		if err := c.Bind(opts); err != nil {
@@ -82,8 +83,8 @@ func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
 	}
 }
 
-// GetCommand returns a specific command.
-func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
+// Get returns a specific command.
+func (ch *CommandsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -109,8 +110,8 @@ func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
 	}
 }
 
-// UpdateCommand updates a command.
-func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
+// Update updates a command.
+func (ch *CommandsHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		command := &models.Command{}
 		if err := c.Bind(command); err != nil {
@@ -127,6 +128,13 @@ func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, updated)
+	}
+}
+
+// Create is unimplemented.
+func (ch *CommandsHandler) Create() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
 	}
 }
 

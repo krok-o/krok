@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -43,8 +44,8 @@ func NewApiKeysHandler(cfg Config, deps ApiKeysHandlerDependencies) (*ApiKeysHan
 	}, nil
 }
 
-// CreateApiKeyPair creates an api key pair for a given user.
-func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
+// Create creates an api key pair for a given user.
+func (a *ApiKeysHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -100,8 +101,8 @@ func (a *ApiKeysHandler) CreateApiKeyPair() echo.HandlerFunc {
 	}
 }
 
-// DeleteApiKeyPair deletes a set of api keys for a given user with a given id.
-func (a *ApiKeysHandler) DeleteApiKeyPair() echo.HandlerFunc {
+// Delete deletes a set of api keys for a given user with a given id.
+func (a *ApiKeysHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -131,8 +132,8 @@ func (a *ApiKeysHandler) DeleteApiKeyPair() echo.HandlerFunc {
 	}
 }
 
-// ListApiKeyPairs lists all api keys for a given user.
-func (a *ApiKeysHandler) ListApiKeyPairs() echo.HandlerFunc {
+// List lists all api keys for a given user.
+func (a *ApiKeysHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -151,8 +152,8 @@ func (a *ApiKeysHandler) ListApiKeyPairs() echo.HandlerFunc {
 	}
 }
 
-// GetApiKeyPair returns a given api key.
-func (a *ApiKeysHandler) GetApiKeyPair() echo.HandlerFunc {
+// Get returns a given api key.
+func (a *ApiKeysHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -180,6 +181,13 @@ func (a *ApiKeysHandler) GetApiKeyPair() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, key)
+	}
+}
+
+// Update is unimplemented.
+func (a *ApiKeysHandler) Update() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
 	}
 }
 
