@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"path"
@@ -18,9 +19,10 @@ import (
 
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
-	RepositoryStorer providers.RepositoryStorer
-	TokenProvider    *TokenProvider
-	Logger           zerolog.Logger
+	RepositoryStorer  providers.RepositoryStorer
+	TokenProvider     *TokenHandler
+	Logger            zerolog.Logger
+	PlatformProviders map[int]providers.Platform
 }
 
 // RepoHandler is a handler taking care of repository related api calls.
@@ -39,8 +41,8 @@ func NewRepositoryHandler(cfg Config, deps RepoHandlerDependencies) (*RepoHandle
 	}, nil
 }
 
-// CreateRepository handles the Create rest event.
-func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
+// Create handles the Create rest event.
+func (r *RepoHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		repo := &models.Repository{}
 		if err := c.Bind(repo); err != nil {
@@ -48,7 +50,7 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
+		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
 		defer cancel()
 
 		created, err := r.RepositoryStorer.Create(ctx, repo)
@@ -64,12 +66,27 @@ func (r *RepoHandler) CreateRepository() echo.HandlerFunc {
 		}
 
 		created.UniqueURL = uurl
+		// Look for the right providers in the list of providers for the given VCS type.
+		// If it's not found, throw an error.
+		var (
+			provider providers.Platform
+			ok       bool
+		)
+		if provider, ok = r.PlatformProviders[repo.VCS]; !ok {
+			err := fmt.Errorf("vcs provider with id %d is not supported", repo.VCS)
+			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
+		}
+		if err := provider.CreateHook(ctx, repo); err != nil {
+			r.Logger.Debug().Err(err).Msg("Failed to create Hook")
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create hook", http.StatusInternalServerError, err))
+		}
 		return c.JSON(http.StatusCreated, created)
 	}
 }
 
-// DeleteRepository handles the Delete rest event.
-func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
+// Delete handles the Delete rest event.
+// TODO: Delete the hook here as well?
+func (r *RepoHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -82,9 +99,7 @@ func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		if err := r.RepositoryStorer.Delete(ctx, n); err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository Delete failed.")
@@ -95,8 +110,8 @@ func (r *RepoHandler) DeleteRepository() echo.HandlerFunc {
 	}
 }
 
-// GetRepository retrieves a repository and displays the unique URL for which this repo is responsible for.
-func (r *RepoHandler) GetRepository() echo.HandlerFunc {
+// Get retrieves a repository and displays the unique URL for which this repo is responsible for.
+func (r *RepoHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -109,9 +124,7 @@ func (r *RepoHandler) GetRepository() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		repo, err := r.RepositoryStorer.Get(ctx, n)
 		if err != nil {
@@ -130,8 +143,8 @@ func (r *RepoHandler) GetRepository() echo.HandlerFunc {
 	}
 }
 
-// ListRepositories handles the List rest event.
-func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
+// List handles the List rest event.
+func (r *RepoHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
 		if err := c.Bind(opts); err != nil {
@@ -139,8 +152,7 @@ func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
 			opts = nil
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		list, err := r.RepositoryStorer.List(ctx, opts)
 		if err != nil {
@@ -152,8 +164,8 @@ func (r *RepoHandler) ListRepositories() echo.HandlerFunc {
 	}
 }
 
-// UpdateRepository handles the update rest event.
-func (r *RepoHandler) UpdateRepository() echo.HandlerFunc {
+// Update handles the update rest event.
+func (r *RepoHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		repo := &models.Repository{}
 		if err := c.Bind(repo); err != nil {
@@ -161,8 +173,7 @@ func (r *RepoHandler) UpdateRepository() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		updated, err := r.RepositoryStorer.Update(ctx, repo)
 		if err != nil {

@@ -11,6 +11,6 @@ type APIKey struct {
 	UserID int    `json:"user_id"`
 	// Generated, maybe a uuid.
 	APIKeyID     string    `json:"api_key_id"`
-	APIKeySecret []byte    `json:"api_key_secret"`
+	APIKeySecret string    `json:"api_key_secret"`
 	TTL          time.Time `json:"ttl"`
 }

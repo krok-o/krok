@@ -1,10 +1,9 @@
 package handlers
 
 import (
-	"context"
+	"errors"
 	"net/http"
 	"strconv"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -18,7 +17,7 @@ import (
 type CommandsHandlerDependencies struct {
 	Logger        zerolog.Logger
 	CommandStorer providers.CommandStorer
-	TokenProvider *TokenProvider
+	TokenProvider *TokenHandler
 }
 
 // CommandsHandler is a handler taking care of commands related api calls.
@@ -37,8 +36,8 @@ func NewCommandsHandler(cfg Config, deps CommandsHandlerDependencies) (*Commands
 	}, nil
 }
 
-// DeleteCommand deletes a command.
-func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
+// Delete deletes a command.
+func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -52,8 +51,7 @@ func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		if err := ch.CommandStorer.Delete(ctx, n); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command Delete failed.")
@@ -64,8 +62,8 @@ func (ch *CommandsHandler) DeleteCommand() echo.HandlerFunc {
 	}
 }
 
-// ListCommands lists commands.
-func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
+// List lists commands.
+func (ch *CommandsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
 		if err := c.Bind(opts); err != nil {
@@ -73,8 +71,7 @@ func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
 			opts = nil
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		list, err := ch.CommandStorer.List(ctx, opts)
 		if err != nil {
@@ -86,8 +83,8 @@ func (ch *CommandsHandler) ListCommands() echo.HandlerFunc {
 	}
 }
 
-// GetCommand returns a specific command.
-func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
+// Get returns a specific command.
+func (ch *CommandsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		id := c.Param("id")
 		if id == "" {
@@ -101,8 +98,7 @@ func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		repo, err := ch.CommandStorer.Get(ctx, n)
 		if err != nil {
@@ -114,8 +110,8 @@ func (ch *CommandsHandler) GetCommand() echo.HandlerFunc {
 	}
 }
 
-// UpdateCommand updates a command.
-func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
+// Update updates a command.
+func (ch *CommandsHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		command := &models.Command{}
 		if err := c.Bind(command); err != nil {
@@ -123,8 +119,7 @@ func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind command", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		updated, err := ch.CommandStorer.Update(ctx, command)
 		if err != nil {
@@ -133,6 +128,13 @@ func (ch *CommandsHandler) UpdateCommand() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, updated)
+	}
+}
+
+// Create is unimplemented.
+func (ch *CommandsHandler) Create() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
 	}
 }
 
@@ -161,8 +163,8 @@ func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to convert repository id to number", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
+
 		if err := ch.CommandStorer.AddCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("AddCommandRelForRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to add command relationship to repository", http.StatusBadRequest, err))
@@ -198,8 +200,7 @@ func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(15*time.Second))
-		defer cancel()
+		ctx := c.Request().Context()
 
 		if err := ch.CommandStorer.RemoveCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("RemoveCommandRelForRepository failed.")

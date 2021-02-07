@@ -16,11 +16,13 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
+	"github.com/krok-o/krok/pkg/krok/providers/github"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
 	"github.com/krok-o/krok/pkg/krok/providers/mailgun"
 	"github.com/krok-o/krok/pkg/krok/providers/plugins"
 	"github.com/krok-o/krok/pkg/krok/providers/vault"
+	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/pkg/server"
 )
 
@@ -53,6 +55,9 @@ func init() {
 	flag.StringVar(&krokArgs.server.Proto, "proto", "http", "--proto http")
 	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost:9998", "--hostname localhost:9998")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
+	// OAuth
+	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
+	flag.StringVar(&krokArgs.server.GoogleClientSecret, "google-client-secret", "", "--google-client-secret my-client-secret}")
 
 	// Store config
 	flag.StringVar(&krokArgs.store.Database, "krok-db-dbname", "krok", "--krok-db-dbname krok")
@@ -69,10 +74,6 @@ func init() {
 
 	// VaultStorer config
 	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
-
-	// OAuth
-	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
-	flag.StringVar(&krokArgs.server.GoogleClientSecret, "google-client-secret", "", "--google-client-secret my-client-secret}")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -85,12 +86,12 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Timestamp().
 		Logger()
 
-	if krokArgs.server.GoogleClientID == "" {
-		log.Fatal().Msg("must provide --google-client-id flag")
-	}
-	if krokArgs.server.GoogleClientSecret == "" {
-		log.Fatal().Msg("must provide --google-client-secret flag")
-	}
+	//if krokArgs.server.GoogleClientID == "" {
+	//	log.Fatal().Msg("must provide --google-client-id flag")
+	//}
+	//if krokArgs.server.GoogleClientSecret == "" {
+	//	log.Fatal().Msg("must provide --google-client-secret flag")
+	//}
 	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
 
 	// Setup Global Token Key
@@ -127,7 +128,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger: log,
 		Storer: fv,
 	})
-	a, _ := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
+	a, _ := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: log,
 		Vault:  v,
 	})
@@ -164,6 +165,23 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	// ************************
+	// Set up platforms
+	// ************************
+
+	platformTokenProvider := auth.NewPlatformTokenProvider(auth.TokenProviderConfig{}, auth.TokenProviderDependencies{
+		Logger: log,
+		Vault:  v,
+	})
+
+	githubProvider := github.NewGithubPlatformProvider(github.Config{
+		Hostname: krokArgs.server.Hostname,
+	}, github.Dependencies{
+		Logger:                log,
+		AuthProvider:          a,
+		PlatformTokenProvider: platformTokenProvider,
+	})
+
+	// ************************
 	// Set up handlers
 	// ************************
 	authMatcher, err := auth.NewApiKeysProvider(auth.ApiKeysConfig{}, auth.ApiKeysDependencies{
@@ -173,12 +191,21 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create new Api keys provider.")
 	}
+
+	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	}, auth.TokenIssuerDependencies{
+		UserStore: userStore,
+		Clock:     providers.NewClock(),
+	})
+
 	handlerDeps := handlers.Dependencies{
-		Logger:     log,
-		UserStore:  userStore,
-		ApiKeyAuth: authMatcher,
+		Logger:      log,
+		UserStore:   userStore,
+		ApiKeyAuth:  authMatcher,
+		TokenIssuer: tokenIssuer,
 	}
-	tp, err := handlers.NewTokenProvider(handlers.Config{
+	tp, err := handlers.NewTokenHandler(handlers.Config{
 		Hostname:           krokArgs.server.Hostname,
 		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
 		GoogleClientID:     krokArgs.server.GoogleClientID,
@@ -188,13 +215,16 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		log.Fatal().Err(err).Msg("Failed to create token handler.")
 	}
 
+	platformProviders := make(map[int]providers.Platform)
+	platformProviders[models.GITHUB] = githubProvider
 	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
 		Hostname:       krokArgs.server.Hostname,
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 	}, handlers.RepoHandlerDependencies{
-		RepositoryStorer: repoStore,
-		TokenProvider:    tp,
-		Logger:           log,
+		RepositoryStorer:  repoStore,
+		TokenProvider:     tp,
+		Logger:            log,
+		PlatformProviders: platformProviders,
 	})
 
 	apiKeysHandler, _ := handlers.NewApiKeysHandler(handlers.Config{
@@ -219,13 +249,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger: log,
 	})
 
-	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
-	}, auth.TokenIssuerDependencies{
-		UserStore: userStore,
-		Clock:     providers.NewClock(),
-	})
-
 	uuidGenerator := providers.NewUUIDGenerator()
 	oauthProvider := auth.NewOAuthAuthenticator(auth.OAuthAuthenticatorConfig{
 		BaseURL:            krokArgs.server.Addr,
@@ -244,7 +267,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		TokenIssuer: tokenIssuer,
 		Logger:      log,
 	})
-
 	// ************************
 	// Set up the server
 	// ************************
@@ -256,6 +278,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		RepositoryHandler: repoHandler,
 		ApiKeyHandler:     apiKeysHandler,
 		AuthHandler:       authHandler,
+		TokenHandler:      tp,
 	})
 
 	// Run service & server

@@ -13,10 +13,13 @@ import (
 // repository.
 type Platform interface {
 	// CreateHook creates a hook for the respective platform.
+	// Events define the events this hook subscribes to. Since we don't want all hooks
+	// to subscribe to all events all the time, we provide the option to the user
+	// to select the events.
 	CreateHook(ctx context.Context, repo *models.Repository) error
 	// ValidateRequest will take a hook and verify it being a valid hook request according to
 	// platform rules.
-	ValidateRequest(ctx context.Context, r *http.Request) error
+	ValidateRequest(ctx context.Context, r *http.Request, repoID int) error
 }
 
 // PlatformTokenProvider defines the operations a token provider must perform.

@@ -100,7 +100,7 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	assert.NoError(t, err)
 	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
-	a, err := auth.NewKrokAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
+	a, err := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})

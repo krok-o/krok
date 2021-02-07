@@ -62,9 +62,11 @@ type Github struct {
 }
 
 // NewGithubPlatformProvider creates a new hook platform provider for Github.
-func NewGithubPlatformProvider(cfg Config, deps Dependencies) (*Github, error) {
-	return &Github{Config: cfg, Dependencies: deps}, nil
+func NewGithubPlatformProvider(cfg Config, deps Dependencies) *Github {
+	return &Github{Config: cfg, Dependencies: deps}
 }
+
+var _ providers.Platform = &Github{}
 
 // ValidateRequest will take a hook and verify it being a valid hook request according to
 // Github's rules.
@@ -159,16 +161,24 @@ func NewGoogleGithubClient(httpClient *http.Client, repoMock GoogleGithubRepoSer
 }
 
 // CreateHook can create a hook for the Github platform.
-func (g *Github) CreateHook(ctx context.Context, repo *models.Repository, events []string) error {
-	log := g.Logger.With().Str("repo", repo.Name).Strs("events", events).Logger()
+func (g *Github) CreateHook(ctx context.Context, repo *models.Repository) error {
+	log := g.Logger.With().Str("repo", repo.Name).Strs("events", repo.Events).Logger()
 	token, err := g.PlatformTokenProvider.GetTokenForPlatform(repo.VCS)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to get platform token.")
 		return err
 	}
 	if repo.Auth == nil {
+		log.Error().Msg("No auth provided for the repository.")
+		return errors.New("no auth provided with the repository")
+	}
+	if repo.Auth.Secret == "" {
 		log.Error().Msg("No secret provided for the repository.")
 		return errors.New("no secret provided to create a hook")
+	}
+	if len(repo.Events) == 0 {
+		log.Error().Msg("No events provided to subscribe to.")
+		return errors.New("no events provided to subscribe to")
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},
@@ -190,9 +200,13 @@ func (g *Github) CreateHook(ctx context.Context, repo *models.Repository, events
 		log.Debug().Str("repo_name", repoName).Str("url", repo.URL).Msg("Failed to extract url parameters.")
 		return errors.New("failed to extract url parameters from git url")
 	}
+	if len(m[0]) < 5 {
+		log.Debug().Str("repo_name", repoName).Str("url", repo.URL).Msg("Couldn't find the repo user from the URL.")
+		return errors.New("failed to extract repo user from the url")
+	}
 	repoUser := m[0][4]
 	hook, resp, err := githubClient.Repositories.CreateHook(context.Background(), repoUser, repoName, &ggithub.Hook{
-		Events: events,
+		Events: repo.Events,
 		Name:   ggithub.String("web"),
 		Active: ggithub.Bool(true),
 		Config: config,

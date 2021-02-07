@@ -47,8 +47,8 @@ type Dependencies struct {
 	RepositoryHandler providers.RepositoryHandler
 	ApiKeyHandler     providers.ApiKeysHandler
 	AuthHandler       providers.AuthHandler
-
-	// TokenProvider providers.TokenProvider
+	TokenHandler      providers.TokenHandler
+	VCSTokenHandler   providers.VCSTokenHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -86,7 +86,9 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// This is the general format of a hook callback url for a repository.
 	// @rid repository id
 	// @vid vcs id
-	e.POST("/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
+	e.POST(api+"/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
+	e.POST(api+"/get-token", s.Dependencies.TokenHandler.TokenHandler())
+	// Admin related actions
 
 	userMiddleware := krokmiddleware.UserAuthentication(&krokmiddleware.UserAuthenticationConfig{
 		CookieName:     handlers.AccessTokenCookie,
@@ -95,25 +97,28 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth := e.Group(api+"/krok", userMiddleware)
 
 	// Repository related actions.
-	auth.POST("/repository", s.Dependencies.RepositoryHandler.CreateRepository())
-	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.GetRepository())
-	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.DeleteRepository())
-	auth.POST("/repositories", s.Dependencies.RepositoryHandler.ListRepositories())
-	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.UpdateRepository())
+	auth.POST("/repository", s.Dependencies.RepositoryHandler.Create())
+	auth.GET("/repository/:id", s.Dependencies.RepositoryHandler.Get())
+	auth.DELETE("/repository/:id", s.Dependencies.RepositoryHandler.Delete())
+	auth.POST("/repositories", s.Dependencies.RepositoryHandler.List())
+	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.Update())
 
 	// command related actions.
-	auth.GET("/command/:id", s.Dependencies.CommandHandler.GetCommand())
-	auth.DELETE("/command/:id", s.Dependencies.CommandHandler.DeleteCommand())
-	auth.POST("/commands", s.Dependencies.CommandHandler.ListCommands())
-	auth.POST("/command/update", s.Dependencies.CommandHandler.UpdateCommand())
+	auth.GET("/command/:id", s.Dependencies.CommandHandler.Get())
+	auth.DELETE("/command/:id", s.Dependencies.CommandHandler.Delete())
+	auth.POST("/commands", s.Dependencies.CommandHandler.List())
+	auth.POST("/command/update", s.Dependencies.CommandHandler.Update())
 	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
 
 	// api keys related actions
-	auth.POST("/user/apikey/generate/:name", s.Dependencies.ApiKeyHandler.CreateApiKeyPair())
-	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.DeleteApiKeyPair())
-	auth.GET("/user/apikey", s.Dependencies.ApiKeyHandler.ListApiKeyPairs())
-	auth.GET("/user/apikey/:keyid", s.Dependencies.ApiKeyHandler.GetApiKeyPair())
+	auth.POST("/user/apikey/generate/:name", s.Dependencies.ApiKeyHandler.Create())
+	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.Delete())
+	auth.GET("/user/apikey", s.Dependencies.ApiKeyHandler.List())
+	auth.GET("/user/apikey/:keyid", s.Dependencies.ApiKeyHandler.Get())
+
+	// vcs token handler
+	auth.POST("/vcs-token", s.Dependencies.VCSTokenHandler.Create())
 
 	// Start TLS with certificate paths
 	if len(s.Config.ServerKeyPath) > 0 && len(s.Config.ServerCrtPath) > 0 {

@@ -74,7 +74,7 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -95,7 +95,7 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		c.SetPath("/command/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("0")
-		err = ch.DeleteCommand()(c)
+		err = ch.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 	})
@@ -111,7 +111,7 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		c.SetPath("/command/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("invalid")
-		err = ch.DeleteCommand()(c)
+		err = ch.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -125,7 +125,7 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/command/:id")
-		err = ch.DeleteCommand()(c)
+		err = ch.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -163,7 +163,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -187,7 +187,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		c.SetPath("/command/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("0")
-		err = ch.GetCommand()(c)
+		err = ch.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, commandExpected, rec.Body.String())
@@ -205,7 +205,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		c.SetPath("/command/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("invalid")
-		err = ch.GetCommand()(c)
+		err = ch.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -220,7 +220,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
 		c.SetPath("/command/:id")
-		err = ch.GetCommand()(c)
+		err = ch.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -261,7 +261,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -282,7 +282,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
 		c.SetPath("/commands")
-		err = ch.ListCommands()(c)
+		err = ch.List()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, expectedCommandsResponse, rec.Body.String())
@@ -302,7 +302,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
 		c.SetPath("/commands")
-		err = ch.ListCommands()(c)
+		err = ch.List()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, expectedCommandsResponse, rec.Body.String())
@@ -324,7 +324,7 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -346,7 +346,7 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		err = ch.UpdateCommand()(c)
+		err = ch.Update()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, commandExpected, rec.Body.String())
@@ -363,7 +363,7 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		err = ch.UpdateCommand()(c)
+		err = ch.Update()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -401,7 +401,7 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,
@@ -509,7 +509,7 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
 		Logger:        logger,

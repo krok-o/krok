@@ -34,7 +34,7 @@ func (mus *mockUserStorer) GetByEmail(ctx context.Context, email string) (*model
 				Name:         "test",
 				UserID:       0,
 				APIKeyID:     "apikeyid",
-				APIKeySecret: []byte("secret"),
+				APIKeySecret: "secret",
 				TTL:          time.Now().Add(10 * time.Minute),
 			},
 		},
@@ -83,10 +83,19 @@ func (maka *mockApiKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte,
 	return nil, nil
 }
 
+type mockGithubPlatformProvider struct {
+	providers.Platform
+}
+
+func (g *mockGithubPlatformProvider) CreateHook(ctx context.Context, repo *models.Repository) error {
+	return nil
+}
+
 func TestRepoHandler_CreateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
 	maka := &mockApiKeyAuth{}
+	mg := &mockGithubPlatformProvider{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
@@ -97,12 +106,15 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
+		PlatformProviders: map[int]providers.Platform{
+			models.GITHUB: mg,
+		},
 	})
 
 	assert.NoError(t, err)
@@ -120,7 +132,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		err = rh.CreateRepository()(c)
+		err = rh.Create()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusCreated, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
@@ -137,7 +149,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		err = rh.CreateRepository()(c)
+		err = rh.Create()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -157,7 +169,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -179,7 +191,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		err = rh.UpdateRepository()(c)
+		err = rh.Update()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
@@ -196,7 +208,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		err = rh.UpdateRepository()(c)
+		err = rh.Update()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -223,7 +235,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -246,7 +258,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		c.SetPath("/repository/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("0")
-		err = rh.GetRepository()(c)
+		err = rh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
@@ -264,7 +276,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		c.SetPath("/repository/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("invalid")
-		err = rh.GetRepository()(c)
+		err = rh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -279,7 +291,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
 		c.SetPath("/repository/:id")
-		err = rh.GetRepository()(c)
+		err = rh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -314,7 +326,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -335,7 +347,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
 		c.SetPath("/repositories")
-		err = rh.ListRepositories()(c)
+		err = rh.List()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
@@ -356,7 +368,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		Hostname:       "http://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -377,7 +389,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		c.SetPath("/repository/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("0")
-		err = rh.DeleteRepository()(c)
+		err = rh.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 	})
@@ -393,7 +405,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		c.SetPath("/repository/:id")
 		c.SetParamNames("id")
 		c.SetParamValues("invalid")
-		err = rh.DeleteRepository()(c)
+		err = rh.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -407,7 +419,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/repository/:id")
-		err = rh.DeleteRepository()(c)
+		err = rh.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})

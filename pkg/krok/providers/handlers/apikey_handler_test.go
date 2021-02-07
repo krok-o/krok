@@ -59,7 +59,7 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,
@@ -77,7 +77,7 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		c.SetPath("/user/apikey/generate/:name")
 		c.SetParamNames("name")
 		c.SetParamValues("test-key")
-		err = akh.CreateApiKeyPair()(c)
+		err = akh.Create()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		fmt.Println(rec.Body.String())
@@ -96,7 +96,7 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
 		c.SetPath("/user/apikey/generate")
-		err = akh.CreateApiKeyPair()(c)
+		err = akh.Create()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		fmt.Println(rec.Body.String())
@@ -114,7 +114,7 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/user/apikey/generate/:name")
-		err = akh.CreateApiKeyPair()(c)
+		err = akh.Create()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
 	})
@@ -134,7 +134,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,
@@ -152,7 +152,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		c.SetPath("/user/apikey/delete/:keyid")
 		c.SetParamNames("keyid")
 		c.SetParamValues("0")
-		err = akh.DeleteApiKeyPair()(c)
+		err = akh.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 	})
@@ -165,7 +165,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		c.SetPath("/user/apikey/:keyid")
 		c.SetParamNames("keyid")
 		c.SetParamValues("0")
-		err = akh.DeleteApiKeyPair()(c)
+		err = akh.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
 	})
@@ -177,7 +177,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
 		c.SetPath("/user/apikey/:keyid")
-		err = akh.DeleteApiKeyPair()(c)
+		err = akh.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -189,7 +189,7 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
 		c.SetPath("/user/apikey/:keyid")
-		err = akh.DeleteApiKeyPair()(c)
+		err = akh.Delete()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -204,7 +204,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 			Name:         "test-key",
 			UserID:       0,
 			APIKeyID:     "api-key-id",
-			APIKeySecret: []byte("secret"),
+			APIKeySecret: "secret",
 			TTL:          time.Now().Add(10 * time.Minute),
 		},
 	}
@@ -218,7 +218,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,
@@ -233,7 +233,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 			Name:         "test-key",
 			UserID:       0,
 			APIKeyID:     "api-key-id",
-			APIKeySecret: []byte("secret"),
+			APIKeySecret: "secret",
 		}
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -243,7 +243,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		c.SetPath("/user/apikey/:keyid")
 		c.SetParamNames("keyid")
 		c.SetParamValues("0")
-		err = akh.GetApiKeyPair()(c)
+		err = akh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		var gotKey models.APIKey
@@ -262,7 +262,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.SetPath("/user/apikey/:keyid")
-		err = akh.GetApiKeyPair()(c)
+		err = akh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
 	})
@@ -274,7 +274,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
 		c.SetPath("/user/apikey/:keyid")
-		err = akh.GetApiKeyPair()(c)
+		err = akh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -285,7 +285,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
 		c.SetPath("/user/apikey/:keyid")
-		err = akh.GetApiKeyPair()(c)
+		err = akh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -297,7 +297,7 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
 		c.SetPath("/user/apikey/:keyid")
-		err = akh.GetApiKeyPair()(c)
+		err = akh.Get()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})
@@ -313,7 +313,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 				Name:         "test-key-1",
 				UserID:       0,
 				APIKeyID:     "test-key-id-1",
-				APIKeySecret: []byte("secret1"),
+				APIKeySecret: "secret1",
 				TTL:          time.Now().Add(10 * time.Minute),
 			},
 			{
@@ -321,7 +321,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 				Name:         "test-key-2",
 				UserID:       1,
 				APIKeyID:     "test-key-id-2",
-				APIKeySecret: []byte("secret2"),
+				APIKeySecret: "secret2",
 				TTL:          time.Now().Add(10 * time.Minute),
 			},
 		},
@@ -336,7 +336,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 		Hostname:       "https://testHost",
 		GlobalTokenKey: "secret",
 	}
-	tp, err := NewTokenProvider(cfg, deps)
+	tp, err := NewTokenHandler(cfg, deps)
 	assert.NoError(t, err)
 	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
 		Dependencies:  deps,
@@ -352,7 +352,7 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
 		c.SetPath("/user/apikey")
-		err = akh.ListApiKeyPairs()(c)
+		err = akh.List()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
 		var gotKey []*models.APIKey

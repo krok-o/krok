@@ -36,8 +36,8 @@ type RepoAuth struct {
 	RepositoryAuthDependencies
 }
 
-// NewKrokAuth creates a new repository authentication provider.
-func NewKrokAuth(cfg RepositoryAuthConfig, deps RepositoryAuthDependencies) (*RepoAuth, error) {
+// NewRepositoryAuth creates a new repository authentication provider.
+func NewRepositoryAuth(cfg RepositoryAuthConfig, deps RepositoryAuthDependencies) (*RepoAuth, error) {
 	return &RepoAuth{
 		RepositoryAuthConfig:       cfg,
 		RepositoryAuthDependencies: deps,
