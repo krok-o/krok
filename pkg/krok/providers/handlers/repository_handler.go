@@ -73,11 +73,11 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 			provider providers.Platform
 			ok       bool
 		)
-		if provider, ok = r.PlatformProviders[repo.VCS]; !ok {
-			err := fmt.Errorf("vcs provider with id %d is not supported", repo.VCS)
+		if provider, ok = r.PlatformProviders[created.VCS]; !ok {
+			err := fmt.Errorf("vcs provider with id %d is not supported", created.VCS)
 			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
 		}
-		if err := provider.CreateHook(ctx, repo); err != nil {
+		if err := provider.CreateHook(ctx, created); err != nil {
 			r.Logger.Debug().Err(err).Msg("Failed to create Hook")
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create hook", http.StatusInternalServerError, err))
 		}
