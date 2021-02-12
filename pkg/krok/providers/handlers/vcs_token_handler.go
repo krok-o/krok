@@ -20,18 +20,16 @@ type VCSTokenHandlerDependencies struct {
 
 // VCSTokenHandler is a handler taking care of vcs token related api calls.
 type VCSTokenHandler struct {
-	Config
 	VCSTokenHandlerDependencies
 }
 
 var _ providers.VCSTokenHandler = &VCSTokenHandler{}
 
 // NewVCSTokenHandler creates a new vcs token handler.
-func NewVCSTokenHandler(cfg Config, deps VCSTokenHandlerDependencies) (*VCSTokenHandler, error) {
+func NewVCSTokenHandler(deps VCSTokenHandlerDependencies) *VCSTokenHandler {
 	return &VCSTokenHandler{
-		Config:                      cfg,
 		VCSTokenHandlerDependencies: deps,
-	}, nil
+	}
 }
 
 // Create handles the Create rest event.

@@ -267,6 +267,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		TokenIssuer: tokenIssuer,
 		Logger:      log,
 	})
+
+	vcsTokenHandler := handlers.NewVCSTokenHandler(handlers.VCSTokenHandlerDependencies{
+		Logger:        log,
+		TokenProvider: platformTokenProvider,
+	})
 	// ************************
 	// Set up the server
 	// ************************
@@ -279,6 +284,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		ApiKeyHandler:     apiKeysHandler,
 		AuthHandler:       authHandler,
 		TokenHandler:      tp,
+		VCSTokenHandler:   vcsTokenHandler,
 	})
 
 	// Run service & server
