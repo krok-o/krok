@@ -25,11 +25,10 @@ func (m *mockPlatformTokenProvider) SaveTokenForPlatform(token string, vcs int) 
 func TestVCSTokenHandler_Create(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	mpt := &mockPlatformTokenProvider{}
-	vtp, err := NewVCSTokenHandler(Config{}, VCSTokenHandlerDependencies{
+	vtp := NewVCSTokenHandler(VCSTokenHandlerDependencies{
 		Logger:        logger,
 		TokenProvider: mpt,
 	})
-	assert.NoError(t, err)
 	token, err := generateTestToken("test@email.com")
 	assert.NoError(t, err)
 
