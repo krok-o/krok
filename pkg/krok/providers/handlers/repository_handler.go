@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -50,9 +48,12 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
-		defer cancel()
+		if ok, field, err := repo.Validate(); !ok {
+			r.Logger.Debug().Err(err).Str("field", field).Msg("Repository validation failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("repository validation failed", http.StatusBadRequest, err))
+		}
 
+		ctx := c.Request().Context()
 		created, err := r.RepositoryStorer.Create(ctx, repo)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")

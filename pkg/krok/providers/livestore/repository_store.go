@@ -71,7 +71,7 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 
 	result, err := r.GetByName(ctx, c.Name)
 	if err != nil {
-		log.Debug().Err(err).Msg("Failed to get created command.")
+		log.Debug().Err(err).Msg("Failed to get created repository.")
 		return nil, err
 	}
 
@@ -83,7 +83,7 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 	return result, nil
 }
 
-// Delete removes a repository and all of its connections to commands.
+// Delete removes a repository and all.
 func (r *RepositoryStore) Delete(ctx context.Context, id int) error {
 	log := r.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {

@@ -124,6 +124,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	fv, _ := filevault.NewFileStorer(krokArgs.fileVault, filevault.Dependencies{
 		Logger: log,
 	})
+	if err := fv.Init(); err != nil {
+		log.Fatal().Str("location", krokArgs.fileVault.Location).Msg("Failed to initialize vault.")
+	}
 	v, _ := vault.NewKrokVault(vault.Config{}, vault.Dependencies{
 		Logger: log,
 		Storer: fv,
