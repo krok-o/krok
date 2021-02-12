@@ -195,7 +195,7 @@ func (r *RepoHandler) Update() echo.HandlerFunc {
 // generateUniqueCallBackURL takes a repository and generates a unique URL based on the ID and Type of the repo
 // and the configured Krok hostname.
 func (r *RepoHandler) generateUniqueCallBackURL(repo *models.Repository) (string, error) {
-	u, err := url.Parse(r.Config.Hostname)
+	u, err := url.Parse(fmt.Sprintf("%s://%s", r.Config.Proto, r.Config.Hostname))
 	if err != nil {
 		r.Logger.Debug().Err(err).Msg("Failed to generate a unique URL for repository.")
 		return "", err

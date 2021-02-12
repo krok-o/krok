@@ -13,6 +13,7 @@ import (
 
 // Config has the configuration options for the repository handler.
 type Config struct {
+	Proto              string
 	Hostname           string
 	GlobalTokenKey     string
 	GoogleClientID     string

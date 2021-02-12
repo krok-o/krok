@@ -221,6 +221,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = githubProvider
 	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
+		Proto:          krokArgs.server.Proto,
 		Hostname:       krokArgs.server.Hostname,
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 	}, handlers.RepoHandlerDependencies{
