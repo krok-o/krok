@@ -103,7 +103,8 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		ApiKeyAuth: maka,
 	}
 	cfg := Config{
-		Hostname:       "http://testHost",
+		Proto:          "http",
+		Hostname:       "testHost",
 		GlobalTokenKey: "secret",
 	}
 	tp, err := NewTokenHandler(cfg, deps)
@@ -166,7 +167,8 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		ApiKeyAuth: maka,
 	}
 	cfg := Config{
-		Hostname:       "http://testHost",
+		Proto:          "http",
+		Hostname:       "testHost",
 		GlobalTokenKey: "secret",
 	}
 	tp, err := NewTokenHandler(cfg, deps)
@@ -232,7 +234,8 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		ApiKeyAuth: maka,
 	}
 	cfg := Config{
-		Hostname:       "http://testHost",
+		Proto:          "http",
+		Hostname:       "testHost",
 		GlobalTokenKey: "secret",
 	}
 	tp, err := NewTokenHandler(cfg, deps)
@@ -323,7 +326,8 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		ApiKeyAuth: maka,
 	}
 	cfg := Config{
-		Hostname:       "http://testHost",
+		Proto:          "http",
+		Hostname:       "testHost",
 		GlobalTokenKey: "secret",
 	}
 	tp, err := NewTokenHandler(cfg, deps)
