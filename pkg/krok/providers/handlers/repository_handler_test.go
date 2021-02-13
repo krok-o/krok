@@ -124,7 +124,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 
 		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1}`
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://rest/api/1/hooks/testHost/0/1/callback"}
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
@@ -183,7 +183,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 
 		repositoryPost := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1}`
-		repositoryExpected := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://testHost/0/1/callback"}
+		repositoryExpected := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository/update", strings.NewReader(repositoryPost))
@@ -233,7 +233,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 	}
 	cfg := RepoConfig{
 		Protocol: "http",
-		HookBase: "testHost",
+		HookBase: "hookbase",
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
@@ -248,7 +248,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://testHost/0/1/callback"}
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -324,7 +324,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 	}
 	cfg := RepoConfig{
 		Protocol: "http",
-		HookBase: "testHost",
+		HookBase: "hookbase",
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
@@ -366,7 +366,7 @@ func TestRepoHandler_DeleteRepository(t *testing.T) {
 	}
 	cfg := RepoConfig{
 		Protocol: "http",
-		HookBase: "http://testHost",
+		HookBase: "hookbase",
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
