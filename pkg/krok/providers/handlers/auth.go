@@ -15,6 +15,7 @@ import (
 type Config struct {
 	Proto              string
 	Hostname           string
+	HookBase           string
 	GlobalTokenKey     string
 	GoogleClientID     string
 	GoogleClientSecret string

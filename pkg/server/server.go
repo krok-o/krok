@@ -23,6 +23,7 @@ const (
 type Config struct {
 	Proto              string
 	Hostname           string
+	HookBase           string
 	Addr               string
 	ServerKeyPath      string
 	ServerCrtPath      string

@@ -54,6 +54,7 @@ func init() {
 	flag.StringVar(&krokArgs.server.ServerCrtPath, "server-crt-path", "", "--server-crt-path /home/user/.server/server.crt")
 	flag.StringVar(&krokArgs.server.Proto, "proto", "http", "--proto http")
 	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost:9998", "--hostname localhost:9998")
+	flag.StringVar(&krokArgs.server.HookBase, "hookbase", "localhost", "--hookbase localhost")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
 	// OAuth
 	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
@@ -210,6 +211,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	}
 	tp, err := handlers.NewTokenHandler(handlers.Config{
 		Hostname:           krokArgs.server.Hostname,
+		HookBase:           krokArgs.server.HookBase,
 		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
 		GoogleClientID:     krokArgs.server.GoogleClientID,
 		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
@@ -223,6 +225,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
 		Proto:          krokArgs.server.Proto,
 		Hostname:       krokArgs.server.Hostname,
+		HookBase:       krokArgs.server.HookBase,
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 	}, handlers.RepoHandlerDependencies{
 		RepositoryStorer:  repoStore,

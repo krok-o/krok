@@ -15,6 +15,10 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
+const (
+	api = "/rest/api/1"
+)
+
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
 	RepositoryStorer  providers.RepositoryStorer
@@ -195,11 +199,11 @@ func (r *RepoHandler) Update() echo.HandlerFunc {
 // generateUniqueCallBackURL takes a repository and generates a unique URL based on the ID and Type of the repo
 // and the configured Krok hostname.
 func (r *RepoHandler) generateUniqueCallBackURL(repo *models.Repository) (string, error) {
-	u, err := url.Parse(fmt.Sprintf("%s://%s", r.Config.Proto, r.Config.Hostname))
+	u, err := url.Parse(fmt.Sprintf("%s://%s", r.Config.Proto, r.Config.HookBase))
 	if err != nil {
 		r.Logger.Debug().Err(err).Msg("Failed to generate a unique URL for repository.")
 		return "", err
 	}
-	u.Path = path.Join(u.Path, strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
+	u.Path = path.Join(u.Path, api, "hooks", strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
 	return u.String(), nil
 }
