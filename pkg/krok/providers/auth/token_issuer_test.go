@@ -17,21 +17,10 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-func generateValidToken(t *testing.T) string {
+func generateToken(t *testing.T, expiresIn time.Duration) string {
 	claims := jwt.StandardClaims{
 		Subject:   "1",
-		ExpiresAt: time.Now().Add(time.Second * 30).Unix(),
-		IssuedAt:  time.Now().Unix(),
-	}
-	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("test"))
-	require.NoError(t, err)
-	return token
-}
-
-func generateExpiredToken(t *testing.T) string {
-	claims := jwt.StandardClaims{
-		Subject:   "1",
-		ExpiresAt: time.Now().Add(-time.Second * 30).Unix(),
+		ExpiresAt: time.Now().Add(expiresIn).Unix(),
 		IssuedAt:  time.Now().Unix(),
 	}
 	token, err := jwt.NewWithClaims(jwt.SigningMethodHS256, claims).SignedString([]byte("test"))
@@ -71,7 +60,7 @@ func TestTokenIssuer_Refresh(t *testing.T) {
 	now, _ := time.Parse(time.RFC3339, "2020-01-31T15:00:00Z")
 
 	t.Run("refresh expired token returns error", func(t *testing.T) {
-		expiredToken := generateExpiredToken(t)
+		expiredToken := generateToken(t, -time.Second*30)
 
 		cfg := TokenIssuerConfig{
 			GlobalTokenKey: "test",
@@ -86,7 +75,7 @@ func TestTokenIssuer_Refresh(t *testing.T) {
 	})
 
 	t.Run("get user from store error", func(t *testing.T) {
-		validToken := generateValidToken(t)
+		validToken := generateToken(t, time.Second*30)
 
 		mockUserStorer := &mocks.UserStorer{}
 		mockUserStorer.On("Get", mock.Anything, 1).Return(nil, errors.New("err"))
@@ -107,7 +96,7 @@ func TestTokenIssuer_Refresh(t *testing.T) {
 	})
 
 	t.Run("get token success", func(t *testing.T) {
-		validToken := generateValidToken(t)
+		validToken := generateToken(t, time.Second*30)
 
 		mockUserStorer := &mocks.UserStorer{}
 		mockUserStorer.On("Get", mock.Anything, 1).Return(&models.User{ID: 1}, nil)
