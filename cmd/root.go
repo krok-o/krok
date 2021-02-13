@@ -209,24 +209,16 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		ApiKeyAuth:  authMatcher,
 		TokenIssuer: tokenIssuer,
 	}
-	tp, err := handlers.NewTokenHandler(handlers.Config{
-		Hostname:           krokArgs.server.Hostname,
-		HookBase:           krokArgs.server.HookBase,
-		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
-		GoogleClientID:     krokArgs.server.GoogleClientID,
-		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
-	}, handlerDeps)
+	tp, err := handlers.NewTokenHandler(handlerDeps)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create token handler.")
 	}
 
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = githubProvider
-	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
-		Proto:          krokArgs.server.Proto,
-		Hostname:       krokArgs.server.Hostname,
-		HookBase:       krokArgs.server.HookBase,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	repoHandler, _ := handlers.NewRepositoryHandler(handlers.RepoConfig{
+		Protocol: krokArgs.server.Proto,
+		HookBase: krokArgs.server.HookBase,
 	}, handlers.RepoHandlerDependencies{
 		RepositoryStorer:  repoStore,
 		TokenProvider:     tp,
@@ -234,19 +226,13 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		PlatformProviders: platformProviders,
 	})
 
-	apiKeysHandler, _ := handlers.NewApiKeysHandler(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
-	}, handlers.ApiKeysHandlerDependencies{
+	apiKeysHandler, _ := handlers.NewApiKeysHandler(handlers.ApiKeysHandlerDependencies{
 		APIKeysStore:  apiKeyStore,
 		TokenProvider: tp,
 		Dependencies:  handlerDeps,
 	})
 
-	commandHandler, _ := handlers.NewCommandsHandler(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
-	}, handlers.CommandsHandlerDependencies{
+	commandHandler, _ := handlers.NewCommandsHandler(handlers.CommandsHandlerDependencies{
 		CommandStorer: commandStore,
 		TokenProvider: tp,
 		Logger:        log,

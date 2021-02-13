@@ -30,16 +30,14 @@ type ApiKeysHandlerDependencies struct {
 
 // ApiKeysHandler is a handler taking care of api keys related api calls.
 type ApiKeysHandler struct {
-	Config
 	ApiKeysHandlerDependencies
 }
 
 var _ providers.ApiKeysHandler = &ApiKeysHandler{}
 
 // NewApiKeysHandler creates a new api key pair handler.
-func NewApiKeysHandler(cfg Config, deps ApiKeysHandlerDependencies) (*ApiKeysHandler, error) {
+func NewApiKeysHandler(deps ApiKeysHandlerDependencies) (*ApiKeysHandler, error) {
 	return &ApiKeysHandler{
-		Config:                     cfg,
 		ApiKeysHandlerDependencies: deps,
 	}, nil
 }

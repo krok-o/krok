@@ -70,13 +70,9 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
@@ -159,13 +155,9 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
@@ -257,13 +249,9 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
@@ -320,13 +308,9 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
@@ -397,13 +381,9 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
@@ -505,13 +485,9 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,

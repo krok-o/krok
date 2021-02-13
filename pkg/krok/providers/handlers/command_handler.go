@@ -22,16 +22,14 @@ type CommandsHandlerDependencies struct {
 
 // CommandsHandler is a handler taking care of commands related api calls.
 type CommandsHandler struct {
-	Config
 	CommandsHandlerDependencies
 }
 
 var _ providers.CommandHandler = &CommandsHandler{}
 
 // NewCommandsHandler creates a new commands handler.
-func NewCommandsHandler(cfg Config, deps CommandsHandlerDependencies) (*CommandsHandler, error) {
+func NewCommandsHandler(deps CommandsHandlerDependencies) (*CommandsHandler, error) {
 	return &CommandsHandler{
-		Config:                      cfg,
 		CommandsHandlerDependencies: deps,
 	}, nil
 }

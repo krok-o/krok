@@ -19,6 +19,12 @@ const (
 	api = "/rest/api/1"
 )
 
+// RepoConfig represents configuration entities that the repository requires.
+type RepoConfig struct {
+	Protocol string
+	HookBase string
+}
+
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
 	RepositoryStorer  providers.RepositoryStorer
@@ -29,16 +35,16 @@ type RepoHandlerDependencies struct {
 
 // RepoHandler is a handler taking care of repository related api calls.
 type RepoHandler struct {
-	Config
+	RepoConfig
 	RepoHandlerDependencies
 }
 
 var _ providers.RepositoryHandler = &RepoHandler{}
 
 // NewRepositoryHandler creates a new repository handler.
-func NewRepositoryHandler(cfg Config, deps RepoHandlerDependencies) (*RepoHandler, error) {
+func NewRepositoryHandler(cfg RepoConfig, deps RepoHandlerDependencies) (*RepoHandler, error) {
 	return &RepoHandler{
-		Config:                  cfg,
+		RepoConfig:              cfg,
 		RepoHandlerDependencies: deps,
 	}, nil
 }
@@ -199,7 +205,7 @@ func (r *RepoHandler) Update() echo.HandlerFunc {
 // generateUniqueCallBackURL takes a repository and generates a unique URL based on the ID and Type of the repo
 // and the configured Krok hostname.
 func (r *RepoHandler) generateUniqueCallBackURL(repo *models.Repository) (string, error) {
-	u, err := url.Parse(fmt.Sprintf("%s://%s", r.Config.Proto, r.Config.HookBase))
+	u, err := url.Parse(fmt.Sprintf("%s://%s", r.RepoConfig.Protocol, r.RepoConfig.HookBase))
 	if err != nil {
 		r.Logger.Debug().Err(err).Msg("Failed to generate a unique URL for repository.")
 		return "", err
