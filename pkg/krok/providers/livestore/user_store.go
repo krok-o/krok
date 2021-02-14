@@ -237,6 +237,7 @@ func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
 	return result, nil
 }
 
+// GetByToken retrieves a user by personal access token.
 func (s *UserStore) GetByToken(ctx context.Context, token string) (*models.User, error) {
 	return s.getByX(ctx, s.Logger, "token", token)
 }
