@@ -27,10 +27,12 @@ func TestUserAuthentication(t *testing.T) {
 		return c.String(http.StatusOK, "test")
 	}
 
-	hf := UserAuthentication(&UserAuthenticationConfig{
+	mw := NewUserMiddleware(UserAuthenticationConfig{
 		GlobalTokenKey: "test",
 		CookieName:     "_a_token_",
-	})(handler)
+	}, nil)
+
+	hf := mw.JWT()(handler)
 
 	t.Run("valid token via header", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
