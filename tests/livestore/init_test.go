@@ -26,13 +26,16 @@ func testMain(m *testing.M) int {
 		log.Fatal("error running test container: ", err)
 	}
 
+	if port != "" {
+		hostname = "localhost:" + port
+	}
+
 	defer func() {
 		if err := cleanup(); err != nil {
 			log.Fatal(err)
 		}
 	}()
 
-	hostname = "localhost:" + port
 	return m.Run()
 }
 
