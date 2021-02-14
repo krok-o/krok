@@ -52,7 +52,6 @@ type UserMiddleware interface {
 
 type UserTokenHandler interface {
 	Generate() echo.HandlerFunc
-	Revoke() echo.HandlerFunc
 }
 
 // AuthHandler provides the handler functions for the authentication flow.

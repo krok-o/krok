@@ -115,7 +115,6 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// user personal token (api token)
 	auth.POST("/user/token/generate", s.Dependencies.UserTokenHandler.Generate())
-	auth.POST("/user/token/revoke", s.Dependencies.UserTokenHandler.Revoke())
 
 	// vcs token handler
 	auth.POST("/vcs-token", s.Dependencies.VCSTokenHandler.Create())
