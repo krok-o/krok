@@ -46,6 +46,15 @@ type VCSTokenHandler interface {
 	CRUDHandler
 }
 
+type UserMiddleware interface {
+	JWT() echo.MiddlewareFunc
+}
+
+type UserTokenHandler interface {
+	Generate() echo.HandlerFunc
+	Revoke() echo.HandlerFunc
+}
+
 // AuthHandler provides the handler functions for the authentication flow.
 type AuthHandler interface {
 	OAuthLogin() echo.HandlerFunc

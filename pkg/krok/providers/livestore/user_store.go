@@ -2,6 +2,7 @@ package livestore
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -112,11 +113,12 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		storedDisplayName string
 		storedID          int
 		storedLastLogin   time.Time
+		storedToken       sql.NullString
 	)
 	f := func(tx pgx.Tx) error {
-		withWhere := fmt.Sprintf("select id, email, display_name, last_login from users where %s = $1", field)
+		withWhere := fmt.Sprintf("select id, email, display_name, last_login, token from users where %s = $1", field)
 		err := tx.QueryRow(ctx, withWhere, value).
-			Scan(&storedID, &storedEmail, &storedDisplayName, &storedLastLogin)
+			Scan(&storedID, &storedEmail, &storedDisplayName, &storedLastLogin, &storedToken)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
@@ -146,16 +148,18 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		DisplayName: storedDisplayName,
 		ID:          storedID,
 		APIKeys:     apiKeys,
-		LastLogin:   storedLastLogin}, nil
+		LastLogin:   storedLastLogin,
+		Token:       storedToken.String,
+	}, nil
 }
 
 // Update updates a user with a given email address.
 func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User, error) {
 	log := s.Logger.With().Int("id", user.ID).Str("email", user.Email).Logger()
+
 	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, "update users set display_name=$1 where id=$2",
-			user.DisplayName,
-			user.ID); err != nil {
+		query := "update users set display_name=$1, token=$2 where id=$3"
+		if tags, err := tx.Exec(ctx, query, user.DisplayName, user.Token, user.ID); err != nil {
 			log.Debug().Err(err).Msg("Failed to update user.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -178,6 +182,7 @@ func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to get updated user.")
 	}
+
 	return newUser, err
 }
 
@@ -230,4 +235,8 @@ func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
 		return nil, fmt.Errorf("failed to execute List all users: %w", err)
 	}
 	return result, nil
+}
+
+func (s *UserStore) GetByToken(ctx context.Context, token string) (*models.User, error) {
+	return s.getByX(ctx, s.Logger, "token", token)
 }

@@ -24,6 +24,7 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers/vault"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/pkg/server"
+	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
 )
 
 var (
@@ -86,12 +87,12 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Timestamp().
 		Logger()
 
-	//if krokArgs.server.GoogleClientID == "" {
+	// if krokArgs.server.GoogleClientID == "" {
 	//	log.Fatal().Msg("must provide --google-client-id flag")
-	//}
-	//if krokArgs.server.GoogleClientSecret == "" {
+	// }
+	// if krokArgs.server.GoogleClientSecret == "" {
 	//	log.Fatal().Msg("must provide --google-client-secret flag")
-	//}
+	// }
 	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
 
 	// Setup Global Token Key
@@ -272,6 +273,18 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 		TokenProvider: platformTokenProvider,
 	})
+
+	userTokenHandler := handlers.NewUserTokenHandler(handlers.UserTokenHandlerDeps{
+		Logger:     log,
+		UserStore:  userStore,
+		APIKeyAuth: authMatcher,
+	})
+
+	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserAuthenticationConfig{
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+		CookieName:     handlers.AccessTokenCookie,
+	}, userStore)
+
 	// ************************
 	// Set up the server
 	// ************************
@@ -279,12 +292,14 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:            log,
 		Krok:              krokHandler,
+		UserMiddleware:    userMiddleware,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
 		ApiKeyHandler:     apiKeysHandler,
 		AuthHandler:       authHandler,
 		TokenHandler:      tp,
 		VCSTokenHandler:   vcsTokenHandler,
+		UserTokenHandler:  userTokenHandler,
 	})
 
 	// Run service & server

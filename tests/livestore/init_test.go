@@ -16,28 +16,24 @@ import (
 // hostname can be dynamic, dependent on whether we are running on CI or locally.
 var hostname = "localhost:5432"
 
-// TestMain runs before each test run.
 func TestMain(m *testing.M) {
-	// note that cleanup cannot be deferred because os.Exit stops it.
+	os.Exit(testMain(m))
+}
+
+func testMain(m *testing.M) int {
 	port, cleanup, err := createTestContainerIfNotCI()
 	if err != nil {
-		log.Println("Error running test container: ", err)
-		os.Exit(1)
+		log.Fatal("error running test container: ", err)
 	}
-	if port == "" {
-		os.Exit(m.Run())
-	}
-	hostname = "localhost:" + port
-	if code := m.Run(); code > 0 {
+
+	defer func() {
 		if err := cleanup(); err != nil {
-			log.Println("Error running cleanup: ", err)
+			log.Fatal(err)
 		}
-		os.Exit(code)
-	}
-	if err := cleanup(); err != nil {
-		log.Println("Error running cleanup: ", err)
-	}
-	os.Exit(0)
+	}()
+
+	hostname = "localhost:" + port
+	return m.Run()
 }
 
 // createTestContainerIfNotCI uses an ephemeral postgres container to run a real test.
