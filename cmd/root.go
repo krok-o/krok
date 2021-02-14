@@ -280,10 +280,13 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		APIKeyAuth: authMatcher,
 	})
 
-	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserAuthenticationConfig{
+	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserMiddlewareConfig{
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 		CookieName:     handlers.AccessTokenCookie,
-	}, userStore)
+	}, krokmiddleware.UserMiddlewareDeps{
+		Logger:    log,
+		UserStore: userStore,
+	})
 
 	// ************************
 	// Set up the server

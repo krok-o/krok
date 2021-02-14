@@ -8,27 +8,34 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
+	"github.com/rs/zerolog"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
 )
 
 const userContextKey = "user"
 
-// UserAuthenticationConfig is the config for the UserAuthentication middleware.
-type UserAuthenticationConfig struct {
+// UserMiddlewareConfig represents the UserMiddleware config.
+type UserMiddlewareConfig struct {
 	GlobalTokenKey string
 	CookieName     string
 }
 
-// UserMiddleware represents our user middleware.
-type UserMiddleware struct {
-	UserAuthenticationConfig
+// UserMiddlewareDeps represents the UserMiddleware dependencies.
+type UserMiddlewareDeps struct {
+	Logger    zerolog.Logger
 	UserStore providers.UserStorer
 }
 
+// UserMiddleware represents our user middleware.
+type UserMiddleware struct {
+	UserMiddlewareConfig
+	UserMiddlewareDeps
+}
+
 // NewUserMiddleware creates a new UserMiddleware.
-func NewUserMiddleware(cfg UserAuthenticationConfig, userStore providers.UserStorer) *UserMiddleware {
-	return &UserMiddleware{UserAuthenticationConfig: cfg, UserStore: userStore}
+func NewUserMiddleware(cfg UserMiddlewareConfig, deps UserMiddlewareDeps) *UserMiddleware {
+	return &UserMiddleware{UserMiddlewareConfig: cfg, UserMiddlewareDeps: deps}
 }
 
 // UserContext represents the user context.
@@ -68,7 +75,8 @@ func (um *UserMiddleware) JWT() echo.MiddlewareFunc {
 			if len(token) == 60 {
 				user, err := um.UserStore.GetByToken(ctx, token)
 				if err != nil {
-					return c.String(http.StatusUnauthorized, "error")
+					um.Logger.Warn().Err(err).Msg("token authentication failed")
+					return c.String(http.StatusUnauthorized, "Personal token authentication failed.")
 				}
 				um.setUser(c, user.ID)
 				return next(c)
@@ -78,12 +86,14 @@ func (um *UserMiddleware) JWT() echo.MiddlewareFunc {
 			if _, err := jwt.ParseWithClaims(token, &claims, func(token *jwt.Token) (interface{}, error) {
 				return []byte(um.GlobalTokenKey), nil
 			}); err != nil {
-				return c.JSON(http.StatusUnauthorized, "failed to verify token")
+				um.Logger.Warn().Err(err).Msg("jwt token authentication failed")
+				return c.JSON(http.StatusUnauthorized, "Token authentication failed.")
 			}
 
 			userID, err := strconv.Atoi(claims.Subject)
 			if err != nil {
-				return c.JSON(http.StatusUnauthorized, "failed to get userID")
+				um.Logger.Warn().Err(err).Msg("failed to parse subject to userID")
+				return c.JSON(http.StatusInternalServerError, "Unexpected error.")
 			}
 			um.setUser(c, userID)
 
