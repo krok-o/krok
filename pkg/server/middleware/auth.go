@@ -71,8 +71,8 @@ func (um *UserMiddleware) JWT() echo.MiddlewareFunc {
 				return c.JSON(http.StatusUnauthorized, "failed to extract token")
 			}
 
-			// 	User API Keys are 60 bytes.
-			if len(token) == 60 {
+			// User API Keys are max 60 bytes.
+			if len(token) <= 60 {
 				user, err := um.UserStore.GetByToken(ctx, token)
 				if err != nil {
 					um.Logger.Warn().Err(err).Msg("token authentication failed")

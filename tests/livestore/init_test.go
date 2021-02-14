@@ -16,6 +16,7 @@ import (
 // hostname can be dynamic, dependent on whether we are running on CI or locally.
 var hostname = "localhost:5432"
 
+// TestMain runs the tests for the package and allows us to bring up any external dependencies required.
 func TestMain(m *testing.M) {
 	os.Exit(testMain(m))
 }

@@ -37,6 +37,9 @@ func TestUserAuthentication(t *testing.T) {
 		CookieName:     "_a_token_",
 	}
 
+	// Invalid token (tampered)
+	invalidToken := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2MTMzMzIxOT_INVALID_sInN1YiI6IjEifQ.5zlBJrc4hY9ENDT49OaKtWPk4WG0APj3JS2aETnEtbs"
+
 	t.Run("valid jwt token via header", func(t *testing.T) {
 		hf := NewUserMiddleware(cfg, UserMiddlewareDeps{}).JWT()(handler)
 
@@ -70,7 +73,7 @@ func TestUserAuthentication(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		res := httptest.NewRecorder()
-		req.Header.Set("Authorization", "invalid")
+		req.Header.Set("Authorization", invalidToken)
 		c := e.NewContext(req, res)
 		err := hf(c)
 		assert.NoError(t, err)
@@ -83,7 +86,7 @@ func TestUserAuthentication(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		res := httptest.NewRecorder()
-		req.Header.Set("Cookie", "_a_token_=invalid")
+		req.Header.Set("Cookie", "_a_token_="+invalidToken)
 		c := e.NewContext(req, res)
 		err := hf(c)
 		assert.NoError(t, err)

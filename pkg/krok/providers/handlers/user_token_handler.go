@@ -70,7 +70,7 @@ func (h *UserTokenHandler) Generate() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, apiErr)
 		}
 
-		h.Logger.Debug().Int("user_id", uc.UserID).Msg("successfully generated a new token")
+		h.Logger.Debug().Int("user_id", updated.ID).Msg("successfully generated a new token")
 		return c.JSON(http.StatusOK, map[string]string{"token": updated.Token})
 	}
 }

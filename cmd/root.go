@@ -87,12 +87,13 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Timestamp().
 		Logger()
 
-	// if krokArgs.server.GoogleClientID == "" {
-	//	log.Fatal().Msg("must provide --google-client-id flag")
-	// }
-	// if krokArgs.server.GoogleClientSecret == "" {
-	//	log.Fatal().Msg("must provide --google-client-secret flag")
-	// }
+	// TODO: Set Google OAuth2 flags are required until we can support anonymous or basic auth.
+	if krokArgs.server.GoogleClientID == "" {
+		log.Fatal().Msg("must provide --google-client-id flag")
+	}
+	if krokArgs.server.GoogleClientSecret == "" {
+		log.Fatal().Msg("must provide --google-client-secret flag")
+	}
 	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
 
 	// Setup Global Token Key
