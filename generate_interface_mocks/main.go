@@ -45,11 +45,11 @@ func main() {
 				if t.Name.IsExported() {
 					switch t.Type.(type) {
 					case *ast.InterfaceType:
-						out, err := exec.Command("mockery", "--name", t.Name.Name, "--filename", fmt.Sprintf("%s_%s.go", base, t.Name.Name)).Output()
+						out, err := exec.Command("mockery", "--name", t.Name.Name, "--filename", fmt.Sprintf("%s_%s.go", base, t.Name.Name)).CombinedOutput()
 						if err != nil {
 							log.Fatal(err)
 						}
-						log.Println(out)
+						log.Println(string(out))
 					}
 				}
 			}
