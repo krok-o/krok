@@ -23,7 +23,7 @@ import (
 func TestCommandSettings_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandSettings_Create")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,
@@ -92,16 +92,14 @@ func TestCommandSettings_Flow(t *testing.T) {
 func TestCommandSettings_Vault(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandSettings_Vault")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -160,7 +158,7 @@ func TestCommandSettings_Vault(t *testing.T) {
 func TestCommandSettings_CascadingDelete(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandSettings_CascadingDelete")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,
@@ -211,7 +209,7 @@ func TestCommandSettings_CascadingDelete(t *testing.T) {
 func TestCommandSettings_UpdateError(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandSettings_UpdateError")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,
@@ -264,7 +262,7 @@ func TestCommandSettings_UpdateError(t *testing.T) {
 func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandSettings_CantCreateSameKeyAndCommandCombination")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,
@@ -317,16 +315,14 @@ func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 func TestCommandSettings_UpdateInVault(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandSettings_UpdateInVault")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,

@@ -50,14 +50,14 @@ type FileStorer struct {
 // The format is:
 // KEY=VALUE
 // KEY2=VALUE2
-func NewFileStorer(cfg Config, deps Dependencies) (*FileStorer, error) {
+func NewFileStorer(cfg Config, deps Dependencies) *FileStorer {
 	return &FileStorer{
 		Config:       cfg,
 		Dependencies: deps,
-	}, nil
+	}
 }
 
-// Init initialises the vault file.
+// Init initializes the vault file.
 func (v *FileStorer) Init() error {
 	path := filepath.Join(v.Location, vaultFileName)
 	log := v.Logger.With().Str("location", path).Logger()

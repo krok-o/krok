@@ -28,10 +28,10 @@ type CommandsHandler struct {
 var _ providers.CommandHandler = &CommandsHandler{}
 
 // NewCommandsHandler creates a new commands handler.
-func NewCommandsHandler(deps CommandsHandlerDependencies) (*CommandsHandler, error) {
+func NewCommandsHandler(deps CommandsHandlerDependencies) *CommandsHandler {
 	return &CommandsHandler{
 		CommandsHandlerDependencies: deps,
-	}, nil
+	}
 }
 
 // Delete deletes a command.

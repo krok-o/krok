@@ -21,7 +21,6 @@ func TestDockerConverter_LoadValueFromFile(t *testing.T) {
 		Dependencies: Dependencies{
 			Logger: logger,
 		},
-		Config: Config{},
 		prefix: location,
 	}
 
@@ -31,7 +30,7 @@ func TestDockerConverter_LoadValueFromFile(t *testing.T) {
 }
 
 func TestDockerConverter_LoadValueFromFileJustValue(t *testing.T) {
-	d := NewDockerConverter(Config{}, Dependencies{})
+	d := NewDockerConverter(Dependencies{})
 
 	value, err := d.LoadValueFromFile("getthis")
 	assert.NoError(t, err)
@@ -46,7 +45,6 @@ func TestDockerConverter_LoadValueFromFileMissingFile(t *testing.T) {
 		Dependencies: Dependencies{
 			Logger: logger,
 		},
-		Config: Config{},
 		prefix: location,
 	}
 

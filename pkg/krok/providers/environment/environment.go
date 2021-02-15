@@ -11,10 +11,6 @@ const (
 	dockerSecretPrefix = "/run/secrets"
 )
 
-// Config has the configuration options for the environment
-type Config struct {
-}
-
 // Dependencies defines the dependencies of this commenter
 type Dependencies struct {
 	Logger zerolog.Logger
@@ -22,16 +18,14 @@ type Dependencies struct {
 
 // DockerConverter is a docker environment secret converter.
 type DockerConverter struct {
-	Config
 	Dependencies
 
 	prefix string
 }
 
 // NewDockerConverter creates a new DockerConverter.
-func NewDockerConverter(cfg Config, deps Dependencies) *DockerConverter {
+func NewDockerConverter(deps Dependencies) *DockerConverter {
 	d := &DockerConverter{
-		Config:       cfg,
 		Dependencies: deps,
 		prefix:       dockerSecretPrefix,
 	}

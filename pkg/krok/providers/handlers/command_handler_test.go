@@ -72,12 +72,11 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("delete normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -157,12 +156,11 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("get normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -251,12 +249,11 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("list normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -310,12 +307,11 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("update normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -383,12 +379,11 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("add relation happy path", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -487,12 +482,11 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("remove relation happy path", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")

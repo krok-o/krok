@@ -38,13 +38,12 @@ func (m *memoryVault) Write(data []byte) error {
 func TestNewKrokVault_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	m := &memoryVault{}
-	v, err := NewKrokVault(Config{}, Dependencies{
+	v := NewKrokVault(Dependencies{
 		Logger: logger,
 		Storer: m,
 	})
-	assert.NoError(t, err)
 
-	err = v.LoadSecrets()
+	err := v.LoadSecrets()
 	assert.NoError(t, err)
 	v.AddSecret("key", []byte("value"))
 	err = v.SaveSecrets()
@@ -71,12 +70,11 @@ func TestNewKrokVault_ReadError(t *testing.T) {
 	m := &memoryVault{
 		readErr: errors.New("error"),
 	}
-	v, err := NewKrokVault(Config{}, Dependencies{
+	v := NewKrokVault(Dependencies{
 		Logger: logger,
 		Storer: m,
 	})
-	assert.NoError(t, err)
 
-	err = v.LoadSecrets()
+	err := v.LoadSecrets()
 	assert.Error(t, err)
 }

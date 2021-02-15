@@ -36,10 +36,10 @@ type ApiKeysHandler struct {
 var _ providers.ApiKeysHandler = &ApiKeysHandler{}
 
 // NewApiKeysHandler creates a new api key pair handler.
-func NewApiKeysHandler(deps ApiKeysHandlerDependencies) (*ApiKeysHandler, error) {
+func NewApiKeysHandler(deps ApiKeysHandlerDependencies) *ApiKeysHandler {
 	return &ApiKeysHandler{
 		ApiKeysHandlerDependencies: deps,
-	}, nil
+	}
 }
 
 // Create creates an api key pair for a given user.

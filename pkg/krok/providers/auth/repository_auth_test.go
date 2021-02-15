@@ -17,20 +17,17 @@ import (
 func TestKrokAuth_CreateRepositoryAuth(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestKrokAuth_CreateRepositoryAuth")
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	auth, err := NewRepositoryAuth(RepositoryAuthConfig{}, RepositoryAuthDependencies{
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
+	auth := NewRepositoryAuth(RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})
-	assert.NoError(t, err)
 
 	info := &models.Auth{
 		SSH:      "testssh",
@@ -51,20 +48,17 @@ func TestKrokAuth_CreateRepositoryAuth(t *testing.T) {
 func TestKrokAuth_CreateRepositoryAuthPartialAuth(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestKrokAuth_CreateRepositoryAuthPartialAuth")
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	auth, err := NewRepositoryAuth(RepositoryAuthConfig{}, RepositoryAuthDependencies{
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
+	auth := NewRepositoryAuth(RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})
-	assert.NoError(t, err)
 
 	info := &models.Auth{
 		SSH: "testssh",
