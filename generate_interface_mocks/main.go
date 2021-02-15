@@ -34,8 +34,7 @@ func main() {
 		fset := token.NewFileSet()
 		node, err := parser.ParseFile(fset, filename, nil, parser.ParseComments)
 		if err != nil {
-			fmt.Println("Error parsing file: " + filename)
-			os.Exit(255)
+			log.Fatal("Error parsing file: " + filename)
 		}
 
 		base := strings.TrimSuffix(filename, filepath.Ext(filename))
