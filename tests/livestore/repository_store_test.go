@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	kerr "github.com/krok-o/krok/errors"
-	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
@@ -31,10 +30,6 @@ func TestRepositoryStore_Flow(t *testing.T) {
 	err := fileStore.Init()
 	assert.NoError(t, err)
 	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
-	a := auth.NewRepositoryAuth(auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -51,7 +46,6 @@ func TestRepositoryStore_Flow(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	ctx := context.Background()
 	repo, err := rp.Create(ctx, &models.Repository{
@@ -98,10 +92,6 @@ func TestRepositoryStore_ListByFilter(t *testing.T) {
 	err := fileStore.Init()
 	assert.NoError(t, err)
 	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
-	a := auth.NewRepositoryAuth(auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
@@ -119,7 +109,6 @@ func TestRepositoryStore_ListByFilter(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	ctx := context.Background()
 	_, err = rp.Create(ctx, &models.Repository{
@@ -165,10 +154,6 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 	err := fileStore.Init()
 	assert.NoError(t, err)
 	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
-	a := auth.NewRepositoryAuth(auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -185,7 +170,6 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: connector,
@@ -238,10 +222,6 @@ func TestRepositoryStore_Create_WithCommands(t *testing.T) {
 	err := fileStore.Init()
 	assert.NoError(t, err)
 	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
-	a := auth.NewRepositoryAuth(auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -258,7 +238,6 @@ func TestRepositoryStore_Create_WithCommands(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	ctx := context.Background()
 	repo, err := rp.Create(ctx, &models.Repository{

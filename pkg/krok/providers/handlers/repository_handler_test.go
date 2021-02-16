@@ -13,8 +13,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -94,6 +96,8 @@ func (g *mockGithubPlatformProvider) CreateHook(ctx context.Context, repo *model
 func TestRepoHandler_CreateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
+	mars := &mocks.RepositoryAuth{}
+	mars.On("CreateRepositoryAuth", mock.Anything, 0, &models.Auth{Secret: "secret"}).Return(nil)
 	maka := &mockApiKeyAuth{}
 	mg := &mockGithubPlatformProvider{}
 	logger := zerolog.New(os.Stderr)
@@ -115,6 +119,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		PlatformProviders: map[int]providers.Platform{
 			models.GITHUB: mg,
 		},
+		Auth: mars,
 	})
 
 	assert.NoError(t, err)
@@ -123,8 +128,8 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1}`
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
+		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1, "auth": {"secret": "secret"}}`
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
@@ -159,6 +164,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
 	maka := &mockApiKeyAuth{}
+	mars := &mocks.RepositoryAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
@@ -175,6 +181,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
+		Auth:             mars,
 	})
 	assert.NoError(t, err)
 
@@ -225,6 +232,10 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		},
 	}
 	maka := &mockApiKeyAuth{}
+	mars := &mocks.RepositoryAuth{}
+	mars.On("GetRepositoryAuth", mock.Anything, 0).Return(&models.Auth{
+		Secret: "secret",
+	}, nil)
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
@@ -241,6 +252,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
+		Auth:             mars,
 	})
 	assert.NoError(t, err)
 
@@ -248,7 +260,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)

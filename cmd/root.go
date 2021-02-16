@@ -144,7 +144,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Dependencies: deps,
 		Connector:    connector,
 		Vault:        v,
-		Auth:         a,
 	})
 
 	commandStore, err := livestore.NewCommandStore(livestore.CommandDependencies{
@@ -220,6 +219,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		TokenProvider:     tp,
 		Logger:            log,
 		PlatformProviders: platformProviders,
+		Auth:              a,
 	})
 
 	apiKeysHandler := handlers.NewApiKeysHandler(handlers.ApiKeysHandlerDependencies{
