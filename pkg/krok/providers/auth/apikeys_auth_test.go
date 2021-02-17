@@ -14,14 +14,14 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-type mockApiKeysStore struct {
+type mockAPIKeysStore struct {
 	providers.APIKeysStorer
 
 	key *models.APIKey
 	err error
 }
 
-func (mak *mockApiKeysStore) GetByApiKeyID(ctx context.Context, id string) (*models.APIKey, error) {
+func (mak *mockAPIKeysStore) GetByAPIKeyID(ctx context.Context, id string) (*models.APIKey, error) {
 	if id == mak.key.APIKeyID {
 		return mak.key, mak.err
 	}
@@ -29,7 +29,7 @@ func (mak *mockApiKeysStore) GetByApiKeyID(ctx context.Context, id string) (*mod
 }
 
 func TestMatch(t *testing.T) {
-	mak := &mockApiKeysStore{
+	mak := &mockAPIKeysStore{
 		key: &models.APIKey{
 			ID:           0,
 			Name:         "test-key",
@@ -40,8 +40,8 @@ func TestMatch(t *testing.T) {
 		},
 	}
 
-	p := NewApiKeysProvider(ApiKeysDependencies{
-		ApiKeysStore: mak,
+	p := NewAPIKeysProvider(APIKeysDependencies{
+		APIKeysStore: mak,
 		Logger:       zerolog.New(os.Stderr),
 	})
 	secret := "secret"

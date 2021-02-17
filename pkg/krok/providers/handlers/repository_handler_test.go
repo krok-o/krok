@@ -73,15 +73,15 @@ func (mrs *mockRepositoryStorer) Delete(ctx context.Context, id int) error {
 	return mrs.deleteErr
 }
 
-type mockApiKeyAuth struct {
-	providers.ApiKeysAuthenticator
+type mockAPIKeyAuth struct {
+	providers.APIKeysAuthenticator
 }
 
-func (maka *mockApiKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
+func (maka *mockAPIKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
 	return nil
 }
 
-func (maka *mockApiKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
+func (maka *mockAPIKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
 	return nil, nil
 }
 
@@ -98,13 +98,13 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 	mrs := &mockRepositoryStorer{}
 	mars := &mocks.RepositoryAuth{}
 	mars.On("CreateRepositoryAuth", mock.Anything, 0, &models.Auth{Secret: "secret"}).Return(nil)
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	mg := &mockGithubPlatformProvider{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	cfg := RepoConfig{
 		Protocol: "http",
@@ -163,13 +163,13 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 func TestRepoHandler_UpdateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	mars := &mocks.RepositoryAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	cfg := RepoConfig{
 		Protocol: "http",
@@ -231,7 +231,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 			VCS:  1,
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	mars := &mocks.RepositoryAuth{}
 	mars.On("GetRepositoryAuth", mock.Anything, 0).Return(&models.Auth{
 		Secret: "secret",
@@ -240,7 +240,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	cfg := RepoConfig{
 		Protocol: "http",
@@ -327,12 +327,12 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 			},
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	cfg := RepoConfig{
 		Protocol: "http",
@@ -369,12 +369,12 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 func TestRepoHandler_DeleteRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	cfg := RepoConfig{
 		Protocol: "http",

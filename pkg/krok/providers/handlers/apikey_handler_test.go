@@ -19,7 +19,7 @@ import (
 	"github.com/krok-o/krok/pkg/server/middleware"
 )
 
-type mockApiKeysStore struct {
+type mockAPIKeysStore struct {
 	providers.APIKeysStorer
 	getKey    *models.APIKey
 	deleteErr error
@@ -27,37 +27,37 @@ type mockApiKeysStore struct {
 	id        int
 }
 
-func (m *mockApiKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.APIKey, error) {
+func (m *mockAPIKeysStore) Create(ctx context.Context, key *models.APIKey) (*models.APIKey, error) {
 	key.ID = m.id
 	m.id++
 	return key, nil
 }
 
-func (m *mockApiKeysStore) Delete(ctx context.Context, id int, uid int) error {
+func (m *mockAPIKeysStore) Delete(ctx context.Context, id int, uid int) error {
 	return m.deleteErr
 }
 
-func (m *mockApiKeysStore) Get(ctx context.Context, id int, userID int) (*models.APIKey, error) {
+func (m *mockAPIKeysStore) Get(ctx context.Context, id int, userID int) (*models.APIKey, error) {
 	return m.getKey, nil
 }
 
-func (m *mockApiKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, error) {
+func (m *mockAPIKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, error) {
 	return m.keyList, nil
 }
 
-func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
-	maka := &mockApiKeyAuth{}
+func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
+	maka := &mockAPIKeyAuth{}
 	mus := &mockUserStorer{}
-	aks := &mockApiKeysStore{}
+	aks := &mockAPIKeysStore{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
+	akh := NewAPIKeysHandler(APIKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
@@ -101,7 +101,7 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		assert.NotEmpty(tt, key.APIKeySecret)
 		assert.NotEmpty(tt, key.APIKeyID)
 		assert.True(tt, key.TTL.After(time.Now()))
-		assert.Equal(tt, "My Api Key", key.Name)
+		assert.Equal(tt, "My API Key", key.Name)
 	})
 	t.Run("create no user context", func(tt *testing.T) {
 		e := echo.New()
@@ -115,19 +115,19 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 	})
 }
 
-func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
-	maka := &mockApiKeyAuth{}
+func TestAPIKeysHandler_DeleteAPIKeyPair(t *testing.T) {
+	maka := &mockAPIKeyAuth{}
 	mus := &mockUserStorer{}
-	aks := &mockApiKeysStore{}
+	aks := &mockAPIKeysStore{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
+	akh := NewAPIKeysHandler(APIKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
@@ -185,10 +185,10 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 	})
 }
 
-func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
-	maka := &mockApiKeyAuth{}
+func TestAPIKeysHandler_GetAPIKeyPair(t *testing.T) {
+	maka := &mockAPIKeyAuth{}
 	mus := &mockUserStorer{}
-	aks := &mockApiKeysStore{
+	aks := &mockAPIKeysStore{
 		getKey: &models.APIKey{
 			ID:           0,
 			Name:         "test-key",
@@ -202,11 +202,11 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
+	akh := NewAPIKeysHandler(APIKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
@@ -288,10 +288,10 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 	})
 }
 
-func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
-	maka := &mockApiKeyAuth{}
+func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
+	maka := &mockAPIKeyAuth{}
 	mus := &mockUserStorer{}
-	aks := &mockApiKeysStore{
+	aks := &mockAPIKeysStore{
 		keyList: []*models.APIKey{
 			{
 				ID:           0,
@@ -315,11 +315,11 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
 	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
+	akh := NewAPIKeysHandler(APIKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,

@@ -74,8 +74,8 @@ func (_m *APIKeysStorer) Get(ctx context.Context, id int, userID int) (*models.A
 	return r0, r1
 }
 
-// GetByApiKeyID provides a mock function with given fields: ctx, id
-func (_m *APIKeysStorer) GetByApiKeyID(ctx context.Context, id string) (*models.APIKey, error) {
+// GetByAPIKeyID provides a mock function with given fields: ctx, id
+func (_m *APIKeysStorer) GetByAPIKeyID(ctx context.Context, id string) (*models.APIKey, error) {
 	ret := _m.Called(ctx, id)
 
 	var r0 *models.APIKey
