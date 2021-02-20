@@ -94,7 +94,7 @@ func (a *APIKeysStore) Delete(ctx context.Context, id int, userID int) error {
 
 // List will list all apikeys for a user.
 func (a *APIKeysStore) List(ctx context.Context, userID int) ([]*models.APIKey, error) {
-	log := a.Logger.With().Str("func", "ListApiKeys").Logger()
+	log := a.Logger.With().Str("func", "ListAPIKeys").Logger()
 	// Select all users.
 	result := make([]*models.APIKey, 0)
 	f := func(tx pgx.Tx) error {
@@ -184,8 +184,8 @@ func (a *APIKeysStore) Get(ctx context.Context, id int, userID int) (*models.API
 	}, nil
 }
 
-// GetByApiKeyID an apikey by it's generated id.
-func (a *APIKeysStore) GetByApiKeyID(ctx context.Context, id string) (*models.APIKey, error) {
+// GetByAPIKeyID an apikey by it's generated id.
+func (a *APIKeysStore) GetByAPIKeyID(ctx context.Context, id string) (*models.APIKey, error) {
 	log := a.Logger.With().Str("id", id).Logger()
 	var (
 		storedID           int

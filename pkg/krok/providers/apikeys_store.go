@@ -16,6 +16,6 @@ type APIKeysStorer interface {
 	List(ctx context.Context, userID int) ([]*models.APIKey, error)
 	// Get an apikey.
 	Get(ctx context.Context, id int, userID int) (*models.APIKey, error)
-	// GetByApiKeyID an apikey by apikeyid.
-	GetByApiKeyID(ctx context.Context, id string) (*models.APIKey, error)
+	// GetByAPIKeyID an apikey by apikeyid.
+	GetByAPIKeyID(ctx context.Context, id string) (*models.APIKey, error)
 }

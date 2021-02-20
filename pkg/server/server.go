@@ -46,7 +46,7 @@ type Dependencies struct {
 	Krok              krok.Handler
 	CommandHandler    providers.CommandHandler
 	RepositoryHandler providers.RepositoryHandler
-	ApiKeyHandler     providers.ApiKeysHandler
+	APIKeyHandler     providers.APIKeysHandler
 	AuthHandler       providers.AuthHandler
 	TokenHandler      providers.TokenHandler
 	VCSTokenHandler   providers.VCSTokenHandler
@@ -113,10 +113,10 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
 
 	// api keys related actions
-	auth.POST("/user/apikey/generate/:name", s.Dependencies.ApiKeyHandler.Create())
-	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.ApiKeyHandler.Delete())
-	auth.GET("/user/apikey", s.Dependencies.ApiKeyHandler.List())
-	auth.GET("/user/apikey/:keyid", s.Dependencies.ApiKeyHandler.Get())
+	auth.POST("/user/apikey/generate/:name", s.Dependencies.APIKeyHandler.Create())
+	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.APIKeyHandler.Delete())
+	auth.GET("/user/apikey", s.Dependencies.APIKeyHandler.List())
+	auth.GET("/user/apikey/:keyid", s.Dependencies.APIKeyHandler.Get())
 
 	// vcs token handler
 	auth.POST("/vcs-token", s.Dependencies.VCSTokenHandler.Create())

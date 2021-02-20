@@ -28,9 +28,16 @@ type Repository struct {
 	Events []string `json:"events,omitempty"`
 }
 
+// Validate validates this model.
 func (r *Repository) Validate() (ok bool, field string, err error) {
 	if r.Name == "" {
 		return false, "Name", errors.New("name cannot be empty")
+	}
+	if r.Auth == nil {
+		return false, "Auth", errors.New("auth information must be defined")
+	}
+	if r.Auth.Secret == "" {
+		return false, "Auth.Secret", errors.New("secret for the webhook must be defined")
 	}
 	return true, "", nil
 }

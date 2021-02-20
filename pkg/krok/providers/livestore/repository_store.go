@@ -28,7 +28,6 @@ type RepositoryDependencies struct {
 	Dependencies
 	Connector *Connector
 	Vault     providers.Vault
-	Auth      providers.RepositoryAuth
 }
 
 // NewRepositoryStore creates a new RepositoryStore
@@ -72,11 +71,6 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 	result, err := r.GetByName(ctx, c.Name)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to get created repository.")
-		return nil, err
-	}
-
-	if err := r.Auth.CreateRepositoryAuth(ctx, result.ID, c.Auth); err != nil {
-		log.Debug().Err(err).Msg("Failed to store auth information.")
 		return nil, err
 	}
 
@@ -258,14 +252,6 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 		return nil, err
 	}
 	result.Commands = commands
-
-	// Get auth info
-	auth, err := r.Auth.GetRepositoryAuth(ctx, result.ID)
-	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
-		log.Debug().Err(err).Msg("GetRepositoryAuth failed.")
-		return nil, err
-	}
-	result.Auth = auth
 	return result, nil
 }
 

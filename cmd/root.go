@@ -144,7 +144,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Dependencies: deps,
 		Connector:    connector,
 		Vault:        v,
-		Auth:         a,
 	})
 
 	commandStore, err := livestore.NewCommandStore(livestore.CommandDependencies{
@@ -187,9 +186,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// ************************
 	// Set up handlers
 	// ************************
-	authMatcher := auth.NewApiKeysProvider(auth.ApiKeysDependencies{
+	authMatcher := auth.NewAPIKeysProvider(auth.APIKeysDependencies{
 		Logger:       log,
-		ApiKeysStore: apiKeyStore,
+		APIKeysStore: apiKeyStore,
 	})
 
 	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
@@ -202,7 +201,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	handlerDeps := handlers.Dependencies{
 		Logger:      log,
 		UserStore:   userStore,
-		ApiKeyAuth:  authMatcher,
+		APIKeyAuth:  authMatcher,
 		TokenIssuer: tokenIssuer,
 	}
 	tp, err := handlers.NewTokenHandler(handlerDeps)
@@ -220,9 +219,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		TokenProvider:     tp,
 		Logger:            log,
 		PlatformProviders: platformProviders,
+		Auth:              a,
 	})
 
-	apiKeysHandler := handlers.NewApiKeysHandler(handlers.ApiKeysHandlerDependencies{
+	apiKeysHandler := handlers.NewAPIKeysHandler(handlers.APIKeysHandlerDependencies{
 		APIKeysStore:  apiKeyStore,
 		TokenProvider: tp,
 		Dependencies:  handlerDeps,
@@ -270,7 +270,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Krok:              krokHandler,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
-		ApiKeyHandler:     apiKeysHandler,
+		APIKeyHandler:     apiKeysHandler,
 		AuthHandler:       authHandler,
 		TokenHandler:      tp,
 		VCSTokenHandler:   vcsTokenHandler,

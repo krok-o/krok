@@ -27,6 +27,7 @@ type RepoConfig struct {
 
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
+	Auth              providers.RepositoryAuth
 	RepositoryStorer  providers.RepositoryStorer
 	TokenProvider     *TokenHandler
 	Logger            zerolog.Logger
@@ -69,6 +70,13 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository", http.StatusBadRequest, err))
 		}
+
+		// Once the creation succeeded, create the auth values
+		if err := r.Auth.CreateRepositoryAuth(ctx, created.ID, repo.Auth); err != nil {
+			r.Logger.Debug().Err(err).Msg("Failed to store auth information.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository auth information", http.StatusBadRequest, err))
+		}
+		created.Auth = repo.Auth
 
 		uurl, err := r.generateUniqueCallBackURL(created)
 		if err != nil {
@@ -137,11 +145,20 @@ func (r *RepoHandler) Get() echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 
+		// Get the repo from store.
 		repo, err := r.RepositoryStorer.Get(ctx, n)
 		if err != nil {
 			apiError := kerr.APIError("failed to get repository", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
+		// Get the auth information for the repository
+		auth, err := r.Auth.GetRepositoryAuth(ctx, repo.ID)
+		if err != nil {
+			apiError := kerr.APIError("failed to get repository auth information", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		repo.Auth = auth
 
 		uurl, err := r.generateUniqueCallBackURL(repo)
 		if err != nil {

@@ -16,8 +16,8 @@ type RepositoryAuth interface {
 	CreateRepositoryAuth(ctx context.Context, repositoryID int, info *models.Auth) error
 }
 
-// ApiKeysAuthenticator deals with authenticating api keys.
-type ApiKeysAuthenticator interface {
+// APIKeysAuthenticator deals with authenticating api keys.
+type APIKeysAuthenticator interface {
 	// Match matches a given user's api keys with the stored ones.
 	Match(ctx context.Context, key *models.APIKey) error
 	// Encrypt takes an api key secret and encrypts it for storage.

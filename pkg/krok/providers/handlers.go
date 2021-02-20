@@ -31,8 +31,8 @@ type CommandHandler interface {
 	RemoveCommandRelForRepository() echo.HandlerFunc
 }
 
-// ApiKeysHandler provides functions which define operations on api key pairs.
-type ApiKeysHandler interface {
+// APIKeysHandler provides functions which define operations on api key pairs.
+type APIKeysHandler interface {
 	CRUDHandler
 }
 

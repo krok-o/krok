@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 
 	kerr "github.com/krok-o/krok/errors"
-	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
@@ -98,10 +97,6 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	err := fileStore.Init()
 	assert.NoError(t, err)
 	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
-	a := auth.NewRepositoryAuth(auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
@@ -123,7 +118,6 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	ctx := context.Background()
 	// Create the first command.
