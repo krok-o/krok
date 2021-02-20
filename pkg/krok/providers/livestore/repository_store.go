@@ -74,6 +74,10 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 		return nil, err
 	}
 
+	// TODO: this will be fixed once I extract the auth creation
+	result.Auth = c.Auth
+	result.Events = c.Events
+
 	return result, nil
 }
 

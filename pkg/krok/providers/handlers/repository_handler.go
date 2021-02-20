@@ -65,7 +65,6 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-		// Create the repo in the DB
 		created, err := r.RepositoryStorer.Create(ctx, repo)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")
