@@ -1,5 +1,7 @@
 package models
 
+import "errors"
+
 // Auth is authentication option for a repository.
 type Auth struct {
 	SSH      string `json:"ssh,omitempty"`
@@ -24,4 +26,11 @@ type Repository struct {
 	UniqueURL string `json:"unique_url,omitempty"`
 	// TODO: Think about storing this
 	Events []string `json:"events,omitempty"`
+}
+
+func (r *Repository) Validate() (ok bool, field string, err error) {
+	if r.Name == "" {
+		return false, "Name", errors.New("name cannot be empty")
+	}
+	return true, "", nil
 }

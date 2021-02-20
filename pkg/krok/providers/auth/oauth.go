@@ -17,6 +17,11 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
+var scopes = []string{
+	"https://www.googleapis.com/auth/userinfo.email",
+	"https://www.googleapis.com/auth/userinfo.profile",
+}
+
 // OAuthAuthenticatorConfig contains the config for the OAuthAuthenticator.
 type OAuthAuthenticatorConfig struct {
 	BaseURL            string
@@ -52,11 +57,8 @@ func NewOAuthAuthenticator(cfg OAuthAuthenticatorConfig, deps OAuthAuthenticator
 			ClientID:     cfg.GoogleClientID,
 			ClientSecret: cfg.GoogleClientSecret,
 			RedirectURL:  fmt.Sprintf("%s/auth/callback", cfg.BaseURL),
-			Scopes: []string{
-				"https://www.googleapis.com/auth/userinfo.email",
-				"https://www.googleapis.com/auth/userinfo.profile",
-			},
-			Endpoint: google.Endpoint,
+			Scopes:       scopes,
+			Endpoint:     google.Endpoint,
 		},
 	}
 }

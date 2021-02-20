@@ -16,16 +16,14 @@ import (
 func TestTokenProvider_SaveTokenForPlatform(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestTokenProvider_SaveTokenForPlatform")
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	tp := NewPlatformTokenProvider(TokenProviderConfig{}, TokenProviderDependencies{
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
+	tp := NewPlatformTokenProvider(TokenProviderDependencies{
 		Logger: logger,
 		Vault:  v,
 	})

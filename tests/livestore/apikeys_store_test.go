@@ -19,7 +19,7 @@ import (
 
 func TestApiKeys_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,

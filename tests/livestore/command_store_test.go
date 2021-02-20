@@ -26,7 +26,7 @@ import (
 func TestCommandStore_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_Create")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,
@@ -90,17 +90,15 @@ func TestCommandStore_Flow(t *testing.T) {
 func TestCommandStore_RelationshipFlow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_RelationshipFlow")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	a, err := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
+	a := auth.NewRepositoryAuth(auth.RepositoryAuthDependencies{
 		Logger: logger,
 		Vault:  v,
 	})
@@ -208,7 +206,7 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 
 func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,
@@ -241,7 +239,7 @@ func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
 func TestCommandStore_Create_Unique(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_Create_Unique")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
 			Hostname: hostname,

@@ -13,6 +13,7 @@ import (
 
 // Config has the configuration options for the repository handler.
 type Config struct {
+	Proto              string
 	Hostname           string
 	GlobalTokenKey     string
 	GoogleClientID     string
@@ -29,14 +30,12 @@ type Dependencies struct {
 
 // TokenHandler is a token provider for the handlers.
 type TokenHandler struct {
-	Config
 	Dependencies
 }
 
 // NewTokenHandler creates a new token handler which deals with generating and handling tokens.
-func NewTokenHandler(cfg Config, deps Dependencies) (*TokenHandler, error) {
+func NewTokenHandler(deps Dependencies) (*TokenHandler, error) {
 	tp := &TokenHandler{
-		Config:       cfg,
 		Dependencies: deps,
 	}
 	return tp, nil

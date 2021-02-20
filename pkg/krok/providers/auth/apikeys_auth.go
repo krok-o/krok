@@ -11,10 +11,6 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-// ApiKeysConfig has the configuration options for the api keys auth provider.
-type ApiKeysConfig struct {
-}
-
 // ApiKeysDependencies defines the dependencies for the apikeys provider.
 type ApiKeysDependencies struct {
 	Logger       zerolog.Logger
@@ -23,16 +19,14 @@ type ApiKeysDependencies struct {
 
 // ApiKeysProvider is the authentication provider for api keys.
 type ApiKeysProvider struct {
-	ApiKeysConfig
 	ApiKeysDependencies
 }
 
 // NewApiKeysProvider creates a new authentication provider for api keys.
-func NewApiKeysProvider(cfg ApiKeysConfig, deps ApiKeysDependencies) (*ApiKeysProvider, error) {
+func NewApiKeysProvider(deps ApiKeysDependencies) *ApiKeysProvider {
 	return &ApiKeysProvider{
-		ApiKeysConfig:       cfg,
 		ApiKeysDependencies: deps,
-	}, nil
+	}
 }
 
 var _ providers.ApiKeysAuthenticator = &ApiKeysProvider{}

@@ -13,10 +13,6 @@ const (
 	tokenFormat = prefixFormat + "_VCS_TOKEN"
 )
 
-// TokenProviderConfig has the configuration options for the token provider.
-type TokenProviderConfig struct {
-}
-
 // TokenProviderDependencies defines the dependencies for the token provider.
 type TokenProviderDependencies struct {
 	Logger zerolog.Logger
@@ -25,14 +21,12 @@ type TokenProviderDependencies struct {
 
 // TokenProvider is the provider which saves and manages tokens for the various platforms.
 type TokenProvider struct {
-	TokenProviderConfig
 	TokenProviderDependencies
 }
 
 // NewPlatformTokenProvider creates a new Token provider for the platforms.
-func NewPlatformTokenProvider(cfg TokenProviderConfig, deps TokenProviderDependencies) *TokenProvider {
+func NewPlatformTokenProvider(deps TokenProviderDependencies) *TokenProvider {
 	return &TokenProvider{
-		TokenProviderConfig:       cfg,
 		TokenProviderDependencies: deps,
 	}
 }

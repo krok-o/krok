@@ -55,18 +55,13 @@ func TestApiKeysHandler_CreateApiKeyPair(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
+	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("create happy path", func(tt *testing.T) {
 		e := echo.New()
@@ -130,18 +125,13 @@ func TestApiKeysHandler_DeleteApiKeyPair(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
+	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("delete happy path", func(tt *testing.T) {
 		e := echo.New()
@@ -214,18 +204,13 @@ func TestApiKeysHandler_GetApiKeyPair(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
+	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("get apikey happy path", func(tt *testing.T) {
 		ekey := &models.APIKey{
@@ -332,18 +317,13 @@ func TestApiKeysHandler_ListApiKeyPairs(t *testing.T) {
 		UserStore:  mus,
 		ApiKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	akh, err := NewApiKeysHandler(cfg, ApiKeysHandlerDependencies{
+	akh := NewApiKeysHandler(ApiKeysHandlerDependencies{
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("list apikey happy path", func(tt *testing.T) {
 		e := echo.New()

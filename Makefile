@@ -58,3 +58,6 @@ start-https:
 
 docker_image:
 	docker build -t $(image):$(version) .
+
+generate_mocks:
+	go build -o pkg/krok/providers/interfaces generate_interface_mocks/main.go && cd pkg/krok/providers && ./interfaces && rm ./interfaces

@@ -40,11 +40,10 @@ func TestMatch(t *testing.T) {
 		},
 	}
 
-	p, err := NewApiKeysProvider(ApiKeysConfig{}, ApiKeysDependencies{
+	p := NewApiKeysProvider(ApiKeysDependencies{
 		ApiKeysStore: mak,
 		Logger:       zerolog.New(os.Stderr),
 	})
-	assert.NoError(t, err)
 	secret := "secret"
 	encrypted, err := p.Encrypt(context.Background(), []byte(secret))
 	assert.NoError(t, err)
