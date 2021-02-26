@@ -21,6 +21,7 @@ type CommandHandler interface {
 	Get() echo.HandlerFunc
 	List() echo.HandlerFunc
 	Update() echo.HandlerFunc
+
 	// Relationship operations.
 
 	// AddCommandRelForRepository adds an entry for this command id to the given repositoryID.
