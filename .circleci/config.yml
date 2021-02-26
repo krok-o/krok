@@ -29,6 +29,7 @@ jobs:
           POSTGRES_PASSWORD: "password123"
     steps:
       - checkout
+      - run: sudo apt-get update
       - run: sudo apt install -y postgresql-client
       - run:
           name: Create sample database
