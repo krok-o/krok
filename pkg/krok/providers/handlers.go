@@ -4,8 +4,10 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// CRUDHandler defines basic crud operations for a resource.
-type CRUDHandler interface {
+// RepositoryHandler defines the handler's capabilities.
+// The handler is a front wrapper for database operations, but also provides
+// additional abilities, i.e.: generate a unique url
+type RepositoryHandler interface {
 	Create() echo.HandlerFunc
 	Delete() echo.HandlerFunc
 	Get() echo.HandlerFunc
@@ -13,16 +15,13 @@ type CRUDHandler interface {
 	Update() echo.HandlerFunc
 }
 
-// RepositoryHandler defines the handler's capabilities.
-// The handler is a front wrapper for database operations, but also provides
-// additional abilities, i.e.: generate a unique url
-type RepositoryHandler interface {
-	CRUDHandler
-}
-
 // CommandHandler defines the actions of commands.
 type CommandHandler interface {
-	CRUDHandler
+	Delete() echo.HandlerFunc
+	Get() echo.HandlerFunc
+	List() echo.HandlerFunc
+	Update() echo.HandlerFunc
+
 	// Relationship operations.
 
 	// AddCommandRelForRepository adds an entry for this command id to the given repositoryID.
@@ -33,7 +32,10 @@ type CommandHandler interface {
 
 // APIKeysHandler provides functions which define operations on api key pairs.
 type APIKeysHandler interface {
-	CRUDHandler
+	Create() echo.HandlerFunc
+	Delete() echo.HandlerFunc
+	Get() echo.HandlerFunc
+	List() echo.HandlerFunc
 }
 
 // TokenHandler provides operations to get and validation JWT tokens.
@@ -43,7 +45,7 @@ type TokenHandler interface {
 
 // VCSTokenHandler provides operations to manage tokens for the various platforms..
 type VCSTokenHandler interface {
-	CRUDHandler
+	Create() echo.HandlerFunc
 }
 
 // AuthHandler provides the handler functions for the authentication flow.

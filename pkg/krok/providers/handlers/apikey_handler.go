@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -179,13 +178,6 @@ func (a *APIKeysHandler) Get() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, key)
-	}
-}
-
-// Update is unimplemented.
-func (a *APIKeysHandler) Update() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
 	}
 }
 

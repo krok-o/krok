@@ -7,14 +7,15 @@ type Clock interface {
 	Now() time.Time
 }
 
-type clock struct{}
+// KrokClock defines a clock for Krok for testing purposes.
+type KrokClock struct{}
 
-// NewClock creates a new clock.
-func NewClock() *clock {
-	return &clock{}
+// NewClock creates a new KrokClock.
+func NewClock() *KrokClock {
+	return &KrokClock{}
 }
 
 // Now gets the current time.
-func (_ *clock) Now() time.Time {
+func (*KrokClock) Now() time.Time {
 	return time.Now()
 }

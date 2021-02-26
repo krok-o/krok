@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -126,13 +125,6 @@ func (ch *CommandsHandler) Update() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, updated)
-	}
-}
-
-// Create is unimplemented.
-func (ch *CommandsHandler) Create() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
 	}
 }
 
