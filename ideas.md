@@ -101,3 +101,4 @@ Users will be done by logging in / registering via Google and OpenID. The platfo
 The backend will use JWT to authenticate. The pure API login will be handled by API keys. The normal frontend will generate
 the JWT using openid and google log in. The api will generate the JWT using the api key matching. API Keys will be encrypted
 and stored encrypted and matched encrypted.
+

@@ -4,3 +4,4 @@ bin
 .vscode
 .tags
 tests/livestore/dbinit/init.sql
+.tmp

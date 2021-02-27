@@ -5,6 +5,7 @@ import (
 )
 
 // Plugins defines functionality a plugin provider needs to have.
+// @WIP
 type Plugins interface {
 	// Upload enables the uploading of a plugin which will define a command.
 	Upload(ctx context.Context, id string) error

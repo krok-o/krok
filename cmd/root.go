@@ -60,20 +60,20 @@ func init() {
 	flag.StringVar(&krokArgs.server.GoogleClientSecret, "google-client-secret", "", "--google-client-secret my-client-secret}")
 
 	// Store config
-	flag.StringVar(&krokArgs.store.Database, "krok-db-dbname", "krok", "--krok-db-dbname krok")
-	flag.StringVar(&krokArgs.store.Username, "krok-db-username", "krok", "--krok-db-username krok")
-	flag.StringVar(&krokArgs.store.Password, "krok-db-password", "password123", "--krok-db-password password123")
-	flag.StringVar(&krokArgs.store.Hostname, "krok-db-hostname", "localhost:5432", "--krok-db-hostname localhost:5432")
+	flag.StringVar(&krokArgs.store.Database, "db-name", "krok", "--db-name krok")
+	flag.StringVar(&krokArgs.store.Username, "db-username", "krok", "--db-username krok")
+	flag.StringVar(&krokArgs.store.Password, "db-password", "password123", "--db-password password123")
+	flag.StringVar(&krokArgs.store.Hostname, "db-hostname", "localhost:5432", "--db-hostname localhost:5432")
 
 	// Email
 	flag.StringVar(&krokArgs.email.Domain, "email-domain", "", "--email-domain krok.com")
 	flag.StringVar(&krokArgs.email.APIKey, "email-apikey", "", "--email-apikey ********")
 
 	// Plugins
-	flag.StringVar(&krokArgs.plugins.Location, "krok-plugin-location", "/tmp/krok/plugins", "--krok-plugin-location /tmp/krok/plugins")
+	flag.StringVar(&krokArgs.plugins.Location, "plugin-location", "/tmp/krok/plugins", "--plugin-location /tmp/krok/plugins")
 
 	// VaultStorer config
-	flag.StringVar(&krokArgs.fileVault.Location, "krok-file-vault-location", "/tmp/krok/vault", "--krok-file-vault-location /tmp/krok/vault")
+	flag.StringVar(&krokArgs.fileVault.Location, "file-vault-location", "/tmp/krok/vault", "--file-vault-location /tmp/krok/vault")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -165,6 +165,18 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Connector:    connector,
 		APIKeys:      apiKeyStore,
 	})
+
+	// ************************
+	// Set up the plugin watcher
+	// ************************
+
+	pw, err := plugins.NewGoPluginsProvider(krokArgs.plugins, plugins.Dependencies{})
+	if err != nil {
+		log.Fatal().Err(err).Msg("Failed to start command watcher.")
+	}
+
+	// start the watcher
+	go pw.Run(context.Background())
 
 	// ************************
 	// Set up platforms

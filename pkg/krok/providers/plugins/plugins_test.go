@@ -63,7 +63,7 @@ func TestPluginProviderFlow(t *testing.T) {
 	mcs := &mockCommandStorer{
 		getError: kerr.ErrNotFound,
 	}
-	_, err := NewGoPluginsProvider(context.Background(), Config{
+	pp, err := NewGoPluginsProvider(Config{
 		Location: location,
 	}, Dependencies{
 		Logger: logger,
@@ -71,6 +71,7 @@ func TestPluginProviderFlow(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
+	go pp.Run(context.Background())
 
 	// Wait for the watcher to start up...
 	time.Sleep(1 * time.Second)
@@ -95,7 +96,7 @@ func TestPluginProviderLoad(t *testing.T) {
 	mcs := &mockCommandStorer{
 		getError: kerr.ErrNotFound,
 	}
-	pp, err := NewGoPluginsProvider(context.Background(), Config{
+	pp, err := NewGoPluginsProvider(Config{
 		Location: location,
 	}, Dependencies{
 		Logger: logger,
@@ -103,6 +104,7 @@ func TestPluginProviderLoad(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
+	go pp.Run(context.Background())
 
 	// Wait for the watcher to start up...
 	err = compileTestDataToLocation(location)

@@ -42,23 +42,22 @@ type GoPlugins struct {
 
 // NewGoPluginsProvider creates a new Go based plugin provider.
 // Starts the folder watcher.
-func NewGoPluginsProvider(ctx context.Context, cfg Config, deps Dependencies) (*GoPlugins, error) {
+func NewGoPluginsProvider(cfg Config, deps Dependencies) (*GoPlugins, error) {
 	p := &GoPlugins{Config: cfg, Dependencies: deps}
 	if _, err := os.Stat(cfg.Location); os.IsNotExist(err) {
 		deps.Logger.Err(err).Str("location", cfg.Location).Msg("Location does not exist.")
 		return nil, err
 	}
-	go p.run(ctx)
 	return p, nil
 }
 
-// run start the watcher and run until context is done.
-func (p *GoPlugins) run(ctx context.Context) {
+// Run starts the watcher and run until context is done.
+func (p *GoPlugins) Run(ctx context.Context) {
 	failureTry := time.Second * 15
 	for {
 		g, ctx := errgroup.WithContext(ctx)
 		g.Go(func() error {
-			return p.Watch(ctx)
+			return p.watch(ctx)
 		})
 		if err := g.Wait(); err != nil {
 			p.Logger.
@@ -76,9 +75,9 @@ func (p *GoPlugins) run(ctx context.Context) {
 	}
 }
 
-// Watch a folder for new plugins/commands to load.
+// watch a folder for new plugins/commands to load.
 // If a file appears in the watched folder, it will be picked up and saved into the commands.
-func (p *GoPlugins) Watch(ctx context.Context) error {
+func (p *GoPlugins) watch(ctx context.Context) error {
 	log := p.Logger.With().Str("location", p.Location).Logger()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
