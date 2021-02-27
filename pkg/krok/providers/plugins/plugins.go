@@ -164,6 +164,7 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		}); err != nil {
 			log.Debug().Err(err).Msg("Failed to add new command.")
 		}
+		log.Debug().Msg("Created new entry for not existing command file.")
 		return nil
 	}
 	// the command exists in the db check if it is enabled, if not and the hash equals,
@@ -175,12 +176,14 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 			log.Debug().Err(err).Msg("Failed to update command to enabled.")
 			return err
 		}
+		log.Info().Msg("Existing command file was re-added with the same hash. Command has been enabled.")
 		return nil
 	}
 	if !command.Enabled && command.Hash != hash {
 		return errors.New("new file's hash does not equal with the stored command's hash")
 	}
 	// command is enabled and hash equals stored hash, nothing to do.
+	log.Info().Msg("File successfully processed.")
 	return nil
 }
 
@@ -203,11 +206,6 @@ func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event,
 	}()
 
 	log.Debug().Msg("File deleted. Disabling plugin.")
-	hash, err := p.generateHash(file)
-	if err != nil || hash == "" {
-		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
-		return err
-	}
 	name := path.Base(file)
 	command, err := p.Store.GetByName(ctx, name)
 	if errors.Is(err, kerr.ErrNotFound) {
