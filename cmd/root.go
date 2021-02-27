@@ -170,7 +170,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// Set up the plugin watcher
 	// ************************
 
-	pw, err := plugins.NewGoPluginsProvider(krokArgs.plugins, plugins.Dependencies{})
+	pw, err := plugins.NewGoPluginsProvider(krokArgs.plugins, plugins.Dependencies{
+		Logger: log,
+		Store:  commandStore,
+	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to start command watcher.")
 	}
