@@ -9,7 +9,6 @@ import (
 	"github.com/rs/zerolog"
 	"golang.org/x/crypto/acme/autocert"
 
-	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
 	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
@@ -43,7 +42,7 @@ type KrokServer struct {
 // Dependencies defines needed dependencies for the krok server.
 type Dependencies struct {
 	Logger            zerolog.Logger
-	Krok              krok.Handler
+	HookHandler       providers.HookHandler
 	CommandHandler    providers.CommandHandler
 	RepositoryHandler providers.RepositoryHandler
 	APIKeyHandler     providers.APIKeysHandler
@@ -87,7 +86,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// This is the general format of a hook callback url for a repository.
 	// @rid repository id
 	// @vid vcs id
-	e.POST(api+"/hooks/:rid/:vid/callback", s.Dependencies.Krok.HandleHooks(ctx))
+	e.POST(api+"/hooks/:rid/:vid/callback", s.Dependencies.HookHandler.HandleHooks())
 	e.POST(api+"/get-token", s.Dependencies.TokenHandler.TokenHandler())
 	// Admin related actions
 

@@ -11,7 +11,6 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
-	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
@@ -249,7 +248,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 	})
 
-	krokHandler := krok.NewHookHandler(krok.Config{}, krok.Dependencies{
+	krokHandler := handlers.NewHookHandler(handlers.Config{}, handlers.Dependencies{
 		Logger: log,
 	})
 
