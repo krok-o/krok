@@ -249,7 +249,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	hookHandler := handlers.NewHookHandler(handlers.Config{}, handlers.HookDependencies{
-		Logger: log,
+		RepositoryStore: repoStore,
+		CommandStore:    commandStore,
+		GithubPlatform:  githubProvider,
+		Watcher:         pw,
+		Logger:          log,
 	})
 
 	uuidGenerator := providers.NewUUIDGenerator()
