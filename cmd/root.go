@@ -248,7 +248,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 	})
 
-	krokHandler := handlers.NewHookHandler(handlers.Config{}, handlers.Dependencies{
+	hookHandler := handlers.NewHookHandler(handlers.Config{}, handlers.HookDependencies{
 		Logger: log,
 	})
 
@@ -281,7 +281,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:            log,
-		Krok:              krokHandler,
+		HookHandler:       hookHandler,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
 		APIKeyHandler:     apiKeysHandler,
