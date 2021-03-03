@@ -15,7 +15,7 @@ import (
 type UserTokenHandlerDeps struct {
 	Logger     zerolog.Logger
 	UserStore  providers.UserStorer
-	APIKeyAuth providers.ApiKeysAuthenticator
+	APIKeyAuth providers.APIKeysAuthenticator
 	UUID       providers.UUIDGenerator
 }
 

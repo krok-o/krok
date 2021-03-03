@@ -74,7 +74,7 @@ func TestNewUserTokenHandler(t *testing.T) {
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
 		mockUUID := &mocks.UUIDGenerator{}
 		mockUUID.On("Generate").Return("14ef04bc-0c1d-4598-b159-78b1a701010f", nil)
-		mockApiKeyAuthenticator := &mocks.ApiKeysAuthenticator{}
+		mockApiKeyAuthenticator := &mocks.APIKeysAuthenticator{}
 		mockApiKeyAuthenticator.On("Encrypt", mock.Anything, []byte("14ef04bc-0c1d-4598-b159-78b1a701010f")).Return(nil, errors.New("err"))
 
 		handler := NewUserTokenHandler(UserTokenHandlerDeps{
@@ -98,7 +98,7 @@ func TestNewUserTokenHandler(t *testing.T) {
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
 		mockUUID := &mocks.UUIDGenerator{}
 		mockUUID.On("Generate").Return("14ef04bc-0c1d-4598-b159-78b1a701010f", nil)
-		mockApiKeyAuthenticator := &mocks.ApiKeysAuthenticator{}
+		mockApiKeyAuthenticator := &mocks.APIKeysAuthenticator{}
 		mockApiKeyAuthenticator.On("Encrypt", mock.Anything, []byte("14ef04bc-0c1d-4598-b159-78b1a701010f")).Return([]byte("1234"), nil)
 		mockUserStore.On("Update", mock.Anything, &models.User{Token: "1234"}).Return(nil, errors.New("err"))
 
@@ -123,7 +123,7 @@ func TestNewUserTokenHandler(t *testing.T) {
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
 		mockUUID := &mocks.UUIDGenerator{}
 		mockUUID.On("Generate").Return("14ef04bc-0c1d-4598-b159-78b1a701010f", nil)
-		mockApiKeyAuthenticator := &mocks.ApiKeysAuthenticator{}
+		mockApiKeyAuthenticator := &mocks.APIKeysAuthenticator{}
 		mockApiKeyAuthenticator.On("Encrypt", mock.Anything, []byte("14ef04bc-0c1d-4598-b159-78b1a701010f")).Return([]byte("1234"), nil)
 		mockUserStore.On("Update", mock.Anything, &models.User{Token: "1234"}).Return(&models.User{Token: "1234"}, nil)
 
