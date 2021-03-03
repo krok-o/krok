@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	kerr "github.com/krok-o/krok/errors"
-	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
@@ -23,21 +22,14 @@ import (
 func TestRepositoryStore_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestRepositoryStore_Create")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	a, err := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
-	assert.NoError(t, err)
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -54,7 +46,6 @@ func TestRepositoryStore_Flow(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	ctx := context.Background()
 	repo, err := rp.Create(ctx, &models.Repository{
@@ -93,20 +84,14 @@ func TestRepositoryStore_Flow(t *testing.T) {
 func TestRepositoryStore_ListByFilter(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestRepositoryStore_ListByFilter")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	a, err := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
 	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
@@ -124,7 +109,6 @@ func TestRepositoryStore_ListByFilter(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	ctx := context.Background()
 	_, err = rp.Create(ctx, &models.Repository{
@@ -162,21 +146,14 @@ func TestRepositoryStore_ListByFilter(t *testing.T) {
 func TestRepositoryStore_Create_Unique(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestRepositoryStore_Create_Unique")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	a, err := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
-	assert.NoError(t, err)
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -193,7 +170,6 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: connector,
@@ -238,21 +214,14 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 func TestRepositoryStore_Create_WithCommands(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestRepositoryStore_Create_WithCommands")
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
-	fileStore, err := filevault.NewFileStorer(filevault.Config{
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
 		Key:      "password123",
 	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
 	assert.NoError(t, err)
-	err = fileStore.Init()
-	assert.NoError(t, err)
-	v, err := vault.NewKrokVault(vault.Config{}, vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
-	a, err := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
-		Logger: logger,
-		Vault:  v,
-	})
-	assert.NoError(t, err)
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -269,7 +238,6 @@ func TestRepositoryStore_Create_WithCommands(t *testing.T) {
 		},
 		Connector: connector,
 		Vault:     v,
-		Auth:      a,
 	})
 	ctx := context.Background()
 	repo, err := rp.Create(ctx, &models.Repository{

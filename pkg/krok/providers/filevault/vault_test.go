@@ -12,12 +12,11 @@ import (
 func TestFileStorer_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestFileStorer_Flow")
-	fileStore, err := NewFileStorer(Config{
+	fileStore := NewFileStorer(Config{
 		Location: location,
 		Key:      "password123",
 	}, Dependencies{Logger: logger})
-	assert.NoError(t, err)
-	err = fileStore.Init()
+	err := fileStore.Init()
 	assert.NoError(t, err)
 	err = fileStore.Write([]byte("data"))
 	assert.NoError(t, err)

@@ -11,10 +11,6 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 )
 
-// Config has the configuration options for the vault.
-type Config struct {
-}
-
 // Dependencies defines the dependencies for the plugin provider.
 type Dependencies struct {
 	Logger zerolog.Logger
@@ -23,7 +19,6 @@ type Dependencies struct {
 
 // KrokVault is the vault used by Krok.
 type KrokVault struct {
-	Config
 	Dependencies
 
 	data map[string][]byte
@@ -34,13 +29,12 @@ type KrokVault struct {
 // The format is:
 // KEY=VALUE
 // KEY2=VALUE2
-func NewKrokVault(cfg Config, deps Dependencies) (*KrokVault, error) {
+func NewKrokVault(deps Dependencies) *KrokVault {
 	kv := &KrokVault{
-		Config:       cfg,
 		Dependencies: deps,
 	}
 	kv.data = make(map[string][]byte)
-	return kv, nil
+	return kv
 }
 
 // ParseToMap will update the Vault data map with values from

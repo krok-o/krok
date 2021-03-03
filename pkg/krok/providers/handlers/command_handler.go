@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
 	"strconv"
 
@@ -22,18 +21,16 @@ type CommandsHandlerDependencies struct {
 
 // CommandsHandler is a handler taking care of commands related api calls.
 type CommandsHandler struct {
-	Config
 	CommandsHandlerDependencies
 }
 
 var _ providers.CommandHandler = &CommandsHandler{}
 
 // NewCommandsHandler creates a new commands handler.
-func NewCommandsHandler(cfg Config, deps CommandsHandlerDependencies) (*CommandsHandler, error) {
+func NewCommandsHandler(deps CommandsHandlerDependencies) *CommandsHandler {
 	return &CommandsHandler{
-		Config:                      cfg,
 		CommandsHandlerDependencies: deps,
-	}, nil
+	}
 }
 
 // Delete deletes a command.
@@ -128,13 +125,6 @@ func (ch *CommandsHandler) Update() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, updated)
-	}
-}
-
-// Create is unimplemented.
-func (ch *CommandsHandler) Create() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
 	}
 }
 

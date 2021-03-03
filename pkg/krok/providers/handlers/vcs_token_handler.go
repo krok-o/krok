@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -47,33 +46,5 @@ func (r *VCSTokenHandler) Create() echo.HandlerFunc {
 		}
 
 		return c.NoContent(http.StatusCreated)
-	}
-}
-
-// Delete handles the Delete rest event.
-func (r *VCSTokenHandler) Delete() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
-	}
-}
-
-// Get retrieves a repository and displays the unique URL for which this repo is responsible for.
-func (r *VCSTokenHandler) Get() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
-	}
-}
-
-// List handles the List rest event.
-func (r *VCSTokenHandler) List() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
-	}
-}
-
-// Update handles the update rest event.
-func (r *VCSTokenHandler) Update() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
 	}
 }

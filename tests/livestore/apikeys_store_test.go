@@ -17,9 +17,9 @@ import (
 	"github.com/krok-o/krok/tests/dbaccess"
 )
 
-func TestApiKeys_Flow(t *testing.T) {
+func TestAPIKeys_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	env := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{Logger: logger})
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -49,7 +49,7 @@ func TestApiKeys_Flow(t *testing.T) {
 	assert.Equal(t, apiKey, getKey)
 
 	// Get the apiKey by api key id.
-	getKey, err = ap.GetByApiKeyID(ctx, apiKey.APIKeyID)
+	getKey, err = ap.GetByAPIKeyID(ctx, apiKey.APIKeyID)
 	assert.NoError(t, err)
 	assert.Equal(t, apiKey, getKey)
 

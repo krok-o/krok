@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"crypto/md5"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -21,31 +20,29 @@ const (
 	keyTTL = 7 * 24 * time.Hour
 )
 
-// ApiKeysHandlerDependencies defines the dependencies for the api keys handler provider.
-type ApiKeysHandlerDependencies struct {
+// APIKeysHandlerDependencies defines the dependencies for the api keys handler provider.
+type APIKeysHandlerDependencies struct {
 	Dependencies
 	APIKeysStore  providers.APIKeysStorer
 	TokenProvider *TokenHandler
 }
 
-// ApiKeysHandler is a handler taking care of api keys related api calls.
-type ApiKeysHandler struct {
-	Config
-	ApiKeysHandlerDependencies
+// APIKeysHandler is a handler taking care of api keys related api calls.
+type APIKeysHandler struct {
+	APIKeysHandlerDependencies
 }
 
-var _ providers.ApiKeysHandler = &ApiKeysHandler{}
+var _ providers.APIKeysHandler = &APIKeysHandler{}
 
-// NewApiKeysHandler creates a new api key pair handler.
-func NewApiKeysHandler(cfg Config, deps ApiKeysHandlerDependencies) (*ApiKeysHandler, error) {
-	return &ApiKeysHandler{
-		Config:                     cfg,
-		ApiKeysHandlerDependencies: deps,
-	}, nil
+// NewAPIKeysHandler creates a new api key pair handler.
+func NewAPIKeysHandler(deps APIKeysHandlerDependencies) *APIKeysHandler {
+	return &APIKeysHandler{
+		APIKeysHandlerDependencies: deps,
+	}
 }
 
 // Create creates an api key pair for a given user.
-func (a *ApiKeysHandler) Create() echo.HandlerFunc {
+func (a *APIKeysHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -55,7 +52,7 @@ func (a *ApiKeysHandler) Create() echo.HandlerFunc {
 
 		name := c.Param("name")
 		if name == "" {
-			name = "My Api Key"
+			name = "My API Key"
 		}
 
 		// generate the key secret
@@ -75,7 +72,7 @@ func (a *ApiKeysHandler) Create() echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-		encrypted, err := a.ApiKeyAuth.Encrypt(ctx, []byte(secret))
+		encrypted, err := a.APIKeyAuth.Encrypt(ctx, []byte(secret))
 		if err != nil {
 			apiError := kerr.APIError("failed to encrypt key", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
@@ -102,7 +99,7 @@ func (a *ApiKeysHandler) Create() echo.HandlerFunc {
 }
 
 // Delete deletes a set of api keys for a given user with a given id.
-func (a *ApiKeysHandler) Delete() echo.HandlerFunc {
+func (a *APIKeysHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -124,7 +121,7 @@ func (a *ApiKeysHandler) Delete() echo.HandlerFunc {
 
 		ctx := c.Request().Context()
 		if err := a.APIKeysStore.Delete(ctx, kn, uc.UserID); err != nil {
-			a.Logger.Debug().Err(err).Msg("ApiKey Delete failed.")
+			a.Logger.Debug().Err(err).Msg("APIKey Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete api key", http.StatusBadRequest, err))
 		}
 
@@ -133,7 +130,7 @@ func (a *ApiKeysHandler) Delete() echo.HandlerFunc {
 }
 
 // List lists all api keys for a given user.
-func (a *ApiKeysHandler) List() echo.HandlerFunc {
+func (a *APIKeysHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -144,7 +141,7 @@ func (a *ApiKeysHandler) List() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		list, err := a.APIKeysStore.List(ctx, uc.UserID)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("ApiKeys List failed.")
+			a.Logger.Debug().Err(err).Msg("APIKeys List failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list api keys", http.StatusBadRequest, err))
 		}
 
@@ -153,7 +150,7 @@ func (a *ApiKeysHandler) List() echo.HandlerFunc {
 }
 
 // Get returns a given api key.
-func (a *ApiKeysHandler) Get() echo.HandlerFunc {
+func (a *APIKeysHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
@@ -184,15 +181,8 @@ func (a *ApiKeysHandler) Get() echo.HandlerFunc {
 	}
 }
 
-// Update is unimplemented.
-func (a *ApiKeysHandler) Update() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		return c.JSON(http.StatusInternalServerError, kerr.APIError("unimplemented", http.StatusInternalServerError, errors.New("unimplemented")))
-	}
-}
-
 // Generate a unique api key for a user.
-func (a *ApiKeysHandler) generateUniqueKey() (string, error) {
+func (a *APIKeysHandler) generateUniqueKey() (string, error) {
 	u, err := uuid.NewUUID()
 	if err != nil {
 		return "", nil
@@ -202,7 +192,7 @@ func (a *ApiKeysHandler) generateUniqueKey() (string, error) {
 }
 
 // Generate a unique api key for a user.
-func (a *ApiKeysHandler) generateKeyID() (string, error) {
+func (a *APIKeysHandler) generateKeyID() (string, error) {
 	u, err := a.generateUniqueKey()
 	if err != nil {
 		return "", err

@@ -63,25 +63,20 @@ func (mcs *mockCommandStorer) RemoveCommandRelForRepository(ctx context.Context,
 func TestCommandsHandler_DeleteCommand(t *testing.T) {
 	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("delete normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -152,25 +147,20 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 			Enabled:  true,
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("get normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -250,25 +240,20 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 			},
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("list normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -313,25 +298,20 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 func TestCommandsHandler_UpdateCommand(t *testing.T) {
 	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("update normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -390,25 +370,20 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 			Enabled:  true,
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("add relation happy path", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
@@ -498,25 +473,20 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 			Enabled:  true,
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "https://testHost",
-		GlobalTokenKey: "secret",
-	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
-	ch, err := NewCommandsHandler(cfg, CommandsHandlerDependencies{
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
 		TokenProvider: tp,
 	})
-	assert.NoError(t, err)
 
 	t.Run("remove relation happy path", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")

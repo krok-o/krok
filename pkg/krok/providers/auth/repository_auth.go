@@ -20,10 +20,6 @@ const (
 	secretFormat   = prefixFormat + "_REPO_SECRET"
 )
 
-// RepositoryAuthConfig has the configuration options for the repository auth.
-type RepositoryAuthConfig struct {
-}
-
 // RepositoryAuthDependencies defines the dependencies for the repository auth provider.
 type RepositoryAuthDependencies struct {
 	Logger zerolog.Logger
@@ -32,16 +28,14 @@ type RepositoryAuthDependencies struct {
 
 // RepoAuth is the authentication provider for Krok repositories.
 type RepoAuth struct {
-	RepositoryAuthConfig
 	RepositoryAuthDependencies
 }
 
 // NewRepositoryAuth creates a new repository authentication provider.
-func NewRepositoryAuth(cfg RepositoryAuthConfig, deps RepositoryAuthDependencies) (*RepoAuth, error) {
+func NewRepositoryAuth(deps RepositoryAuthDependencies) *RepoAuth {
 	return &RepoAuth{
-		RepositoryAuthConfig:       cfg,
 		RepositoryAuthDependencies: deps,
-	}, nil
+	}
 }
 
 var _ providers.RepositoryAuth = &RepoAuth{}

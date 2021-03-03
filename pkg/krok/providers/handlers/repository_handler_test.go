@@ -13,8 +13,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -71,15 +73,15 @@ func (mrs *mockRepositoryStorer) Delete(ctx context.Context, id int) error {
 	return mrs.deleteErr
 }
 
-type mockApiKeyAuth struct {
-	providers.ApiKeysAuthenticator
+type mockAPIKeyAuth struct {
+	providers.APIKeysAuthenticator
 }
 
-func (maka *mockApiKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
+func (maka *mockAPIKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
 	return nil
 }
 
-func (maka *mockApiKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
+func (maka *mockAPIKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
 	return nil, nil
 }
 
@@ -94,19 +96,21 @@ func (g *mockGithubPlatformProvider) CreateHook(ctx context.Context, repo *model
 func TestRepoHandler_CreateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
-	maka := &mockApiKeyAuth{}
+	mars := &mocks.RepositoryAuth{}
+	mars.On("CreateRepositoryAuth", mock.Anything, 0, &models.Auth{Secret: "secret"}).Return(nil)
+	maka := &mockAPIKeyAuth{}
 	mg := &mockGithubPlatformProvider{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
+	cfg := RepoConfig{
+		Protocol: "http",
+		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -115,6 +119,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		PlatformProviders: map[int]providers.Platform{
 			models.GITHUB: mg,
 		},
+		Auth: mars,
 	})
 
 	assert.NoError(t, err)
@@ -123,8 +128,8 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1}`
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://testHost/0/1/callback"}
+		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1, "auth": {"secret": "secret"}}`
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
@@ -158,23 +163,25 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 func TestRepoHandler_UpdateRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
+	mars := &mocks.RepositoryAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
+	cfg := RepoConfig{
+		Protocol: "http",
+		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
+		Auth:             mars,
 	})
 	assert.NoError(t, err)
 
@@ -183,7 +190,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 
 		repositoryPost := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1}`
-		repositoryExpected := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://testHost/0/1/callback"}
+		repositoryExpected := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository/update", strings.NewReader(repositoryPost))
@@ -224,23 +231,28 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 			VCS:  1,
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
+	mars := &mocks.RepositoryAuth{}
+	mars.On("GetRepositoryAuth", mock.Anything, 0).Return(&models.Auth{
+		Secret: "secret",
+	}, nil)
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
+	cfg := RepoConfig{
+		Protocol: "http",
+		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
 		TokenProvider:    tp,
+		Auth:             mars,
 	})
 	assert.NoError(t, err)
 
@@ -248,7 +260,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://testHost/0/1/callback"}
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -315,18 +327,18 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 			},
 		},
 	}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
+	cfg := RepoConfig{
+		Protocol: "http",
+		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
@@ -357,18 +369,18 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 func TestRepoHandler_DeleteRepository(t *testing.T) {
 	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
-	maka := &mockApiKeyAuth{}
+	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
 	deps := Dependencies{
 		Logger:     logger,
 		UserStore:  mus,
-		ApiKeyAuth: maka,
+		APIKeyAuth: maka,
 	}
-	cfg := Config{
-		Hostname:       "http://testHost",
-		GlobalTokenKey: "secret",
+	cfg := RepoConfig{
+		Protocol: "http",
+		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(cfg, deps)
+	tp, err := NewTokenHandler(deps)
 	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,

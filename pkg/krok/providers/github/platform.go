@@ -162,7 +162,7 @@ func NewGoogleGithubClient(httpClient *http.Client, repoMock GoogleGithubRepoSer
 
 // CreateHook can create a hook for the Github platform.
 func (g *Github) CreateHook(ctx context.Context, repo *models.Repository) error {
-	log := g.Logger.With().Str("repo", repo.Name).Strs("events", repo.Events).Logger()
+	log := g.Logger.With().Str("unique_url", repo.UniqueURL).Str("repo", repo.Name).Strs("events", repo.Events).Logger()
 	token, err := g.PlatformTokenProvider.GetTokenForPlatform(repo.VCS)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to get platform token.")
@@ -179,6 +179,10 @@ func (g *Github) CreateHook(ctx context.Context, repo *models.Repository) error 
 	if len(repo.Events) == 0 {
 		log.Error().Msg("No events provided to subscribe to.")
 		return errors.New("no events provided to subscribe to")
+	}
+	if repo.UniqueURL == "" {
+		log.Error().Msg("Unique callback url is empty.")
+		return errors.New("unique callback url is empty")
 	}
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: token},

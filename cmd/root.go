@@ -34,14 +34,13 @@ var (
 		Run:   runKrokCmd,
 	}
 	krokArgs struct {
-		devMode     bool
-		debug       bool
-		server      server.Config
-		environment environment.Config
-		store       livestore.Config
-		plugins     plugins.Config
-		email       mailgun.Config
-		fileVault   filevault.Config
+		devMode   bool
+		debug     bool
+		server    server.Config
+		store     livestore.Config
+		plugins   plugins.Config
+		email     mailgun.Config
+		fileVault filevault.Config
 	}
 )
 
@@ -55,6 +54,7 @@ func init() {
 	flag.StringVar(&krokArgs.server.ServerCrtPath, "server-crt-path", "", "--server-crt-path /home/user/.server/server.crt")
 	flag.StringVar(&krokArgs.server.Proto, "proto", "http", "--proto http")
 	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost:9998", "--hostname localhost:9998")
+	flag.StringVar(&krokArgs.server.HookBase, "hookbase", "localhost", "--hookbase localhost")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
 	// OAuth
 	flag.StringVar(&krokArgs.server.GoogleClientID, "google-client-id", "", "--google-client-id my-client-id}")
@@ -112,7 +112,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// Set up db connection, vault and auth handlers.
 	// ************************
 
-	converter := environment.NewDockerConverter(environment.Config{}, environment.Dependencies{
+	converter := environment.NewDockerConverter(environment.Dependencies{
 		Logger: log,
 	})
 	connector := livestore.NewDatabaseConnector(krokArgs.store, livestore.Dependencies{
@@ -123,14 +123,17 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:    log,
 		Converter: converter,
 	}
-	fv, _ := filevault.NewFileStorer(krokArgs.fileVault, filevault.Dependencies{
+	fv := filevault.NewFileStorer(krokArgs.fileVault, filevault.Dependencies{
 		Logger: log,
 	})
-	v, _ := vault.NewKrokVault(vault.Config{}, vault.Dependencies{
+	if err := fv.Init(); err != nil {
+		log.Fatal().Str("location", krokArgs.fileVault.Location).Msg("Failed to initialize vault.")
+	}
+	v := vault.NewKrokVault(vault.Dependencies{
 		Logger: log,
 		Storer: fv,
 	})
-	a, _ := auth.NewRepositoryAuth(auth.RepositoryAuthConfig{}, auth.RepositoryAuthDependencies{
+	a := auth.NewRepositoryAuth(auth.RepositoryAuthDependencies{
 		Logger: log,
 		Vault:  v,
 	})
@@ -143,7 +146,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Dependencies: deps,
 		Connector:    connector,
 		Vault:        v,
-		Auth:         a,
 	})
 
 	commandStore, err := livestore.NewCommandStore(livestore.CommandDependencies{
@@ -170,7 +172,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// Set up platforms
 	// ************************
 
-	platformTokenProvider := auth.NewPlatformTokenProvider(auth.TokenProviderConfig{}, auth.TokenProviderDependencies{
+	platformTokenProvider := auth.NewPlatformTokenProvider(auth.TokenProviderDependencies{
 		Logger: log,
 		Vault:  v,
 	})
@@ -186,13 +188,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// ************************
 	// Set up handlers
 	// ************************
-	authMatcher, err := auth.NewApiKeysProvider(auth.ApiKeysConfig{}, auth.ApiKeysDependencies{
+	authMatcher := auth.NewAPIKeysProvider(auth.APIKeysDependencies{
 		Logger:       log,
-		ApiKeysStore: apiKeyStore,
+		APIKeysStore: apiKeyStore,
 	})
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to create new Api keys provider.")
-	}
 
 	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
@@ -204,44 +203,34 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	handlerDeps := handlers.Dependencies{
 		Logger:      log,
 		UserStore:   userStore,
-		ApiKeyAuth:  authMatcher,
+		APIKeyAuth:  authMatcher,
 		TokenIssuer: tokenIssuer,
 	}
-	tp, err := handlers.NewTokenHandler(handlers.Config{
-		Hostname:           krokArgs.server.Hostname,
-		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
-		GoogleClientID:     krokArgs.server.GoogleClientID,
-		GoogleClientSecret: krokArgs.server.GoogleClientSecret,
-	}, handlerDeps)
+	tp, err := handlers.NewTokenHandler(handlerDeps)
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to create token handler.")
 	}
 
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = githubProvider
-	repoHandler, _ := handlers.NewRepositoryHandler(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+	repoHandler, _ := handlers.NewRepositoryHandler(handlers.RepoConfig{
+		Protocol: krokArgs.server.Proto,
+		HookBase: krokArgs.server.HookBase,
 	}, handlers.RepoHandlerDependencies{
 		RepositoryStorer:  repoStore,
 		TokenProvider:     tp,
 		Logger:            log,
 		PlatformProviders: platformProviders,
+		Auth:              a,
 	})
 
-	apiKeysHandler, _ := handlers.NewApiKeysHandler(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
-	}, handlers.ApiKeysHandlerDependencies{
+	apiKeysHandler := handlers.NewAPIKeysHandler(handlers.APIKeysHandlerDependencies{
 		APIKeysStore:  apiKeyStore,
 		TokenProvider: tp,
 		Dependencies:  handlerDeps,
 	})
 
-	commandHandler, _ := handlers.NewCommandsHandler(handlers.Config{
-		Hostname:       krokArgs.server.Hostname,
-		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
-	}, handlers.CommandsHandlerDependencies{
+	commandHandler := handlers.NewCommandsHandler(handlers.CommandsHandlerDependencies{
 		CommandStorer: commandStore,
 		TokenProvider: tp,
 		Logger:        log,
@@ -299,7 +288,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		UserMiddleware:    userMiddleware,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
-		ApiKeyHandler:     apiKeysHandler,
+		APIKeyHandler:     apiKeysHandler,
 		AuthHandler:       authHandler,
 		TokenHandler:      tp,
 		VCSTokenHandler:   vcsTokenHandler,

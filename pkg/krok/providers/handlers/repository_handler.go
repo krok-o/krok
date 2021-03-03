@@ -1,13 +1,11 @@
 package handlers
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/url"
 	"path"
 	"strconv"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -17,8 +15,19 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
+const (
+	api = "/rest/api/1"
+)
+
+// RepoConfig represents configuration entities that the repository requires.
+type RepoConfig struct {
+	Protocol string
+	HookBase string
+}
+
 // RepoHandlerDependencies defines the dependencies for the repository handler provider.
 type RepoHandlerDependencies struct {
+	Auth              providers.RepositoryAuth
 	RepositoryStorer  providers.RepositoryStorer
 	TokenProvider     *TokenHandler
 	Logger            zerolog.Logger
@@ -27,16 +36,16 @@ type RepoHandlerDependencies struct {
 
 // RepoHandler is a handler taking care of repository related api calls.
 type RepoHandler struct {
-	Config
+	RepoConfig
 	RepoHandlerDependencies
 }
 
 var _ providers.RepositoryHandler = &RepoHandler{}
 
 // NewRepositoryHandler creates a new repository handler.
-func NewRepositoryHandler(cfg Config, deps RepoHandlerDependencies) (*RepoHandler, error) {
+func NewRepositoryHandler(cfg RepoConfig, deps RepoHandlerDependencies) (*RepoHandler, error) {
 	return &RepoHandler{
-		Config:                  cfg,
+		RepoConfig:              cfg,
 		RepoHandlerDependencies: deps,
 	}, nil
 }
@@ -50,14 +59,24 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind repository", http.StatusBadRequest, err))
 		}
 
-		ctx, cancel := context.WithDeadline(context.Background(), time.Now().Add(defaultTimeout))
-		defer cancel()
+		if ok, field, err := repo.Validate(); !ok {
+			r.Logger.Debug().Err(err).Str("field", field).Msg("Repository validation failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("repository validation failed", http.StatusBadRequest, err))
+		}
 
+		ctx := c.Request().Context()
 		created, err := r.RepositoryStorer.Create(ctx, repo)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository", http.StatusBadRequest, err))
 		}
+
+		// Once the creation succeeded, create the auth values
+		if err := r.Auth.CreateRepositoryAuth(ctx, created.ID, repo.Auth); err != nil {
+			r.Logger.Debug().Err(err).Msg("Failed to store auth information.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository auth information", http.StatusBadRequest, err))
+		}
+		created.Auth = repo.Auth
 
 		uurl, err := r.generateUniqueCallBackURL(created)
 		if err != nil {
@@ -72,11 +91,11 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 			provider providers.Platform
 			ok       bool
 		)
-		if provider, ok = r.PlatformProviders[repo.VCS]; !ok {
-			err := fmt.Errorf("vcs provider with id %d is not supported", repo.VCS)
+		if provider, ok = r.PlatformProviders[created.VCS]; !ok {
+			err := fmt.Errorf("vcs provider with id %d is not supported", created.VCS)
 			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
 		}
-		if err := provider.CreateHook(ctx, repo); err != nil {
+		if err := provider.CreateHook(ctx, created); err != nil {
 			r.Logger.Debug().Err(err).Msg("Failed to create Hook")
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create hook", http.StatusInternalServerError, err))
 		}
@@ -126,11 +145,20 @@ func (r *RepoHandler) Get() echo.HandlerFunc {
 		}
 		ctx := c.Request().Context()
 
+		// Get the repo from store.
 		repo, err := r.RepositoryStorer.Get(ctx, n)
 		if err != nil {
 			apiError := kerr.APIError("failed to get repository", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
+		// Get the auth information for the repository
+		auth, err := r.Auth.GetRepositoryAuth(ctx, repo.ID)
+		if err != nil {
+			apiError := kerr.APIError("failed to get repository auth information", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		repo.Auth = auth
 
 		uurl, err := r.generateUniqueCallBackURL(repo)
 		if err != nil {
@@ -194,11 +222,11 @@ func (r *RepoHandler) Update() echo.HandlerFunc {
 // generateUniqueCallBackURL takes a repository and generates a unique URL based on the ID and Type of the repo
 // and the configured Krok hostname.
 func (r *RepoHandler) generateUniqueCallBackURL(repo *models.Repository) (string, error) {
-	u, err := url.Parse(r.Config.Hostname)
+	u, err := url.Parse(fmt.Sprintf("%s://%s", r.RepoConfig.Protocol, r.RepoConfig.HookBase))
 	if err != nil {
 		r.Logger.Debug().Err(err).Msg("Failed to generate a unique URL for repository.")
 		return "", err
 	}
-	u.Path = path.Join(u.Path, strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
+	u.Path = path.Join(u.Path, api, "hooks", strconv.Itoa(repo.ID), strconv.Itoa(repo.VCS), "callback")
 	return u.String(), nil
 }
