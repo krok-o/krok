@@ -72,7 +72,7 @@ func (um *UserMiddleware) JWT() echo.MiddlewareFunc {
 			}
 
 			// User API Keys are max 60 bytes.
-			if len(token) <= 60 {
+			if len(token) == providers.UserPersonalTokenLength {
 				user, err := um.UserStore.GetByToken(ctx, token)
 				if err != nil {
 					um.Logger.Warn().Err(err).Msg("token authentication failed")

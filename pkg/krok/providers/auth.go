@@ -8,6 +8,11 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
+const (
+	// UserPersonalTokenLength is the length of the generated user personal access tokens.
+	UserPersonalTokenLength = 60
+)
+
 // RepositoryAuth defines the capabilities of a repository authentication storage framework.
 type RepositoryAuth interface {
 	// GetRepositoryAuth returns auth data for a repository.
@@ -38,6 +43,7 @@ type TokenIssuer interface {
 	Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error)
 }
 
+// UserTokenGenerator handlers the generation of a user personal access token.
 type UserTokenGenerator interface {
 	Generate() (string, error)
 }
