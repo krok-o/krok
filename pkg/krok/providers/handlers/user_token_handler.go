@@ -13,10 +13,9 @@ import (
 
 // UserTokenHandlerDeps represents the UserTokenHandler dependencies.
 type UserTokenHandlerDeps struct {
-	Logger     zerolog.Logger
-	UserStore  providers.UserStorer
-	APIKeyAuth providers.APIKeysAuthenticator
-	UUID       providers.UUIDGenerator
+	Logger             zerolog.Logger
+	UserStore          providers.UserStorer
+	UserTokenGenerator providers.UserTokenGenerator
 }
 
 // UserTokenHandler represents the user personal token handler.
@@ -48,21 +47,14 @@ func (h *UserTokenHandler) Generate() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, apiErr)
 		}
 
-		secret, err := h.UUID.Generate()
+		token, err := h.UserTokenGenerator.Generate()
 		if err != nil {
-			h.Logger.Error().Int("user_id", uc.UserID).Err(err).Msg("failed to generate the uuid secret")
-			apiErr := kerr.APIError("Failed to generate the secret.", http.StatusInternalServerError, err)
+			h.Logger.Error().Int("user_id", uc.UserID).Err(err).Msg("failed to generate token")
+			apiErr := kerr.APIError("Failed to generate the token.", http.StatusInternalServerError, err)
 			return c.JSON(http.StatusInternalServerError, apiErr)
 		}
 
-		token, err := h.APIKeyAuth.Encrypt(ctx, []byte(secret))
-		if err != nil {
-			h.Logger.Error().Int("user_id", uc.UserID).Err(err).Msg("failed to encrypt the uuid secret")
-			apiErr := kerr.APIError("Failed to encrypt the secret.", http.StatusInternalServerError, err)
-			return c.JSON(http.StatusInternalServerError, apiErr)
-		}
-
-		user.Token = string(token)
+		user.Token = token
 		updated, err := h.UserStore.Update(ctx, user)
 		if err != nil {
 			h.Logger.Error().Int("user_id", uc.UserID).Err(err).Msg("failed to update the user")

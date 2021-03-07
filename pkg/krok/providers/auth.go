@@ -37,3 +37,7 @@ type TokenIssuer interface {
 	Create(token *models.User) (*oauth2.Token, error)
 	Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error)
 }
+
+type UserTokenGenerator interface {
+	Generate() (string, error)
+}

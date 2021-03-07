@@ -46,48 +46,6 @@ func TestNewUserTokenHandler(t *testing.T) {
 		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	})
 
-	t.Run("uuid generate error returns 500", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.Set("user", &middleware.UserContext{UserID: 1})
-
-		mockUserStore := &mocks.UserStorer{}
-		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
-		mockUUID := &mocks.UUIDGenerator{}
-		mockUUID.On("Generate").Return("", errors.New("err"))
-
-		handler := NewUserTokenHandler(UserTokenHandlerDeps{UserStore: mockUserStore, UUID: mockUUID})
-		err := handler.Generate()(c)
-		assert.NoError(t, err)
-		assert.Equal(t, "{\"code\":500,\"message\":\"Failed to generate the secret.\",\"error\":\"err\"}\n", rec.Body.String())
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	})
-
-	t.Run("encrypt error returns 500", func(t *testing.T) {
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		c.Set("user", &middleware.UserContext{UserID: 1})
-
-		mockUserStore := &mocks.UserStorer{}
-		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
-		mockUUID := &mocks.UUIDGenerator{}
-		mockUUID.On("Generate").Return("14ef04bc-0c1d-4598-b159-78b1a701010f", nil)
-		mockApiKeyAuthenticator := &mocks.APIKeysAuthenticator{}
-		mockApiKeyAuthenticator.On("Encrypt", mock.Anything, []byte("14ef04bc-0c1d-4598-b159-78b1a701010f")).Return(nil, errors.New("err"))
-
-		handler := NewUserTokenHandler(UserTokenHandlerDeps{
-			UserStore:  mockUserStore,
-			UUID:       mockUUID,
-			APIKeyAuth: mockApiKeyAuthenticator,
-		})
-		err := handler.Generate()(c)
-		assert.NoError(t, err)
-		assert.Equal(t, "{\"code\":500,\"message\":\"Failed to encrypt the secret.\",\"error\":\"err\"}\n", rec.Body.String())
-		assert.Equal(t, http.StatusInternalServerError, rec.Code)
-	})
-
 	t.Run("update error returns 500", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
@@ -96,16 +54,14 @@ func TestNewUserTokenHandler(t *testing.T) {
 
 		mockUserStore := &mocks.UserStorer{}
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
-		mockUUID := &mocks.UUIDGenerator{}
-		mockUUID.On("Generate").Return("14ef04bc-0c1d-4598-b159-78b1a701010f", nil)
-		mockApiKeyAuthenticator := &mocks.APIKeysAuthenticator{}
-		mockApiKeyAuthenticator.On("Encrypt", mock.Anything, []byte("14ef04bc-0c1d-4598-b159-78b1a701010f")).Return([]byte("1234"), nil)
 		mockUserStore.On("Update", mock.Anything, &models.User{Token: "1234"}).Return(nil, errors.New("err"))
 
+		mockUTG := &mocks.UserTokenGenerator{}
+		mockUTG.On("Generate").Return("1234", nil)
+
 		handler := NewUserTokenHandler(UserTokenHandlerDeps{
-			UserStore:  mockUserStore,
-			UUID:       mockUUID,
-			APIKeyAuth: mockApiKeyAuthenticator,
+			UserStore:          mockUserStore,
+			UserTokenGenerator: mockUTG,
 		})
 		err := handler.Generate()(c)
 		assert.NoError(t, err)
@@ -121,16 +77,14 @@ func TestNewUserTokenHandler(t *testing.T) {
 
 		mockUserStore := &mocks.UserStorer{}
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
-		mockUUID := &mocks.UUIDGenerator{}
-		mockUUID.On("Generate").Return("14ef04bc-0c1d-4598-b159-78b1a701010f", nil)
-		mockApiKeyAuthenticator := &mocks.APIKeysAuthenticator{}
-		mockApiKeyAuthenticator.On("Encrypt", mock.Anything, []byte("14ef04bc-0c1d-4598-b159-78b1a701010f")).Return([]byte("1234"), nil)
 		mockUserStore.On("Update", mock.Anything, &models.User{Token: "1234"}).Return(&models.User{Token: "1234"}, nil)
 
+		mockUTG := &mocks.UserTokenGenerator{}
+		mockUTG.On("Generate").Return("1234", nil)
+
 		handler := NewUserTokenHandler(UserTokenHandlerDeps{
-			UserStore:  mockUserStore,
-			UUID:       mockUUID,
-			APIKeyAuth: mockApiKeyAuthenticator,
+			UserStore:          mockUserStore,
+			UserTokenGenerator: mockUTG,
 		})
 		err := handler.Generate()(c)
 		assert.NoError(t, err)
