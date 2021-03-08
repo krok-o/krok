@@ -46,7 +46,6 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		getId := func(id string) (int, error) {
 			i := c.Param(id)
 			if i == "" {
-
 				return 0, errors.New("id is empty")
 			}
 
@@ -87,12 +86,12 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		}
 
 		// all good, run all attached commands in separate go routines.
+		log.Debug().Msg("Request appears to be valid. Running attached commands.")
 		execute := make([]krok.Execute, 0)
 		for _, c := range repo.Commands {
-			log.Debug().Str("name", c.Name).Msg("Loading command...")
 			p, err := k.Watcher.Load(ctx, c.Location)
 			if err != nil {
-				log.Debug().Str("name", c.Name).Msg("Failed to load command... ignoring.")
+				log.Debug().Err(err).Str("name", c.Name).Msg("Failed to load command... ignoring.")
 				continue
 			}
 			execute = append(execute, p)
