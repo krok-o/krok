@@ -3,6 +3,7 @@ package handlers
 import (
 	"net/http"
 
+	"github.com/dchest/uniuri"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 
@@ -13,9 +14,8 @@ import (
 
 // UserTokenHandlerDeps represents the UserTokenHandler dependencies.
 type UserTokenHandlerDeps struct {
-	Logger             zerolog.Logger
-	UserStore          providers.UserStorer
-	UserTokenGenerator providers.UserTokenGenerator
+	Logger    zerolog.Logger
+	UserStore providers.UserStorer
 }
 
 // UserTokenHandler represents the user personal token handler.
@@ -47,14 +47,7 @@ func (h *UserTokenHandler) Generate() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, apiErr)
 		}
 
-		token, err := h.UserTokenGenerator.Generate()
-		if err != nil {
-			h.Logger.Error().Int("user_id", uc.UserID).Err(err).Msg("failed to generate token")
-			apiErr := kerr.APIError("Failed to generate the token.", http.StatusInternalServerError, err)
-			return c.JSON(http.StatusInternalServerError, apiErr)
-		}
-
-		user.Token = token
+		user.Token = uniuri.NewLen(60)
 		updated, err := h.UserStore.Update(ctx, user)
 		if err != nil {
 			h.Logger.Error().Int("user_id", uc.UserID).Err(err).Msg("failed to update the user")

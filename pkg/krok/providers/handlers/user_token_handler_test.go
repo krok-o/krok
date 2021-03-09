@@ -54,14 +54,10 @@ func TestNewUserTokenHandler(t *testing.T) {
 
 		mockUserStore := &mocks.UserStorer{}
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
-		mockUserStore.On("Update", mock.Anything, &models.User{Token: "1234"}).Return(nil, errors.New("err"))
-
-		mockUTG := &mocks.UserTokenGenerator{}
-		mockUTG.On("Generate").Return("1234", nil)
+		mockUserStore.On("Update", mock.Anything, mock.Anything).Return(nil, errors.New("err"))
 
 		handler := NewUserTokenHandler(UserTokenHandlerDeps{
-			UserStore:          mockUserStore,
-			UserTokenGenerator: mockUTG,
+			UserStore: mockUserStore,
 		})
 		err := handler.Generate()(c)
 		assert.NoError(t, err)
@@ -77,14 +73,10 @@ func TestNewUserTokenHandler(t *testing.T) {
 
 		mockUserStore := &mocks.UserStorer{}
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
-		mockUserStore.On("Update", mock.Anything, &models.User{Token: "1234"}).Return(&models.User{Token: "1234"}, nil)
-
-		mockUTG := &mocks.UserTokenGenerator{}
-		mockUTG.On("Generate").Return("1234", nil)
+		mockUserStore.On("Update", mock.Anything, mock.Anything).Return(&models.User{Token: "1234"}, nil)
 
 		handler := NewUserTokenHandler(UserTokenHandlerDeps{
-			UserStore:          mockUserStore,
-			UserTokenGenerator: mockUTG,
+			UserStore: mockUserStore,
 		})
 		err := handler.Generate()(c)
 		assert.NoError(t, err)

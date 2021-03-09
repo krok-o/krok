@@ -4,6 +4,7 @@ go 1.15
 
 require (
 	cirello.io/pglock v1.8.0
+	github.com/dchest/uniuri v0.0.0-20200228104902-7aecb25e1fe5
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/facebookgo/ensure v0.0.0-20200202191622-63f1cf65ac4c // indirect
 	github.com/facebookgo/stack v0.0.0-20160209184415-751773369052 // indirect
