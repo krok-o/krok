@@ -15,5 +15,6 @@ type UserStorer interface {
 	List(ctx context.Context) ([]*models.User, error)
 	Get(ctx context.Context, id int) (*models.User, error)
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
+	GetByToken(ctx context.Context, token string) (*models.User, error)
 	Update(ctx context.Context, user *models.User) (*models.User, error)
 }
