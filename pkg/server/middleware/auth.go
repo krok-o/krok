@@ -15,9 +15,11 @@ import (
 
 const (
 	userContextKey = "user"
-	// Note that this is lowercase to deal with people who lowercase
-	// bearer, dispite it being a case sensitive value.
-	bearerHeader = "bearer "
+	// The RFC defines this value as case sensitive.
+	// We acknowledge the RFC and will reject requests which use this
+	// as a case insensitive value.
+	// RFC: https://tools.ietf.org/html/rfc6750 section 1.1. Notational Conventions
+	bearerHeader = "Bearer "
 )
 
 // UserMiddlewareConfig represents the UserMiddleware config.
@@ -113,7 +115,7 @@ func (um *UserMiddleware) setUser(c echo.Context, userID int) {
 }
 
 func (um *UserMiddleware) extractToken(c echo.Context) (string, error) {
-	authHeader := strings.ToLower(c.Request().Header.Get("Authorization"))
+	authHeader := c.Request().Header.Get("Authorization")
 	if authHeader != "" && strings.HasPrefix(authHeader, bearerHeader) {
 		return strings.TrimPrefix(authHeader, bearerHeader), nil
 	}
