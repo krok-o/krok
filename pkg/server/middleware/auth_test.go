@@ -45,7 +45,7 @@ func TestUserAuthentication(t *testing.T) {
 
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		res := httptest.NewRecorder()
-		req.Header.Set("Authorization", generateTestToken(t))
+		req.Header.Set("Authorization", "Bearer "+generateTestToken(t))
 		c := e.NewContext(req, res)
 		err := hf(c)
 		assert.NoError(t, err)

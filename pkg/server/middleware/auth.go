@@ -13,7 +13,10 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 )
 
-const userContextKey = "user"
+const (
+	userContextKey = "user"
+	bearerHeader   = "Bearer "
+)
 
 // UserMiddlewareConfig represents the UserMiddleware config.
 type UserMiddlewareConfig struct {
@@ -109,8 +112,8 @@ func (um *UserMiddleware) setUser(c echo.Context, userID int) {
 
 func (um *UserMiddleware) extractToken(c echo.Context) (string, error) {
 	authHeader := c.Request().Header.Get("Authorization")
-	if authHeader != "" {
-		return strings.TrimPrefix(authHeader, "Bearer "), nil
+	if authHeader != "" && strings.HasPrefix(authHeader, bearerHeader) {
+		return strings.TrimPrefix(authHeader, bearerHeader), nil
 	}
 
 	token, err := c.Cookie(um.CookieName)
