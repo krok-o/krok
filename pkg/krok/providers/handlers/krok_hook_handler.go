@@ -43,7 +43,7 @@ func NewHookHandler(cfg Config, deps HookDependencies) *KrokHookHandler {
 // HandleHooks creates a hook handler.
 func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		getId := func(id string) (int, error) {
+		getID := func(id string) (int, error) {
 			i := c.Param(id)
 			if i == "" {
 				return 0, errors.New("id is empty")
@@ -55,13 +55,13 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			}
 			return n, nil
 		}
-		rid, err := getId("rid")
+		rid, err := getID("rid")
 		if err != nil {
 			apiError := kerr.APIError("invalid repository id", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
-		vid, err := getId("vid")
+		vid, err := getID("vid")
 		if err != nil {
 			apiError := kerr.APIError("invalid platform id", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
@@ -86,6 +86,8 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		}
 
 		// all good, run all attached commands in separate go routines.
+
+		// convert all plugins to an executable function
 		log.Debug().Msg("Request appears to be valid. Running attached commands.")
 		execute := make([]krok.Execute, 0)
 		for _, c := range repo.Commands {
@@ -97,6 +99,10 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			execute = append(execute, p)
 		}
 
+		// TODO: Refactor this because this shouldn't live in the handler. This should be handled
+		// by workers which should somehow report back a status of the commands.
+		// Shiiiit....
+		// Extract the running of commands into a state reporting executer.
 		// Run all commands.
 		errs := make([]error, 0)
 		errChan := make(chan error, len(execute))
@@ -119,6 +125,11 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		}
 
 		wg.Wait()
+
+		// Gather all potentional errors.
+		for e := range errChan {
+			errs = append(errs, e)
+		}
 
 		if len(errs) != 0 {
 			log.Error().Errs("command_errors", errs).Msg("The following errors happened while executing...")
