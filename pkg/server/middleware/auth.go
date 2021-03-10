@@ -15,7 +15,9 @@ import (
 
 const (
 	userContextKey = "user"
-	bearerHeader   = "Bearer "
+	// Note that this is lowercase to deal with people who lowercase
+	// bearer, dispite it being a case sensitive value.
+	bearerHeader = "bearer "
 )
 
 // UserMiddlewareConfig represents the UserMiddleware config.
@@ -111,7 +113,7 @@ func (um *UserMiddleware) setUser(c echo.Context, userID int) {
 }
 
 func (um *UserMiddleware) extractToken(c echo.Context) (string, error) {
-	authHeader := c.Request().Header.Get("Authorization")
+	authHeader := strings.ToLower(c.Request().Header.Get("Authorization"))
 	if authHeader != "" && strings.HasPrefix(authHeader, bearerHeader) {
 		return strings.TrimPrefix(authHeader, bearerHeader), nil
 	}
