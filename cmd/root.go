@@ -265,8 +265,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	userTokenHandler := handlers.NewUserTokenHandler(handlers.UserTokenHandlerDeps{
-		Logger:    log,
-		UserStore: userStore,
+		Logger:       log,
+		UserStore:    userStore,
+		UATGenerator: auth.NewUserTokenGenerator(),
 	})
 
 	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserMiddlewareConfig{

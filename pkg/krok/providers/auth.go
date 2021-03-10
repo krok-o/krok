@@ -42,3 +42,8 @@ type TokenIssuer interface {
 	Create(token *models.User) (*oauth2.Token, error)
 	Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error)
 }
+
+// UserTokenGenerator handlers the generation of a user personal access token.
+type UserTokenGenerator interface {
+	Generate(length int) (string, error)
+}
