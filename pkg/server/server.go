@@ -11,8 +11,6 @@ import (
 
 	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
-	"github.com/krok-o/krok/pkg/krok/providers/handlers"
-	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
 )
 
 const (
@@ -44,12 +42,14 @@ type KrokServer struct {
 type Dependencies struct {
 	Logger            zerolog.Logger
 	Krok              krok.Handler
+	UserMiddleware    providers.UserMiddleware
 	CommandHandler    providers.CommandHandler
 	RepositoryHandler providers.RepositoryHandler
 	APIKeyHandler     providers.APIKeysHandler
 	AuthHandler       providers.AuthHandler
 	TokenHandler      providers.TokenHandler
 	VCSTokenHandler   providers.VCSTokenHandler
+	UserTokenHandler  providers.UserTokenHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -91,11 +91,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	e.POST(api+"/get-token", s.Dependencies.TokenHandler.TokenHandler())
 	// Admin related actions
 
-	userMiddleware := krokmiddleware.UserAuthentication(&krokmiddleware.UserAuthenticationConfig{
-		CookieName:     handlers.AccessTokenCookie,
-		GlobalTokenKey: s.GlobalTokenKey,
-	})
-	auth := e.Group(api+"/krok", userMiddleware)
+	auth := e.Group(api+"/krok", s.Dependencies.UserMiddleware.JWT())
 
 	// Repository related actions.
 	auth.POST("/repository", s.Dependencies.RepositoryHandler.Create())
@@ -117,6 +113,9 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.APIKeyHandler.Delete())
 	auth.GET("/user/apikey", s.Dependencies.APIKeyHandler.List())
 	auth.GET("/user/apikey/:keyid", s.Dependencies.APIKeyHandler.Get())
+
+	// user personal token (api token)
+	auth.POST("/user/token/generate", s.Dependencies.UserTokenHandler.Generate())
 
 	// vcs token handler
 	auth.POST("/vcs-token", s.Dependencies.VCSTokenHandler.Create())

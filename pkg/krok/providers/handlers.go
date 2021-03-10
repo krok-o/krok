@@ -48,6 +48,16 @@ type VCSTokenHandler interface {
 	Create() echo.HandlerFunc
 }
 
+// UserMiddleware provides UserMiddleware authentication capabilities.
+type UserMiddleware interface {
+	JWT() echo.MiddlewareFunc
+}
+
+// UserTokenHandler provides operations for user personal access tokens.
+type UserTokenHandler interface {
+	Generate() echo.HandlerFunc
+}
+
 // AuthHandler provides the handler functions for the authentication flow.
 type AuthHandler interface {
 	OAuthLogin() echo.HandlerFunc

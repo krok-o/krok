@@ -56,9 +56,11 @@ func TestUserStore_Flow(t *testing.T) {
 
 	// Update users
 	getUser.DisplayName = "UpdatedName"
+	getUser.Token = "UpdatedToken"
 	updatedU, err := up.Update(ctx, getUser)
 	assert.NoError(t, err)
 	assert.Equal(t, "UpdatedName", updatedU.DisplayName)
+	assert.Equal(t, "UpdatedToken", updatedU.Token)
 
 	// Delete user
 	err = up.Delete(ctx, getUser.ID)

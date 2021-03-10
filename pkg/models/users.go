@@ -11,4 +11,5 @@ type User struct {
 	ID          int       `json:"id"`
 	LastLogin   time.Time `json:"last_login,omitempty"`
 	APIKeys     []*APIKey `json:"api_keys,omitempty"`
+	Token       string    `json:"-"`
 }

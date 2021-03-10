@@ -24,6 +24,7 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers/vault"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/pkg/server"
+	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
 )
 
 var (
@@ -86,12 +87,13 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Timestamp().
 		Logger()
 
-	//if krokArgs.server.GoogleClientID == "" {
-	//	log.Fatal().Msg("must provide --google-client-id flag")
-	//}
-	//if krokArgs.server.GoogleClientSecret == "" {
-	//	log.Fatal().Msg("must provide --google-client-secret flag")
-	//}
+	// TODO: Set Google OAuth2 flags are required until we can support anonymous or basic auth.
+	if krokArgs.server.GoogleClientID == "" {
+		log.Fatal().Msg("must provide --google-client-id flag")
+	}
+	if krokArgs.server.GoogleClientSecret == "" {
+		log.Fatal().Msg("must provide --google-client-secret flag")
+	}
 	krokArgs.server.Addr = fmt.Sprintf("%s://%s", krokArgs.server.Proto, krokArgs.server.Hostname)
 
 	// Setup Global Token Key
@@ -261,6 +263,21 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 		TokenProvider: platformTokenProvider,
 	})
+
+	userTokenHandler := handlers.NewUserTokenHandler(handlers.UserTokenHandlerDeps{
+		Logger:       log,
+		UserStore:    userStore,
+		UATGenerator: auth.NewUserTokenGenerator(),
+	})
+
+	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserMiddlewareConfig{
+		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
+		CookieName:     handlers.AccessTokenCookie,
+	}, krokmiddleware.UserMiddlewareDeps{
+		Logger:    log,
+		UserStore: userStore,
+	})
+
 	// ************************
 	// Set up the server
 	// ************************
@@ -268,12 +285,14 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
 		Logger:            log,
 		Krok:              krokHandler,
+		UserMiddleware:    userMiddleware,
 		CommandHandler:    commandHandler,
 		RepositoryHandler: repoHandler,
 		APIKeyHandler:     apiKeysHandler,
 		AuthHandler:       authHandler,
 		TokenHandler:      tp,
 		VCSTokenHandler:   vcsTokenHandler,
+		UserTokenHandler:  userTokenHandler,
 	})
 
 	// Run service & server

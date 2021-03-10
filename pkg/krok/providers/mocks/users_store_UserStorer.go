@@ -97,6 +97,29 @@ func (_m *UserStorer) GetByEmail(ctx context.Context, email string) (*models.Use
 	return r0, r1
 }
 
+// GetByToken provides a mock function with given fields: ctx, token
+func (_m *UserStorer) GetByToken(ctx context.Context, token string) (*models.User, error) {
+	ret := _m.Called(ctx, token)
+
+	var r0 *models.User
+	if rf, ok := ret.Get(0).(func(context.Context, string) *models.User); ok {
+		r0 = rf(ctx, token)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.User)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
+		r1 = rf(ctx, token)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // List provides a mock function with given fields: ctx
 func (_m *UserStorer) List(ctx context.Context) ([]*models.User, error) {
 	ret := _m.Called(ctx)
