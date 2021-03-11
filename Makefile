@@ -15,7 +15,7 @@ binaries:
 		-ldflags=${GO_LDFLAGS_STATIC} \
 		-output="$(BUILDDIR)/{{.OS}}/{{.Arch}}/$(NAME)" \
 		-tags="netgo" \
-		./...
+		./
 
 .PHONY: bootstrap
 bootstrap:

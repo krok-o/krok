@@ -64,3 +64,9 @@ type AuthHandler interface {
 	OAuthCallback() echo.HandlerFunc
 	Refresh() echo.HandlerFunc
 }
+
+// HookHandler represents what the Krok server is capable off.
+type HookHandler interface {
+	// HandleHooks handles all hooks incoming to Krok.
+	HandleHooks() echo.HandlerFunc
+}

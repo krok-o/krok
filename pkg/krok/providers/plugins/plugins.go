@@ -42,23 +42,22 @@ type GoPlugins struct {
 
 // NewGoPluginsProvider creates a new Go based plugin provider.
 // Starts the folder watcher.
-func NewGoPluginsProvider(ctx context.Context, cfg Config, deps Dependencies) (*GoPlugins, error) {
+func NewGoPluginsProvider(cfg Config, deps Dependencies) (*GoPlugins, error) {
 	p := &GoPlugins{Config: cfg, Dependencies: deps}
 	if _, err := os.Stat(cfg.Location); os.IsNotExist(err) {
 		deps.Logger.Err(err).Str("location", cfg.Location).Msg("Location does not exist.")
 		return nil, err
 	}
-	go p.run(ctx)
 	return p, nil
 }
 
-// run start the watcher and run until context is done.
-func (p *GoPlugins) run(ctx context.Context) {
+// Run starts the watcher and run until context is done.
+func (p *GoPlugins) Run(ctx context.Context) {
 	failureTry := time.Second * 15
 	for {
 		g, ctx := errgroup.WithContext(ctx)
 		g.Go(func() error {
-			return p.Watch(ctx)
+			return p.watch(ctx)
 		})
 		if err := g.Wait(); err != nil {
 			p.Logger.
@@ -76,9 +75,9 @@ func (p *GoPlugins) run(ctx context.Context) {
 	}
 }
 
-// Watch a folder for new plugins/commands to load.
+// watch a folder for new plugins/commands to load.
 // If a file appears in the watched folder, it will be picked up and saved into the commands.
-func (p *GoPlugins) Watch(ctx context.Context) error {
+func (p *GoPlugins) watch(ctx context.Context) error {
 	log := p.Logger.With().Str("location", p.Location).Logger()
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -165,6 +164,7 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		}); err != nil {
 			log.Debug().Err(err).Msg("Failed to add new command.")
 		}
+		log.Debug().Msg("Created new entry for not existing command file.")
 		return nil
 	}
 	// the command exists in the db check if it is enabled, if not and the hash equals,
@@ -176,12 +176,14 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 			log.Debug().Err(err).Msg("Failed to update command to enabled.")
 			return err
 		}
+		log.Info().Msg("Existing command file was re-added with the same hash. Command has been enabled.")
 		return nil
 	}
 	if !command.Enabled && command.Hash != hash {
 		return errors.New("new file's hash does not equal with the stored command's hash")
 	}
 	// command is enabled and hash equals stored hash, nothing to do.
+	log.Info().Msg("File successfully processed.")
 	return nil
 }
 
@@ -204,11 +206,6 @@ func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event,
 	}()
 
 	log.Debug().Msg("File deleted. Disabling plugin.")
-	hash, err := p.generateHash(file)
-	if err != nil || hash == "" {
-		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
-		return err
-	}
 	name := path.Base(file)
 	command, err := p.Store.GetByName(ctx, name)
 	if errors.Is(err, kerr.ErrNotFound) {
