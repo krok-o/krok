@@ -2,40 +2,33 @@ package handlers
 
 import (
 	"errors"
-	"io/ioutil"
+	"fmt"
 	"net/http"
 	"strconv"
-	"sync"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 
 	kerr "github.com/krok-o/krok/errors"
-	"github.com/krok-o/krok/pkg/krok"
 	"github.com/krok-o/krok/pkg/krok/providers"
-	"github.com/krok-o/krok/pkg/models"
 )
 
 // HookDependencies defines the dependencies of this server.
 type HookDependencies struct {
 	// Load all the hook providers here and decide to which to delegate to.
-	Logger          zerolog.Logger
-	RepositoryStore providers.RepositoryStorer
-	CommandStore    providers.CommandStorer
-	GithubPlatform  providers.Platform
-	Watcher         providers.Watcher
+	Logger            zerolog.Logger
+	RepositoryStore   providers.RepositoryStorer
+	PlatformProviders map[int]providers.Platform
 }
 
 // KrokHookHandler is the main hook handler.
 type KrokHookHandler struct {
 	HookDependencies
-	Config
 }
 
 // NewHookHandler creates a new Krok server to listen for all hook related events.
-func NewHookHandler(cfg Config, deps HookDependencies) *KrokHookHandler {
+func NewHookHandler(deps HookDependencies) *KrokHookHandler {
 	return &KrokHookHandler{
-		Config:           cfg,
 		HookDependencies: deps,
 	}
 }
@@ -77,65 +70,17 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 
 		log.Debug().Str("name", repo.Name).Msg("Found repository...")
 		// Validate the request that it's a valid and subscribed to event.
-		switch vid {
-		case models.GITHUB:
-			if err := k.GithubPlatform.ValidateRequest(ctx, c.Request(), repo.ID); err != nil {
-				apiError := kerr.APIError("failed to validate hook request", http.StatusBadRequest, err)
-				return c.JSON(http.StatusBadRequest, apiError)
-			}
+		provider, ok := k.PlatformProviders[vid]
+		if !ok {
+			err := fmt.Errorf("vcs provider with id %d is not supported", vid)
+			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
 		}
-
-		// all good, run all attached commands in separate go routines.
-
-		// convert all plugins to an executable function
-		log.Debug().Msg("Request appears to be valid. Running attached commands.")
-		execute := make([]krok.Execute, 0)
-		for _, c := range repo.Commands {
-			p, err := k.Watcher.Load(ctx, c.Location)
-			if err != nil {
-				log.Debug().Err(err).Str("name", c.Name).Msg("Failed to load command... ignoring.")
-				continue
-			}
-			execute = append(execute, p)
-		}
-
-		// TODO: Refactor this because this shouldn't live in the handler. This should be handled
-		// by workers which should somehow report back a status of the commands.
-		// Shiiiit....
-		// Extract the running of commands into a state reporting executer.
-		// Run all commands.
-		errs := make([]error, 0)
-		errChan := make(chan error, len(execute))
-		var wg sync.WaitGroup
-		payload, err := ioutil.ReadAll(c.Request().Body)
-		if err != nil {
-			apiError := kerr.APIError("failed to get payload", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		defer c.Request().Body.Close()
-
-		for _, e := range execute {
-			wg.Add(1)
-			go func(ex krok.Execute, errChan chan error) {
-				defer wg.Done()
-				if _, _, err := ex(string(payload)); err != nil {
-					errChan <- err
-				}
-			}(e, errChan)
-		}
-
-		wg.Wait()
-
-		// Gather all potentional errors.
-		for e := range errChan {
-			errs = append(errs, e)
-		}
-
-		if len(errs) != 0 {
-			log.Error().Errs("command_errors", errs).Msg("The following errors happened while executing...")
+		if err := provider.ValidateRequest(ctx, c.Request(), repo.ID); err != nil {
 			apiError := kerr.APIError("failed to validate hook request", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
+		// TODO: Placeholder... Call the executor here and then return.
 		return c.String(http.StatusOK, "successfully processed event")
 	}
 }
