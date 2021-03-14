@@ -3,14 +3,17 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/models"
 )
 
 // HookDependencies defines the dependencies of this server.
@@ -19,6 +22,8 @@ type HookDependencies struct {
 	Logger            zerolog.Logger
 	RepositoryStore   providers.RepositoryStorer
 	PlatformProviders map[int]providers.Platform
+	Executer          providers.Executor
+	EventsStorer      providers.EventsStorer
 }
 
 // KrokHookHandler is the main hook handler.
@@ -79,8 +84,30 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to validate hook request", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		// TODO: Placeholder... Call the executor here and then return.
+		payload, err := ioutil.ReadAll(c.Request().Body)
+		if err != nil {
+			apiError := kerr.APIError("failed to get payload", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		// TODO: Implement to get the event ID based on the platform.
+		event := &models.Event{
+			Commands:     repo.Commands,
+			RepositoryID: rid,
+			CreateAt:     time.Now(),
+			EventID:      "provider-event-id",
+			Payload:      string(payload),
+		}
+		// Create an ID for this event from the database.
+		storedEvent, err := k.EventsStorer.Create(ctx, event)
+		if err != nil {
+			apiError := kerr.APIError("failed to store event", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		// Create a run which runs the commands attached to this event.
+		if err := k.Executer.CreateRun(ctx, storedEvent); err != nil {
+			apiError := kerr.APIError("failed to start run for event", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
 		return c.String(http.StatusOK, "successfully processed event")
 	}
 }

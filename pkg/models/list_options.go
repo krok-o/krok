@@ -5,5 +5,8 @@ type ListOptions struct {
 	Name string `json:"name,omitempty"`
 	// List all repositories for Git, Gitea...
 	VCS int `json:"vcs,omitempty"`
-	// Add paging later on.
+	// Current Page
+	Page int `json:"page,omitempty"`
+	// Items per Page
+	PageSize int `json:"page_size,omitempty"`
 }
