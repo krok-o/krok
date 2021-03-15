@@ -97,7 +97,7 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		event := &models.Event{
 			Commands:     repo.Commands,
 			RepositoryID: rid,
-			CreateAt:     time.Now(),
+			CreateAt:     time.Now(), // TODO: replace this with the timer thingy.
 			EventID:      id,
 			Payload:      string(payload),
 		}
