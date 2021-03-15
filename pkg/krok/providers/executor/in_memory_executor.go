@@ -89,7 +89,6 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event)
 
 // runCommand takes a single command and executes it, waiting for it to finish,
 // or time out. Either way, it will update the corresponding command row.
-// TODO: Add additional parameters like repository and command and event id maybe?
 func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, commandID int, payload []byte) {
 	done := make(chan error, 1)
 	update := func(status string, outcome string) {
@@ -127,7 +126,11 @@ func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, comm
 				return
 			}
 			// update entry with success
-			update("success", "")
+			output, err := cmd.Output()
+			if err != nil {
+				ime.Logger.Debug().Err(err).Msg("Failed to get command output.")
+			}
+			update("success", string(output))
 			ime.Logger.Info().Msg("Successfully finished command.")
 			return
 		case <-time.After(time.Duration(ime.Config.DefaultMaximumCommandRuntime) * time.Second):
