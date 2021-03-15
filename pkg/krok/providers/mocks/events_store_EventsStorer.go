@@ -61,7 +61,7 @@ func (_m *EventsStorer) GetEvent(ctx context.Context, eventID int) (*models.Even
 }
 
 // ListEventForRepository provides a mock function with given fields: ctx, repoID, options
-func (_m *EventsStorer) ListEventForRepository(ctx context.Context, repoID int, options models.ListOptions) (*[]models.Event, error) {
+func (_m *EventsStorer) ListEventsForRepository(ctx context.Context, repoID int, options models.ListOptions) (*[]models.Event, error) {
 	ret := _m.Called(ctx, repoID, options)
 
 	var r0 *[]models.Event

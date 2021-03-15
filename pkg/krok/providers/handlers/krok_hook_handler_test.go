@@ -6,13 +6,14 @@ import (
 	"os"
 	"testing"
 
-	"github.com/krok-o/krok/pkg/krok/providers"
-	"github.com/krok-o/krok/pkg/krok/providers/mocks"
-	"github.com/krok-o/krok/pkg/models"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
+	"github.com/krok-o/krok/pkg/models"
 )
 
 func TestHandleHooks(t *testing.T) {
@@ -21,12 +22,25 @@ func TestHandleHooks(t *testing.T) {
 	mrs.On("Get", mock.Anything, 1).Return(&models.Repository{ID: 1}, nil)
 	mgp := &mocks.Platform{}
 	mgp.On("ValidateRequest", mock.Anything, mock.Anything, 1).Return(nil)
+	mgp.On("GetEventID", mock.Anything, mock.Anything).Return("id", nil)
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = mgp
+	es := &mocks.EventsStorer{}
+	es.On("Create", mock.Anything, mock.Anything).Return(&models.Event{
+		ID:           1,
+		EventID:      "id",
+		RepositoryID: 1,
+		Commands:     make([]*models.Command, 0),
+		Payload:      "",
+	}, nil)
+	ex := &mocks.Executor{}
+	ex.On("CreateRun", mock.Anything, mock.Anything).Return(nil)
 	deps := HookDependencies{
 		Logger:            logger,
 		RepositoryStore:   mrs,
 		PlatformProviders: platformProviders,
+		EventsStorer:      es,
+		Executer:          ex,
 	}
 
 	hh := NewHookHandler(deps)
