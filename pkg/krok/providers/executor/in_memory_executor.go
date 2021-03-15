@@ -23,7 +23,6 @@ type Config struct {
 type Dependencies struct {
 	Logger      zerolog.Logger
 	CommandRuns providers.CommandRunStorer
-	Events      providers.EventsStorer
 }
 
 // InMemoryExecuter defines an Executor which runs commands
@@ -92,7 +91,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event)
 func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, commandID int, payload []byte) {
 	done := make(chan error, 1)
 	update := func(status string, outcome string) {
-		if _, err := ime.CommandRuns.UpdateRunStatus(ctx, commandID, status, outcome); err != nil {
+		if err := ime.CommandRuns.UpdateRunStatus(ctx, commandID, status, outcome); err != nil {
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
 		}
 	}

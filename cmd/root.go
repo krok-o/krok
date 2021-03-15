@@ -179,6 +179,21 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		APIKeys:      apiKeyStore,
 	})
 
+	commandRunStore := livestore.NewCommandRunStore(livestore.CommandRunDependencies{
+		Connector:    connector,
+		Dependencies: deps,
+	})
+
+	eventStorer := livestore.NewEventsStorer(livestore.EventsStoreDependencies{
+		Dependencies: deps,
+		Connector:    connector,
+	})
+
+	ex := executor.NewInMemoryExecuter(krokArgs.executer, executor.Dependencies{
+		Logger:      log,
+		CommandRuns: commandRunStore,
+	})
+
 	// ************************
 	// Set up the plugin watcher
 	// ************************
@@ -266,6 +281,8 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		RepositoryStore:   repoStore,
 		PlatformProviders: platformProviders,
 		Logger:            log,
+		Executer:          ex,
+		EventsStorer:      eventStorer,
 	})
 
 	uuidGenerator := providers.NewUUIDGenerator()
