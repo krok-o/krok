@@ -68,7 +68,26 @@ create table apikeys (
 
 -- The files lock which will contain the lock for a file with a timestamp of creation.
 -- Locks that are older than 10 minutes will be purged.
+-- Note: Delete this when we remove the watcher.
 create table file_lock (
     name varchar ( 256 ) unique not null,
     lock_start date
+);
+
+-- store events for a repository.
+create table events (
+    id serial primary key,
+    event_id varchar unique not null,
+    repository_id int,
+    payload varchar,
+    created_at date
+);
+
+-- store a run for a command. This is associated with an event.
+create table command_run (
+    id serial primary key,
+    event_id int,
+    status varchar,
+    outcome varchar,
+    created_at date
 )
