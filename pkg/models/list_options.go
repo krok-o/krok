@@ -1,5 +1,9 @@
 package models
 
+import (
+	"time"
+)
+
 // ListOptions provides options for List operations with additional filters.
 type ListOptions struct {
 	Name string `json:"name,omitempty"`
@@ -9,4 +13,8 @@ type ListOptions struct {
 	Page int `json:"page,omitempty"`
 	// Items per Page
 	PageSize int `json:"page_size,omitempty"`
+	// Starting Date
+	StartingDate *time.Time `json:"starting_date,omitempty"`
+	// Ending Date
+	EndDate *time.Time `json:"end_date,omitempty"`
 }

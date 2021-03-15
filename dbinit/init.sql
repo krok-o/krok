@@ -84,8 +84,13 @@ create table events (
 );
 
 -- store a run for a command. This is associated with an event.
+-- Note that we don't save command ID here, because it might have
+-- been already deleted when we look back to this event.
+-- So events will contain CommandRuns which save the name of the
+-- command only.
 create table command_run (
     id serial primary key,
+    command_name varchar,
     event_id int,
     status varchar,
     outcome varchar,

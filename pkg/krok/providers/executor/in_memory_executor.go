@@ -51,25 +51,26 @@ func NewInMemoryExecuter(cfg Config, deps Dependencies) *InMemoryExecuter {
 }
 
 // CreateRun creates a run for an event.
-func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event) error {
+func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event, commands []*models.Command) error {
 	log := ime.Logger.
 		With().
 		Int("event_id", event.ID).
 		Int("repository_id", event.RepositoryID).
-		Int("commands", len(event.Commands)).
+		Int("commands", len(commands)).
 		Logger()
 
 	log.Info().Msg("Starting run")
-	commands := make([]*exec.Cmd, 0)
+	cmds := make([]*exec.Cmd, 0)
 	// Start these here with the runner go routine
-	for _, c := range event.Commands {
+	for _, c := range commands {
 		// TODO: find a way to define the command parameters.
 		var err error
 		commandRun := &models.CommandRun{
-			EventID:  event.ID,
-			Status:   "created",
-			Outcome:  "",
-			CreateAt: time.Now(),
+			EventID:     event.ID,
+			CommandName: c.Name,
+			Status:      "created",
+			Outcome:     "",
+			CreateAt:    time.Now(),
 		}
 		commandRun, err = ime.CommandRuns.CreateRun(ctx, commandRun)
 		if err != nil {
@@ -77,21 +78,21 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event)
 			return err
 		}
 		cmd := exec.Command(ime.NodePath, c.Location)
-		commands = append(commands, cmd)
+		cmds = append(cmds, cmd)
 		go ime.runCommand(ctx, cmd, commandRun.ID, []byte(event.Payload))
 	}
 	ime.runsLock.Lock()
-	ime.runs[event.ID] = commands
+	ime.runs[event.ID] = cmds
 	ime.runsLock.Unlock()
 	return nil
 }
 
 // runCommand takes a single command and executes it, waiting for it to finish,
 // or time out. Either way, it will update the corresponding command row.
-func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, commandID int, payload []byte) {
+func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, commandRunID int, payload []byte) {
 	done := make(chan error, 1)
 	update := func(status string, outcome string) {
-		if err := ime.CommandRuns.UpdateRunStatus(ctx, commandID, status, outcome); err != nil {
+		if err := ime.CommandRuns.UpdateRunStatus(ctx, commandRunID, status, outcome); err != nil {
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
 		}
 	}

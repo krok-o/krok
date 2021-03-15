@@ -35,12 +35,13 @@ var _ providers.CommandRunStorer = &CommandRunStore{}
 
 // CreateRun creates a new Command run entry.
 func (a *CommandRunStore) CreateRun(ctx context.Context, cmdRun *models.CommandRun) (*models.CommandRun, error) {
-	log := a.Logger.With().Int("id", cmdRun.ID).Logger()
+	log := a.Logger.With().Int("event_id", cmdRun.EventID).Logger()
 	var returnID int
 	f := func(tx pgx.Tx) error {
-		query := fmt.Sprintf("insert into %s(event_id, status, outcome, created_at) values($1, $2, $3, $4) returning id", commandRunTable)
+		query := fmt.Sprintf("insert into %s(event_id, command_name, status, outcome, created_at) values($1, $2, $3, $4, $5) returning id", commandRunTable)
 		row := tx.QueryRow(ctx, query,
 			cmdRun.EventID,
+			cmdRun.CommandName,
 			cmdRun.Status,
 			cmdRun.Outcome,
 			cmdRun.CreateAt)
