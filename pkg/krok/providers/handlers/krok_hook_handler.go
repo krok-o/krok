@@ -89,7 +89,6 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to get payload", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		// TODO: Implement to get the event ID based on the platform.
 		id, err := provider.GetEventID(ctx, c.Request())
 		if err != nil {
 			apiError := kerr.APIError("failed to get event ID from provider", http.StatusBadRequest, err)
