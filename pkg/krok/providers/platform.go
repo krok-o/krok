@@ -20,6 +20,8 @@ type Platform interface {
 	// ValidateRequest will take a hook and verify it being a valid hook request according to
 	// platform rules.
 	ValidateRequest(ctx context.Context, r *http.Request, repoID int) error
+	// GetEventID Based on the platform, retrieve the ID of the event.
+	GetEventID(ctx context.Context, r *http.Request) (string, error)
 }
 
 // PlatformTokenProvider defines the operations a token provider must perform.
