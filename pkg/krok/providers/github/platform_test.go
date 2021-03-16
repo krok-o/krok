@@ -155,4 +155,7 @@ func TestGithub_GetEventID(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.Equal(t, "ID", id)
+
+	_, err = npp.GetEventID(context.Background(), &http.Request{})
+	assert.Errorf(t, err, "event id not found for request")
 }
