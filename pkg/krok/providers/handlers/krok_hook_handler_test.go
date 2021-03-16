@@ -34,7 +34,7 @@ func TestHandleHooks(t *testing.T) {
 		Payload:      "",
 	}, nil)
 	ex := &mocks.Executor{}
-	ex.On("CreateRun", mock.Anything, mock.Anything).Return(nil)
+	ex.On("CreateRun", mock.Anything, mock.Anything, mock.Anything).Return(nil)
 	deps := HookDependencies{
 		Logger:            logger,
 		RepositoryStore:   mrs,
