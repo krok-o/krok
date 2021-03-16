@@ -40,6 +40,15 @@ func TestEventsStore_Create(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
+
+	_, err = es.Create(ctx, &models.Event{
+		EventID:      "uuid1",
+		CreateAt:     time.Now(),
+		RepositoryID: 1,
+		CommandRuns:  make([]*models.CommandRun, 0),
+		Payload:      "{}",
+	})
+	assert.Error(t, err)
 }
 
 func TestEventsStore_GetWithRuns(t *testing.T) {
@@ -101,6 +110,9 @@ func TestEventsStore_GetWithRuns(t *testing.T) {
 	assert.Equal(t, run.ID, e.CommandRuns[0].ID)
 	assert.Equal(t, run.Outcome, e.CommandRuns[0].Outcome)
 	assert.Equal(t, run.Status, e.CommandRuns[0].Status)
+
+	_, err = es.GetEvent(ctx, 999)
+	assert.Error(t, err)
 }
 
 func TestEventsStore_List(t *testing.T) {
@@ -132,6 +144,13 @@ func TestEventsStore_List(t *testing.T) {
 		events, err := es.ListEventsForRepository(ctx, 1, models.ListOptions{})
 		assert.NoError(tt, err)
 		assert.NotZero(tt, len(events), "events list should not have come back as empty")
+	})
+
+	t.Run("basic list errors", func(tt *testing.T) {
+		ctx := context.Background()
+		es, err := es.ListEventsForRepository(ctx, 999, models.ListOptions{})
+		assert.NoError(tt, err)
+		assert.Empty(tt, es)
 	})
 
 	t.Run("filter between dates", func(tt *testing.T) {

@@ -73,4 +73,10 @@ func TestCommandRun_UpdateRunStatus(t *testing.T) {
 	r, err = crs.Get(ctx, r.ID)
 	assert.Equal(t, "success", r.Status)
 	assert.Equal(t, "all good", r.Outcome)
+
+	err = crs.UpdateRunStatus(ctx, 999, "success", "all good")
+	assert.Error(t, err)
+
+	_, err = crs.Get(ctx, 999)
+	assert.Error(t, err)
 }
