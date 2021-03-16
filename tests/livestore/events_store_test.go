@@ -31,7 +31,7 @@ func TestEventsStore_Create(t *testing.T) {
 	})
 	ctx := context.Background()
 	event, err := es.Create(ctx, &models.Event{
-		EventID:      "uuid",
+		EventID:      "uuid1",
 		CreateAt:     time.Now(),
 		RepositoryID: 1,
 		CommandRuns:  make([]*models.CommandRun, 0),
@@ -69,7 +69,7 @@ func TestEventsStore_GetWithRuns(t *testing.T) {
 
 	ctx := context.Background()
 	event, err := es.Create(ctx, &models.Event{
-		EventID:      "uuid",
+		EventID:      "uuid2",
 		CreateAt:     time.Now(),
 		RepositoryID: 1,
 		Payload:      "{}",
@@ -120,7 +120,7 @@ func TestEventsStore_List(t *testing.T) {
 	t.Run("basic list function", func(tt *testing.T) {
 		ctx := context.Background()
 		event, err := es.Create(ctx, &models.Event{
-			EventID:      "uuid",
+			EventID:      "uuid3",
 			CreateAt:     time.Now(),
 			RepositoryID: 1,
 			Payload:      "{}",
