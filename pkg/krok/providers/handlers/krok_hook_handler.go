@@ -95,7 +95,6 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		event := &models.Event{
-			Commands:     repo.Commands,
 			RepositoryID: rid,
 			CreateAt:     time.Now(), // TODO: replace this with the timer thingy.
 			EventID:      id,
@@ -108,7 +107,7 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		// Create a run which runs the commands attached to this event.
-		if err := k.Executer.CreateRun(ctx, storedEvent); err != nil {
+		if err := k.Executer.CreateRun(ctx, storedEvent, repo.Commands); err != nil {
 			apiError := kerr.APIError("failed to start run for event", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}

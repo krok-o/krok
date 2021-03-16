@@ -30,7 +30,7 @@ func TestHandleHooks(t *testing.T) {
 		ID:           1,
 		EventID:      "id",
 		RepositoryID: 1,
-		Commands:     make([]*models.Command, 0),
+		CommandRuns:  make([]*models.CommandRun, 0),
 		Payload:      "",
 	}, nil)
 	ex := &mocks.Executor{}

@@ -38,24 +38,15 @@ func (_m *CommandRunStorer) CreateRun(ctx context.Context, run *models.CommandRu
 }
 
 // UpdateRunStatus provides a mock function with given fields: ctx, id, status, outcome
-func (_m *CommandRunStorer) UpdateRunStatus(ctx context.Context, id int, status string, outcome string) (*models.CommandRun, error) {
+func (_m *CommandRunStorer) UpdateRunStatus(ctx context.Context, id int, status string, outcome string) error {
 	ret := _m.Called(ctx, id, status, outcome)
 
-	var r0 *models.CommandRun
-	if rf, ok := ret.Get(0).(func(context.Context, int, string, string) *models.CommandRun); ok {
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, string, string) error); ok {
 		r0 = rf(ctx, id, status, outcome)
 	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*models.CommandRun)
-		}
+		r0 = ret.Error(0)
 	}
 
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int, string, string) error); ok {
-		r1 = rf(ctx, id, status, outcome)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
+	return r0
 }

@@ -28,13 +28,13 @@ func (_m *Executor) CancelRun(ctx context.Context, id int) error {
 	return r0
 }
 
-// CreateRun provides a mock function with given fields: ctx, event
-func (_m *Executor) CreateRun(ctx context.Context, event *models.Event) error {
-	ret := _m.Called(ctx, event)
+// CreateRun provides a mock function with given fields: ctx, event, commands
+func (_m *Executor) CreateRun(ctx context.Context, event *models.Event, commands []*models.Command) error {
+	ret := _m.Called(ctx, event, commands)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *models.Event) error); ok {
-		r0 = rf(ctx, event)
+	if rf, ok := ret.Get(0).(func(context.Context, *models.Event, []*models.Command) error); ok {
+		r0 = rf(ctx, event, commands)
 	} else {
 		r0 = ret.Error(0)
 	}
