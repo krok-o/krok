@@ -2,6 +2,7 @@ package livestore
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -133,4 +134,105 @@ func TestEventsStore_List(t *testing.T) {
 		assert.NotZero(tt, len(events), "events list should not have come back as empty")
 	})
 
+	t.Run("filter between dates", func(tt *testing.T) {
+		ctx := context.Background()
+		event1, err := es.Create(ctx, &models.Event{
+			EventID:      "uuid4",
+			CreateAt:     time.Date(2021, 03, 12, 13, 0, 0, 0, time.UTC),
+			RepositoryID: 1,
+			Payload:      "{}",
+		})
+		assert.NoError(t, err)
+		assert.NotEqual(t, 0, event1.ID, "Event ID should have been a sequence and increased to above 0.")
+		event2, err := es.Create(ctx, &models.Event{
+			EventID:      "uuid5",
+			CreateAt:     time.Date(2005, 03, 12, 13, 0, 0, 0, time.UTC),
+			RepositoryID: 1,
+			Payload:      "{}",
+		})
+		assert.NoError(t, err)
+		assert.NotEqual(t, 0, event2.ID, "Event ID should have been a sequence and increased to above 0.")
+
+		from := time.Date(2021, 02, 12, 13, 0, 0, 0, time.UTC)
+		to := time.Date(2021, 03, 13, 13, 0, 0, 0, time.UTC)
+		events, err := es.ListEventsForRepository(ctx, 1, models.ListOptions{
+			StartingDate: &from,
+			EndDate:      &to,
+		})
+		assert.NoError(tt, err)
+		assert.Len(tt, events, 1, "events list should not have come back as empty")
+		assert.Equal(tt, event1.ID, events[0].ID)
+
+		from = time.Date(2005, 02, 12, 13, 0, 0, 0, time.UTC)
+		to = time.Date(2006, 03, 13, 13, 0, 0, 0, time.UTC)
+		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+			StartingDate: &from,
+			EndDate:      &to,
+		})
+		assert.NoError(tt, err)
+		assert.Len(tt, events, 1, "events list should not have come back as empty")
+		assert.Equal(tt, event2.ID, events[0].ID)
+
+		from = time.Date(2005, 02, 12, 13, 0, 0, 0, time.UTC)
+		to = time.Date(2021, 03, 13, 13, 0, 0, 0, time.UTC)
+		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+			StartingDate: &from,
+			EndDate:      &to,
+		})
+		assert.NoError(tt, err)
+		assert.Len(tt, events, 2, "events list should not have come back as empty")
+	})
+
+	t.Run("pagination", func(tt *testing.T) {
+		ctx := context.Background()
+		_, err := es.Create(ctx, &models.Event{
+			EventID:      "uuid14",
+			CreateAt:     time.Date(2005, 03, 12, 13, 1, 0, 0, time.UTC),
+			RepositoryID: 1,
+			Payload:      "{}",
+		})
+		assert.NoError(tt, err)
+		_, err = es.Create(ctx, &models.Event{
+			EventID:      "uuid15",
+			CreateAt:     time.Date(2005, 03, 12, 13, 2, 0, 0, time.UTC),
+			RepositoryID: 1,
+			Payload:      "{}",
+		})
+		assert.NoError(tt, err)
+		event3, err := es.Create(ctx, &models.Event{
+			EventID:      "uuid16",
+			CreateAt:     time.Date(2005, 03, 12, 13, 3, 0, 0, time.UTC),
+			RepositoryID: 1,
+			Payload:      "{}",
+		})
+		assert.NoError(tt, err)
+
+		events, err := es.ListEventsForRepository(ctx, 1, models.ListOptions{
+			PageSize: 1,
+		})
+
+		assert.NoError(tt, err)
+		assert.Len(tt, events, 1)
+
+		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+			PageSize: 2,
+		})
+
+		assert.NoError(tt, err)
+		assert.Len(tt, events, 2)
+
+		from := time.Date(2005, 03, 12, 13, 1, 0, 0, time.UTC)
+		to := time.Date(2005, 03, 12, 13, 4, 0, 0, time.UTC)
+		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+			StartingDate: &from,
+			EndDate:      &to,
+			PageSize:     1,
+			Page:         3,
+		})
+
+		assert.NoError(tt, err)
+		assert.Len(tt, events, 1)
+		fmt.Println(events[0])
+		assert.Equal(tt, event3.ID, events[0].ID)
+	})
 }

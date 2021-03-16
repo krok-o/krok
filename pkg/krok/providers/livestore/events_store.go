@@ -81,7 +81,7 @@ func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 		}
 		if options.StartingDate != nil && options.EndDate != nil {
 			sql += " and created_at between $2 and $3 limit $4 offset $5"
-			args = append(args, options.StartingDate, options.EndDate, options.PageSize, options.PageSize*options.Page)
+			args = append(args, *options.StartingDate, *options.EndDate, options.PageSize, options.PageSize*options.Page)
 		} else {
 			sql += " limit $2 offset $3"
 			args = append(args, options.PageSize, options.PageSize*options.Page)
