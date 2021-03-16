@@ -131,3 +131,28 @@ func TestGithub_CreateHook_InvalidURL(t *testing.T) {
 	})
 	assert.Error(t, err)
 }
+
+func TestGithub_GetEventID(t *testing.T) {
+	cliLogger := zerolog.New(os.Stderr)
+	mp := &mockAuthProvider{
+		getAuth: &models.Auth{
+			SSH:      "ssh",
+			Username: "username",
+			Password: "password",
+			Secret:   "secret",
+		},
+	}
+	mptp := &mockPlatformTokenProvider{}
+	npp := NewGithubPlatformProvider(Config{Hostname: "https://krok.com"}, Dependencies{
+		Logger:                cliLogger,
+		PlatformTokenProvider: mptp,
+		AuthProvider:          mp,
+	})
+	header := http.Header{}
+	header.Add("X-GitHub-Delivery", "ID")
+	id, err := npp.GetEventID(context.Background(), &http.Request{
+		Header: header,
+	})
+	assert.NoError(t, err)
+	assert.Equal(t, "ID", id)
+}
