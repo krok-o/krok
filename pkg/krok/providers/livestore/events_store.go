@@ -18,8 +18,8 @@ const (
 	defaultPageSize  = 10
 )
 
-// eventsStore is a postgres based store for eventStorer.
-type eventsStore struct {
+// EventsStore is a postgres based store for eventStorer.
+type EventsStore struct {
 	EventsStoreDependencies
 }
 
@@ -30,14 +30,14 @@ type EventsStoreDependencies struct {
 }
 
 // NewEventsStorer creates a new eventsStore
-func NewEventsStorer(deps EventsStoreDependencies) *eventsStore {
-	return &eventsStore{EventsStoreDependencies: deps}
+func NewEventsStorer(deps EventsStoreDependencies) *EventsStore {
+	return &EventsStore{EventsStoreDependencies: deps}
 }
 
-var _ providers.EventsStorer = &eventsStore{}
+var _ providers.EventsStorer = &EventsStore{}
 
 // Create an event.
-func (e *eventsStore) Create(ctx context.Context, event *models.Event) (*models.Event, error) {
+func (e *EventsStore) Create(ctx context.Context, event *models.Event) (*models.Event, error) {
 	log := e.Logger.With().Str("event_id", event.EventID).Int("repository_id", event.RepositoryID).Logger()
 	var returnID int
 	f := func(tx pgx.Tx) error {
@@ -67,7 +67,7 @@ func (e *eventsStore) Create(ctx context.Context, event *models.Event) (*models.
 // ListEventsForRepository gets paginated list of events for a repository.
 // It does not return the command runs and the payloads to prevent potentially big chunks of transfer data.
 // To get those, one must do a Get.
-func (e *eventsStore) ListEventsForRepository(ctx context.Context, repoID int, options models.ListOptions) ([]*models.Event, error) {
+func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, options models.ListOptions) ([]*models.Event, error) {
 	log := e.Logger.With().Str("func", "List").Int("repo_id", repoID).Logger()
 	if options.PageSize == 0 {
 		options.PageSize = defaultPageSize
@@ -75,15 +75,18 @@ func (e *eventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 	// Select all commands.
 	result := make([]*models.Event, 0)
 	f := func(tx pgx.Tx) error {
-		sql := fmt.Sprintf("select id, event_id, repository_id, created_at from %s limit %d offset %d where repository_id = $1", eventsStoreTable, options.PageSize, options.PageSize*options.Page)
+		sql := fmt.Sprintf("select id, event_id, repository_id, created_at from %s where repository_id = $1", eventsStoreTable)
 		args := []interface{}{
 			repoID,
 		}
 		if options.StartingDate != nil && options.EndDate != nil {
-			sql += " where created_at between $1 and $2"
-			args = append(args, options.StartingDate, options.EndDate)
+			sql += " and created_at between $2 and $3 limit $4 offset $5"
+			args = append(args, options.StartingDate, options.EndDate, options.PageSize, options.PageSize*options.Page)
+		} else {
+			sql += " limit $2 offset $3"
+			args = append(args, options.PageSize, options.PageSize*options.Page)
 		}
-		rows, err := tx.Query(ctx, sql, args)
+		rows, err := tx.Query(ctx, sql, args...)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
@@ -108,7 +111,7 @@ func (e *eventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 			if err := rows.Scan(&storedID, &storedEventID, &storedRepositoryID, &storedCreatedAt); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
-					Query: "select all events",
+					Query: sql,
 					Err:   fmt.Errorf("failed to scan: %w", err),
 				}
 			}
@@ -129,18 +132,18 @@ func (e *eventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 }
 
 // GetEvent retrieves details about an event.
-func (e *eventsStore) GetEvent(ctx context.Context, id int) (*models.Event, error) {
+func (e *EventsStore) GetEvent(ctx context.Context, id int) (*models.Event, error) {
 	// Select all commands from a run belonging to this event and get the command.
 	log := e.Logger.With().Int("id", id).Logger()
 	// Get all data from the repository table.
 	result := &models.Event{}
 	f := func(tx pgx.Tx) error {
 		var (
-			storedId, repoID int
+			storedID, repoID int
 			eventID, payload string
 			createdAt        time.Time
 		)
-		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, event_id, created_at, repository_id, payload from %s where id=$1", eventsStoreTable), id).Scan(&storedId, &eventID, &createdAt, &repoID, &payload); err != nil {
+		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, event_id, created_at, repository_id, payload from %s where id=$1", eventsStoreTable), id).Scan(&storedID, &eventID, &createdAt, &repoID, &payload); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select id in events",
@@ -152,7 +155,7 @@ func (e *eventsStore) GetEvent(ctx context.Context, id int) (*models.Event, erro
 				Err:   fmt.Errorf("failed to scan: %w", err),
 			}
 		}
-		result.ID = storedId
+		result.ID = storedID
 		result.RepositoryID = repoID
 		result.EventID = eventID
 		result.CreateAt = createdAt
@@ -173,7 +176,7 @@ func (e *eventsStore) GetEvent(ctx context.Context, id int) (*models.Event, erro
 }
 
 // getCommandRunForEvent returns a list of command runs for an event.
-func (e *eventsStore) getCommandRunForEvent(ctx context.Context, id int) ([]*models.CommandRun, error) {
+func (e *EventsStore) getCommandRunForEvent(ctx context.Context, id int) ([]*models.CommandRun, error) {
 	log := e.Logger.With().Int("id", id).Logger()
 
 	// Select the related commands.
