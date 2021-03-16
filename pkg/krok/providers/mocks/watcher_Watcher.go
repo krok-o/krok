@@ -13,29 +13,6 @@ type Watcher struct {
 	mock.Mock
 }
 
-// Load provides a mock function with given fields: ctx, location
-func (_m *Watcher) Load(ctx context.Context, location string) (func(string, []interface{}) (string, bool, error), error) {
-	ret := _m.Called(ctx, location)
-
-	var r0 func(string, []interface{}) (string, bool, error)
-	if rf, ok := ret.Get(0).(func(context.Context, string) func(string, []interface{}) (string, bool, error)); ok {
-		r0 = rf(ctx, location)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(func(string, []interface{}) (string, bool, error))
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, string) error); ok {
-		r1 = rf(ctx, location)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // Run provides a mock function with given fields: ctx
 func (_m *Watcher) Run(ctx context.Context) {
 	_m.Called(ctx)
