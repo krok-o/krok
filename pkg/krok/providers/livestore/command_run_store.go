@@ -2,7 +2,9 @@ package livestore
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"time"
 
 	"github.com/jackc/pgx/v4"
 
@@ -60,6 +62,51 @@ func (a *CommandRunStore) CreateRun(ctx context.Context, cmdRun *models.CommandR
 	}
 	cmdRun.ID = returnID
 	return cmdRun, nil
+}
+
+// Get returns a single command run.
+func (a *CommandRunStore) Get(ctx context.Context, id int) (*models.CommandRun, error) {
+	log := a.Logger.With().Int("id", id).Logger()
+	var (
+		storedID        int
+		storedName      string
+		storedEventID   int
+		storedStatus    string
+		storedOutcome   string
+		storedCreatedAt time.Time
+	)
+	f := func(tx pgx.Tx) error {
+		query := fmt.Sprintf("select id, command_name, event_id, status, outcome, created_at from %s where id = $1", commandRunTable)
+		if err := tx.QueryRow(ctx, query, id).
+			Scan(&storedID, &storedName, &storedEventID, &storedStatus, &storedOutcome, &storedCreatedAt); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: query,
+					Err:   kerr.ErrNotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query row.")
+			return &kerr.QueryError{
+				Query: query,
+				Err:   err,
+			}
+		}
+		return nil
+	}
+
+	if err := a.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("failed to run in transactions")
+		return nil, err
+	}
+
+	return &models.CommandRun{
+		ID:          storedID,
+		CommandName: storedName,
+		EventID:     storedEventID,
+		Status:      storedStatus,
+		Outcome:     storedOutcome,
+		CreateAt:    storedCreatedAt,
+	}, nil
 }
 
 // UpdateRunStatus takes an id a status and an outcome and updates a run with it. This is a convenient method around
