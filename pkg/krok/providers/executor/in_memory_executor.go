@@ -79,7 +79,8 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		}
 		cmd := exec.Command(ime.NodePath, c.Location)
 		cmds = append(cmds, cmd)
-		go ime.runCommand(ctx, cmd, commandRun.ID, []byte(event.Payload))
+		// this needs its own context, since the context from above is already cancelled.
+		go ime.runCommand(context.Background(), cmd, commandRun.ID, []byte(event.Payload))
 	}
 	ime.runsLock.Lock()
 	ime.runs[event.ID] = cmds
@@ -96,15 +97,15 @@ func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, comm
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
 		}
 	}
-	if err := cmd.Start(); err != nil {
-		update("failed", err.Error())
-		ime.Logger.Debug().Err(err).Msg("Failed to start command.")
-		return
-	}
 	in, err := cmd.StdinPipe()
 	if err != nil {
 		update("failed", err.Error())
 		ime.Logger.Debug().Err(err).Msg("Failed to run command.")
+		return
+	}
+	if err := cmd.Start(); err != nil {
+		update("failed", err.Error())
+		ime.Logger.Debug().Err(err).Msg("Failed to start command.")
 		return
 	}
 	if _, err := in.Write(payload); err != nil {
@@ -145,7 +146,8 @@ func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, comm
 	}
 }
 
-// CancelRun will cancel a run and mark all commands as cancelled.
+// CancelRun will cancel a run and mark all commands as cancelled then remove the entry from the run map.
+// If the kill was unsuccessful, the user can try running it again.
 func (ime *InMemoryExecuter) CancelRun(ctx context.Context, id int) error {
 	ime.runsLock.RLock()
 	commands, ok := ime.runs[id]
@@ -160,12 +162,14 @@ func (ime *InMemoryExecuter) CancelRun(ctx context.Context, id int) error {
 			ime.Logger.Err(err).Int("pid", c.Process.Pid).Msg("Failed to kill process with pid.")
 			killError = true
 		}
-		// update entry
 	}
 	if killError {
 		return errors.New("there was an error while cancelling running commands, " +
 			"please inspect the log for more details")
 	}
+	ime.runsLock.Lock()
+	delete(ime.runs, id)
+	ime.runsLock.Unlock()
 	ime.Logger.Debug().Msg("All commands successfully cancelled.")
 	return nil
 }
