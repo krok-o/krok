@@ -1,9 +1,12 @@
 package executor
 
 import (
+	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"os/exec"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -77,8 +80,10 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			log.Debug().Err(err).Msg("Failed to create run for command")
 			return err
 		}
-		cmd := exec.Command(ime.NodePath, c.Location)
+		location := filepath.Join(c.Location, c.Name)
+		cmd := exec.Command(ime.NodePath, location)
 		cmds = append(cmds, cmd)
+		log.Debug().Str("location", location).Msg("Preparing to run command at location...")
 		// this needs its own context, since the context from above is already cancelled.
 		go ime.runCommand(context.Background(), cmd, commandRun.ID, []byte(event.Payload))
 	}
@@ -97,20 +102,45 @@ func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, comm
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
 		}
 	}
-	in, err := cmd.StdinPipe()
+	buffer := bytes.Buffer{}
+	buffer.Write(payload)
+	cmd.Stdin = &buffer
+
+	cmdErrReader, err := cmd.StderrPipe()
 	if err != nil {
 		update("failed", err.Error())
-		ime.Logger.Debug().Err(err).Msg("Failed to run command.")
+		ime.Logger.Debug().Err(err).Msg("Failed to get stdreader.")
 		return
 	}
+
+	var stdErr string
+
+	errScanner := bufio.NewScanner(cmdErrReader)
+	go func() {
+		for errScanner.Scan() {
+			stdErr += errScanner.Text()
+		}
+	}()
+
+	cmdOutReader, err := cmd.StdoutPipe()
+	if err != nil {
+		update("failed", err.Error())
+		ime.Logger.Debug().Err(err).Msg("Failed to get stdreader.")
+		return
+	}
+
+	var stdOut string
+
+	outScanner := bufio.NewScanner(cmdOutReader)
+	go func() {
+		for outScanner.Scan() {
+			stdOut += outScanner.Text()
+		}
+	}()
+
 	if err := cmd.Start(); err != nil {
 		update("failed", err.Error())
 		ime.Logger.Debug().Err(err).Msg("Failed to start command.")
-		return
-	}
-	if _, err := in.Write(payload); err != nil {
-		update("failed", err.Error())
-		ime.Logger.Debug().Err(err).Msg("Failed to send payload to command.")
 		return
 	}
 
@@ -122,16 +152,11 @@ func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, comm
 		select {
 		case err := <-done:
 			if err != nil {
-				update("failed", err.Error())
+				update("failed", stdErr)
 				ime.Logger.Debug().Err(err).Msg("Failed to run command.")
 				return
 			}
-			// update entry with success
-			output, err := cmd.Output()
-			if err != nil {
-				ime.Logger.Debug().Err(err).Msg("Failed to get command output.")
-			}
-			update("success", string(output))
+			update("success", stdOut)
 			ime.Logger.Info().Msg("Successfully finished command.")
 			return
 		case <-time.After(time.Duration(ime.Config.DefaultMaximumCommandRuntime) * time.Second):
