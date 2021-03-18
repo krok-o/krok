@@ -1,7 +1,6 @@
 package executor
 
 import (
-	"bufio"
 	"bytes"
 	"context"
 	"errors"
@@ -98,6 +97,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, commandRunID int, payload []byte) {
 	done := make(chan error, 1)
 	update := func(status string, outcome string) {
+		ime.Logger.Debug().Int("command_run_id", commandRunID).Str("status", status).Str("outcome", outcome).Msg("Updating command run entry.")
 		if err := ime.CommandRuns.UpdateRunStatus(ctx, commandRunID, status, outcome); err != nil {
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
 		}
@@ -105,38 +105,10 @@ func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, comm
 	buffer := bytes.Buffer{}
 	buffer.Write(payload)
 	cmd.Stdin = &buffer
-
-	cmdErrReader, err := cmd.StderrPipe()
-	if err != nil {
-		update("failed", err.Error())
-		ime.Logger.Debug().Err(err).Msg("Failed to get stdreader.")
-		return
-	}
-
-	var stdErr string
-
-	errScanner := bufio.NewScanner(cmdErrReader)
-	go func() {
-		for errScanner.Scan() {
-			stdErr += errScanner.Text()
-		}
-	}()
-
-	cmdOutReader, err := cmd.StdoutPipe()
-	if err != nil {
-		update("failed", err.Error())
-		ime.Logger.Debug().Err(err).Msg("Failed to get stdreader.")
-		return
-	}
-
-	var stdOut string
-
-	outScanner := bufio.NewScanner(cmdOutReader)
-	go func() {
-		for outScanner.Scan() {
-			stdOut += outScanner.Text()
-		}
-	}()
+	stdErr := bytes.Buffer{}
+	cmd.Stderr = &stdErr
+	stdOut := bytes.Buffer{}
+	cmd.Stdout = &stdOut
 
 	if err := cmd.Start(); err != nil {
 		update("failed", err.Error())
@@ -152,11 +124,11 @@ func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, comm
 		select {
 		case err := <-done:
 			if err != nil {
-				update("failed", stdErr)
+				update("failed", stdErr.String())
 				ime.Logger.Debug().Err(err).Msg("Failed to run command.")
 				return
 			}
-			update("success", stdOut)
+			update("success", stdOut.String())
 			ime.Logger.Info().Msg("Successfully finished command.")
 			return
 		case <-time.After(time.Duration(ime.Config.DefaultMaximumCommandRuntime) * time.Second):
