@@ -80,6 +80,11 @@ func (g *Github) ValidateRequest(ctx context.Context, req *http.Request, repoID 
 		return err
 	}
 
+	if repoAuth == nil {
+		g.Logger.Debug().Msg("Auth is not present.")
+		return errors.New("no auth specified")
+	}
+
 	// Get the secret from the repo auth provider?
 	hook, _ := github.New(github.Options.Secret(repoAuth.Secret))
 	h, err := hook.Parse(req,

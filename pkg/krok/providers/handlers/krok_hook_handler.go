@@ -80,10 +80,10 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			err := fmt.Errorf("vcs provider with id %d is not supported", vid)
 			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
 		}
-		//if err := provider.ValidateRequest(ctx, c.Request(), repo.ID); err != nil {
-		//	apiError := kerr.APIError("failed to validate hook request", http.StatusBadRequest, err)
-		//	return c.JSON(http.StatusBadRequest, apiError)
-		//}
+		if err := provider.ValidateRequest(ctx, c.Request(), repo.ID); err != nil {
+			apiError := kerr.APIError("failed to validate hook request", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
 		payload, err := ioutil.ReadAll(c.Request().Body)
 		if err != nil {
 			apiError := kerr.APIError("failed to get payload", http.StatusBadRequest, err)
