@@ -578,6 +578,10 @@ func (s *CommandStore) ListSettings(ctx context.Context, commandID int) ([]*mode
 				}
 			}
 			if inVault {
+				if err := s.Vault.LoadSecrets(); err != nil {
+					log.Debug().Err(err).Msg("Failed to load secrets.")
+					return err
+				}
 				v, err := s.Vault.GetSecret(value)
 				if err != nil {
 					log.Debug().Err(err).Msg("Failed to get value for secret from vault.")
