@@ -406,9 +406,9 @@ func TestCommandSettings_ErrorOnListIfValueDoesntExistsInVault(t *testing.T) {
 		Name:         "Test_Error_On_No_Value_Setting_1",
 		Schedule:     "test-schedule-setting-1",
 		Repositories: nil,
-		Filename:     "test-filename-update-vault-1",
+		Filename:     "Test_Error_On_No_Value_Setting_2",
 		Location:     location,
-		Hash:         "settings-update-vault",
+		Hash:         "settings-update-vault-2",
 		Enabled:      true,
 	})
 	assert.NoError(t, err)
