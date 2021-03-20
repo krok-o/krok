@@ -378,7 +378,7 @@ func TestCommandSettings_UpdateInVault(t *testing.T) {
 
 func TestCommandSettings_ErrorOnListIfValueDoesntExistsInVault(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandSettings_UpdateInVault")
+	location, _ := ioutil.TempDir("", "TestCommandSettings_ErrorOnListIfValueDoesntExistsInVault")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	fileStore := filevault.NewFileStorer(filevault.Config{
 		Location: location,
@@ -403,7 +403,7 @@ func TestCommandSettings_ErrorOnListIfValueDoesntExistsInVault(t *testing.T) {
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
-		Name:         "Test_UpdateVault_Setting_1",
+		Name:         "Test_Error_On_No_Value_Setting_1",
 		Schedule:     "test-schedule-setting-1",
 		Repositories: nil,
 		Filename:     "test-filename-update-vault-1",
