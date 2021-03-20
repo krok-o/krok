@@ -416,14 +416,14 @@ func TestCommandSettings_ErrorOnListIfValueDoesntExistsInVault(t *testing.T) {
 
 	err = cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
-		Key:       "key",
+		Key:       "key99",
 		Value:     "value",
 		InVault:   true,
 	})
 	assert.NoError(t, err)
 	err = v.LoadSecrets()
 	assert.NoError(t, err)
-	vKey := fmt.Sprintf("command_setting_%d_%s", c.ID, "key")
+	vKey := fmt.Sprintf("command_setting_%d_%s", c.ID, "key99")
 	v.DeleteSecret(vKey)
 	err = v.SaveSecrets()
 	assert.NoError(t, err)
