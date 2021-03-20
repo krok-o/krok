@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -23,8 +25,9 @@ type Config struct {
 
 // Dependencies defines dependencies for this provider
 type Dependencies struct {
-	Logger      zerolog.Logger
-	CommandRuns providers.CommandRunStorer
+	Logger        zerolog.Logger
+	CommandRuns   providers.CommandRunStorer
+	CommandStorer providers.CommandStorer
 }
 
 // InMemoryExecuter defines an Executor which runs commands
@@ -65,8 +68,20 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 	cmds := make([]*exec.Cmd, 0)
 	// Start these here with the runner go routine
 	for _, c := range commands {
-		// TODO: find a way to define the command parameters.
-		var err error
+
+		settings, err := ime.CommandStorer.ListSettings(ctx, c.ID)
+		if err != nil {
+			ime.Logger.Debug().Err(err).Msg("Failed to get settings for command.")
+			return err
+		}
+
+		// We aren't going to save these because it could be things like tokens which are
+		// confidential.
+		var args []string
+		for _, s := range settings {
+			args = append(args, fmt.Sprintf("%s:%s", s.Key, s.Value))
+		}
+
 		commandRun := &models.CommandRun{
 			EventID:     event.ID,
 			CommandName: c.Name,
@@ -80,7 +95,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			return err
 		}
 		location := filepath.Join(c.Location, c.Name)
-		cmd := exec.Command(ime.NodePath, location)
+		cmd := exec.Command(ime.NodePath, location, strings.Join(args, ","))
 		cmds = append(cmds, cmd)
 		log.Debug().Str("location", location).Msg("Preparing to run command at location...")
 		// this needs its own context, since the context from above is already cancelled.

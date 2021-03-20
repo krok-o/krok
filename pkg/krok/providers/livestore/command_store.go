@@ -540,7 +540,7 @@ func (s *CommandStore) DeleteSetting(ctx context.Context, id int) error {
 	return nil
 }
 
-// ListSettings lists all settings for a command. This will not show values for settings which are stored in vault.
+// ListSettings lists all settings for a command.
 func (s *CommandStore) ListSettings(ctx context.Context, commandID int) ([]*models.CommandSetting, error) {
 	log := s.Logger.With().Str("func", "ListSettings").Logger()
 	// Select all commands.
@@ -578,7 +578,12 @@ func (s *CommandStore) ListSettings(ctx context.Context, commandID int) ([]*mode
 				}
 			}
 			if inVault {
-				value = "***********"
+				v, err := s.Vault.GetSecret(value)
+				if err != nil {
+					log.Debug().Err(err).Msg("Failed to get value for secret from vault.")
+					return err
+				}
+				value = string(v)
 			}
 			setting := &models.CommandSetting{
 				ID:        id,

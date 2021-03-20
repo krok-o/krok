@@ -143,7 +143,7 @@ func TestCommandSettings_Vault(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
 	setting := list[0]
-	assert.Equal(t, "***********", setting.Value)
+	assert.Equal(t, "confidential_value", setting.Value)
 
 	vKey := fmt.Sprintf("command_setting_%d_%s", c.ID, setting.Key)
 	value, err := v.GetSecret(vKey)
