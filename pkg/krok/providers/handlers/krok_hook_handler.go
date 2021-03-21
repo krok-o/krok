@@ -80,6 +80,11 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			err := fmt.Errorf("vcs provider with id %d is not supported", vid)
 			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
 		}
+		id, err := provider.GetEventID(ctx, c.Request())
+		if err != nil {
+			apiError := kerr.APIError("failed to get event ID from provider", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
 		if err := provider.ValidateRequest(ctx, c.Request(), repo.ID); err != nil {
 			apiError := kerr.APIError("failed to validate hook request", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
@@ -87,11 +92,6 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		payload, err := ioutil.ReadAll(c.Request().Body)
 		if err != nil {
 			apiError := kerr.APIError("failed to get payload", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		id, err := provider.GetEventID(ctx, c.Request())
-		if err != nil {
-			apiError := kerr.APIError("failed to get event ID from provider", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		event := &models.Event{
