@@ -30,6 +30,27 @@ func (_m *Platform) CreateHook(ctx context.Context, repo *models.Repository) err
 	return r0
 }
 
+// GetEventID provides a mock function with given fields: ctx, r
+func (_m *Platform) GetEventID(ctx context.Context, r *http.Request) (string, error) {
+	ret := _m.Called(ctx, r)
+
+	var r0 string
+	if rf, ok := ret.Get(0).(func(context.Context, *http.Request) string); ok {
+		r0 = rf(ctx, r)
+	} else {
+		r0 = ret.Get(0).(string)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *http.Request) error); ok {
+		r1 = rf(ctx, r)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // ValidateRequest provides a mock function with given fields: ctx, r, repoID
 func (_m *Platform) ValidateRequest(ctx context.Context, r *http.Request, repoID int) error {
 	ret := _m.Called(ctx, r, repoID)

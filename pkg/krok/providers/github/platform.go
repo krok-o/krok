@@ -80,6 +80,11 @@ func (g *Github) ValidateRequest(ctx context.Context, req *http.Request, repoID 
 		return err
 	}
 
+	if repoAuth == nil {
+		g.Logger.Debug().Msg("Auth is not present.")
+		return errors.New("no auth specified")
+	}
+
 	// Get the secret from the repo auth provider?
 	hook, _ := github.New(github.Options.Secret(repoAuth.Secret))
 	h, err := hook.Parse(req,
@@ -158,6 +163,15 @@ func NewGoogleGithubClient(httpClient *http.Client, repoMock GoogleGithubRepoSer
 	return GoogleGithubClient{
 		Repositories: githubClient.Repositories,
 	}
+}
+
+// GetEventID Based on the platform, retrieve the ID of the event.
+func (g *Github) GetEventID(ctx context.Context, r *http.Request) (string, error) {
+	id := r.Header.Get("X-GitHub-Delivery")
+	if id == "" {
+		return "", errors.New("event id not found for request")
+	}
+	return id, nil
 }
 
 // CreateHook can create a hook for the Github platform.

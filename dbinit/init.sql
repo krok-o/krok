@@ -4,7 +4,7 @@ create table commands (
     schedule varchar,
     filename varchar unique not null,
     hash varchar unique not null,
-    location varchar unique not null,
+    location varchar not null,
     enabled boolean not null
 );
 
@@ -68,7 +68,36 @@ create table apikeys (
 
 -- The files lock which will contain the lock for a file with a timestamp of creation.
 -- Locks that are older than 10 minutes will be purged.
+-- Note: Delete this when we remove the watcher.
 create table file_lock (
     name varchar ( 256 ) unique not null,
     lock_start date
-)
+);
+
+-- store events for a repository.
+create table events (
+    id serial primary key,
+    event_id varchar unique not null,
+    repository_id int,
+    payload varchar,
+    created_at date
+);
+
+-- store a run for a command. This is associated with an event.
+-- Note that we don't save command ID here, because it might have
+-- been already deleted when we look back to this event.
+-- So events will contain CommandRuns which save the name of the
+-- command only.
+create table command_run (
+    id serial primary key,
+    command_name varchar,
+    event_id int,
+    status varchar,
+    outcome varchar,
+    created_at date
+);
+
+-- Uncomment for testing
+-- insert into users (email, last_login, display_name) values ('skarlso777@gmail.com', now(), 'shrek');
+-- secret is 'secret'
+-- insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, now() + INTERVAL '130 days');

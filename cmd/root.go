@@ -14,6 +14,7 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
+	"github.com/krok-o/krok/pkg/krok/providers/executor"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/github"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
@@ -40,6 +41,7 @@ var (
 		plugins   plugins.Config
 		email     mailgun.Config
 		fileVault filevault.Config
+		executer  executor.Config
 	}
 )
 
@@ -74,6 +76,9 @@ func init() {
 
 	// VaultStorer config
 	flag.StringVar(&krokArgs.fileVault.Location, "file-vault-location", "/tmp/krok/vault", "--file-vault-location /tmp/krok/vault")
+
+	// Executer config
+	flag.IntVar(&krokArgs.executer.DefaultMaximumCommandRuntime, "default-maximum-command-runtime", 30, "Given in seconds.")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.
@@ -167,6 +172,22 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		APIKeys:      apiKeyStore,
 	})
 
+	commandRunStore := livestore.NewCommandRunStore(livestore.CommandRunDependencies{
+		Connector:    connector,
+		Dependencies: deps,
+	})
+
+	eventStorer := livestore.NewEventsStorer(livestore.EventsStoreDependencies{
+		Dependencies: deps,
+		Connector:    connector,
+	})
+
+	ex := executor.NewInMemoryExecuter(krokArgs.executer, executor.Dependencies{
+		Logger:        log,
+		CommandRuns:   commandRunStore,
+		CommandStorer: commandStore,
+	})
+
 	// ************************
 	// Set up the plugin watcher
 	// ************************
@@ -254,6 +275,8 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		RepositoryStore:   repoStore,
 		PlatformProviders: platformProviders,
 		Logger:            log,
+		Executer:          ex,
+		EventsStorer:      eventStorer,
 	})
 
 	uuidGenerator := providers.NewUUIDGenerator()
