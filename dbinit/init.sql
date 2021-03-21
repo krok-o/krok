@@ -4,7 +4,7 @@ create table commands (
     schedule varchar,
     filename varchar unique not null,
     hash varchar unique not null,
-    location varchar unique not null,
+    location varchar not null,
     enabled boolean not null
 );
 

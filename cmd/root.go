@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"os"
-	"os/exec"
 
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
@@ -91,12 +90,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	log := zerolog.New(out).With().
 		Timestamp().
 		Logger()
-
-	path, err := exec.LookPath("node")
-	if err != nil {
-		log.Fatal().Err(err).Msg("Node executable not found. Please make sure it's reachable and on the PATH.")
-	}
-	krokArgs.executer.NodePath = path
 
 	// TODO: Set Google OAuth2 flags are required until we can support anonymous or basic auth.
 	if krokArgs.server.GoogleClientID == "" {

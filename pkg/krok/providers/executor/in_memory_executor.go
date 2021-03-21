@@ -68,10 +68,14 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 	cmds := make([]*exec.Cmd, 0)
 	// Start these here with the runner go routine
 	for _, c := range commands {
+		if !c.Enabled {
+			log.Debug().Str("name", c.Name).Msg("Skipping as command is disabled.")
+			continue
+		}
 
 		settings, err := ime.CommandStorer.ListSettings(ctx, c.ID)
 		if err != nil {
-			ime.Logger.Debug().Err(err).Msg("Failed to get settings for command.")
+			log.Debug().Err(err).Msg("Failed to get settings for command.")
 			return err
 		}
 
@@ -95,7 +99,8 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			return err
 		}
 		location := filepath.Join(c.Location, c.Name)
-		cmd := exec.Command(ime.NodePath, location, strings.Join(args, ","))
+		// run the plugin, which should be an executable.
+		cmd := exec.Command(location, strings.Join(args, ","))
 		cmds = append(cmds, cmd)
 		log.Debug().Str("location", location).Msg("Preparing to run command at location...")
 		// this needs its own context, since the context from above is already cancelled.
