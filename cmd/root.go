@@ -267,7 +267,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	commandHandler := handlers.NewCommandsHandler(handlers.CommandsHandlerDependencies{
 		CommandStorer: commandStore,
-		TokenProvider: tp,
 		Logger:        log,
 	})
 

@@ -94,28 +94,18 @@ func (g *mockGithubPlatformProvider) CreateHook(ctx context.Context, repo *model
 }
 
 func TestRepoHandler_CreateRepository(t *testing.T) {
-	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
 	mars := &mocks.RepositoryAuth{}
 	mars.On("CreateRepositoryAuth", mock.Anything, 0, &models.Auth{Secret: "secret"}).Return(nil)
-	maka := &mockAPIKeyAuth{}
 	mg := &mockGithubPlatformProvider{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
 	cfg := RepoConfig{
 		Protocol: "http",
 		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
-		TokenProvider:    tp,
 		PlatformProviders: map[int]providers.Platform{
 			models.GITHUB: mg,
 		},
@@ -161,26 +151,16 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 }
 
 func TestRepoHandler_UpdateRepository(t *testing.T) {
-	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
-	maka := &mockAPIKeyAuth{}
 	mars := &mocks.RepositoryAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
 	cfg := RepoConfig{
 		Protocol: "http",
 		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
-		TokenProvider:    tp,
 		Auth:             mars,
 	})
 	assert.NoError(t, err)
@@ -222,7 +202,6 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 }
 
 func TestRepoHandler_GetRepository(t *testing.T) {
-	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{
 		getRepo: &models.Repository{
 			Name: "test-name",
@@ -231,27 +210,18 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 			VCS:  1,
 		},
 	}
-	maka := &mockAPIKeyAuth{}
 	mars := &mocks.RepositoryAuth{}
 	mars.On("GetRepositoryAuth", mock.Anything, 0).Return(&models.Auth{
 		Secret: "secret",
 	}, nil)
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
 	cfg := RepoConfig{
 		Protocol: "http",
 		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
-		TokenProvider:    tp,
 		Auth:             mars,
 	})
 	assert.NoError(t, err)
@@ -310,7 +280,6 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 }
 
 func TestRepoHandler_ListRepositories(t *testing.T) {
-	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{
 		listRepo: []*models.Repository{
 			{
@@ -327,23 +296,14 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 			},
 		},
 	}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
 	cfg := RepoConfig{
 		Protocol: "http",
 		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
-		TokenProvider:    tp,
 	})
 	assert.NoError(t, err)
 
@@ -367,25 +327,15 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 }
 
 func TestRepoHandler_DeleteRepository(t *testing.T) {
-	mus := &mockUserStorer{}
 	mrs := &mockRepositoryStorer{}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
 	cfg := RepoConfig{
 		Protocol: "http",
 		HookBase: "hookbase",
 	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
 		Logger:           logger,
 		RepositoryStorer: mrs,
-		TokenProvider:    tp,
 	})
 	assert.NoError(t, err)
 

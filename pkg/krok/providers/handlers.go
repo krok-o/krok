@@ -70,3 +70,12 @@ type HookHandler interface {
 	// HandleHooks handles all hooks incoming to Krok.
 	HandleHooks() echo.HandlerFunc
 }
+
+// CommandSettingsHandler defines the actions of command settings.
+type CommandSettingsHandler interface {
+	Create() echo.HandlerFunc
+	Delete() echo.HandlerFunc
+	Get() echo.HandlerFunc
+	List() echo.HandlerFunc
+	Update() echo.HandlerFunc
+}

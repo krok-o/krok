@@ -29,7 +29,6 @@ type RepoConfig struct {
 type RepoHandlerDependencies struct {
 	Auth              providers.RepositoryAuth
 	RepositoryStorer  providers.RepositoryStorer
-	TokenProvider     *TokenHandler
 	Logger            zerolog.Logger
 	PlatformProviders map[int]providers.Platform
 }
