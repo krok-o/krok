@@ -16,7 +16,7 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-func TestCommandSettingsHandler_Create(t *testing.T) {
+func TestCommandSettingsHandler_BasicFlow(t *testing.T) {
 	cs := &mocks.CommandStorer{}
 	logger := zerolog.New(os.Stderr)
 	csh := NewCommandSettingsHandler(CommandSettingsHandlerDependencies{
@@ -44,26 +44,22 @@ func TestCommandSettingsHandler_Create(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusCreated, rec.Code)
 	})
-	t.Run("create normal flow", func(tt *testing.T) {
+	t.Run("delete normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
-		cs.On("CreateSetting", mock.Anything, &models.CommandSetting{
-			CommandID: 1,
-			Key:       "key",
-			Value:     "value",
-			InVault:   false,
-		}).Return(nil)
+		cs.On("DeleteSetting", mock.Anything, 1).Return(nil)
 
-		commandSettingsPost := `{"command_id" : 1, "key" : "key", "value": "value", "in_vault": false}`
 		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/commands/setting", strings.NewReader(commandSettingsPost))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req := httptest.NewRequest(http.MethodDelete, "/", nil)
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
-		err = csh.Create()(c)
+		c.SetPath("/command/settings/:id")
+		c.SetParamNames("id")
+		c.SetParamValues("1")
+		err = csh.Delete()(c)
 		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusCreated, rec.Code)
+		assert.Equal(tt, http.StatusOK, rec.Code)
 	})
 	t.Run("update normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
