@@ -111,9 +111,9 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// command settings
 	auth.GET("/command/settings/:id", s.Dependencies.CommandSettingsHandler.Get())
 	auth.DELETE("/command/settings/:id", s.Dependencies.CommandSettingsHandler.Delete())
-	auth.POST("/command/settings", s.Dependencies.CommandSettingsHandler.List())
+	auth.POST("/command/:id/settings", s.Dependencies.CommandSettingsHandler.List())
 	auth.POST("/command/settings/update", s.Dependencies.CommandSettingsHandler.Update())
-	auth.POST("/command/settings", s.Dependencies.CommandSettingsHandler.Create())
+	auth.POST("/command/setting", s.Dependencies.CommandSettingsHandler.Create())
 
 	// api keys related actions
 	auth.POST("/user/apikey/generate/:name", s.Dependencies.APIKeyHandler.Create())
