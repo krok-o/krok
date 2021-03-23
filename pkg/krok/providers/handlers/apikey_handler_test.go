@@ -15,6 +15,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/pkg/server/middleware"
 )
@@ -45,8 +46,20 @@ func (m *mockAPIKeysStore) List(ctx context.Context, userID int) ([]*models.APIK
 	return m.keyList, nil
 }
 
+type mockAPIKeyAuth struct {
+	providers.APIKeysAuthenticator
+}
+
+func (maka *mockAPIKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
+	return nil
+}
+
+func (maka *mockAPIKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
+	return nil, nil
+}
+
 func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
-	maka := &mockAPIKeyAuth{}
+	maka := &mocks.APIKeysAuthenticator{}
 	mus := &mockUserStorer{}
 	aks := &mockAPIKeysStore{}
 	logger := zerolog.New(os.Stderr)

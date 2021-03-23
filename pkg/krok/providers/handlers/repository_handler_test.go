@@ -73,18 +73,6 @@ func (mrs *mockRepositoryStorer) Delete(ctx context.Context, id int) error {
 	return mrs.deleteErr
 }
 
-type mockAPIKeyAuth struct {
-	providers.APIKeysAuthenticator
-}
-
-func (maka *mockAPIKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
-	return nil
-}
-
-func (maka *mockAPIKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte, error) {
-	return nil, nil
-}
-
 type mockGithubPlatformProvider struct {
 	providers.Platform
 }
