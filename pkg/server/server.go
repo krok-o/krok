@@ -39,16 +39,17 @@ type KrokServer struct {
 
 // Dependencies defines needed dependencies for the krok server.
 type Dependencies struct {
-	Logger            zerolog.Logger
-	HookHandler       providers.HookHandler
-	UserMiddleware    providers.UserMiddleware
-	CommandHandler    providers.CommandHandler
-	RepositoryHandler providers.RepositoryHandler
-	APIKeyHandler     providers.APIKeysHandler
-	AuthHandler       providers.AuthHandler
-	TokenHandler      providers.TokenHandler
-	VCSTokenHandler   providers.VCSTokenHandler
-	UserTokenHandler  providers.UserTokenHandler
+	Logger                 zerolog.Logger
+	HookHandler            providers.HookHandler
+	UserMiddleware         providers.UserMiddleware
+	CommandHandler         providers.CommandHandler
+	CommandSettingsHandler providers.CommandSettingsHandler
+	RepositoryHandler      providers.RepositoryHandler
+	APIKeyHandler          providers.APIKeysHandler
+	AuthHandler            providers.AuthHandler
+	TokenHandler           providers.TokenHandler
+	VCSTokenHandler        providers.VCSTokenHandler
+	UserTokenHandler       providers.UserTokenHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -106,6 +107,13 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/update", s.Dependencies.CommandHandler.Update())
 	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
+
+	// command settings
+	auth.GET("/command/settings/:id", s.Dependencies.CommandSettingsHandler.Get())
+	auth.DELETE("/command/settings/:id", s.Dependencies.CommandSettingsHandler.Delete())
+	auth.POST("/command/:id/settings", s.Dependencies.CommandSettingsHandler.List())
+	auth.POST("/command/settings/update", s.Dependencies.CommandSettingsHandler.Update())
+	auth.POST("/command/setting", s.Dependencies.CommandSettingsHandler.Create())
 
 	// api keys related actions
 	auth.POST("/user/apikey/generate/:name", s.Dependencies.APIKeyHandler.Create())

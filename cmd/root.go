@@ -253,7 +253,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		HookBase: krokArgs.server.HookBase,
 	}, handlers.RepoHandlerDependencies{
 		RepositoryStorer:  repoStore,
-		TokenProvider:     tp,
 		Logger:            log,
 		PlatformProviders: platformProviders,
 		Auth:              a,
@@ -267,7 +266,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	commandHandler := handlers.NewCommandsHandler(handlers.CommandsHandlerDependencies{
 		CommandStorer: commandStore,
-		TokenProvider: tp,
 		Logger:        log,
 	})
 

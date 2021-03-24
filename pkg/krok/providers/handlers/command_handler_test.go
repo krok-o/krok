@@ -61,21 +61,11 @@ func (mcs *mockCommandStorer) RemoveCommandRelForRepository(ctx context.Context,
 }
 
 func TestCommandsHandler_DeleteCommand(t *testing.T) {
-	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
-		TokenProvider: tp,
 	})
 
 	t.Run("delete normal flow", func(tt *testing.T) {
@@ -127,7 +117,6 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 }
 
 func TestCommandsHandler_GetCommand(t *testing.T) {
-	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{
 		getCommand: &models.Command{
 			Name:     "test-command",
@@ -147,19 +136,10 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 			Enabled:  true,
 		},
 	}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
-		TokenProvider: tp,
 	})
 
 	t.Run("get normal flow", func(tt *testing.T) {
@@ -217,7 +197,6 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 }
 
 func TestCommandsHandler_ListCommands(t *testing.T) {
-	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{
 		commandList: []*models.Command{
 			{
@@ -240,19 +219,10 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 			},
 		},
 	}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
-		TokenProvider: tp,
 	})
 
 	t.Run("list normal flow", func(tt *testing.T) {
@@ -296,21 +266,11 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 }
 
 func TestCommandsHandler_UpdateCommand(t *testing.T) {
-	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
-		TokenProvider: tp,
 	})
 
 	t.Run("update normal flow", func(tt *testing.T) {
@@ -350,7 +310,6 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 }
 
 func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
-	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{
 		getCommand: &models.Command{
 			Name:     "test-command",
@@ -370,19 +329,10 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 			Enabled:  true,
 		},
 	}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
-		TokenProvider: tp,
 	})
 
 	t.Run("add relation happy path", func(tt *testing.T) {
@@ -453,7 +403,6 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 }
 
 func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
-	mus := &mockUserStorer{}
 	mcs := &mockCommandStorer{
 		getCommand: &models.Command{
 			Name:     "test-command",
@@ -473,19 +422,10 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 			Enabled:  true,
 		},
 	}
-	maka := &mockAPIKeyAuth{}
 	logger := zerolog.New(os.Stderr)
-	deps := Dependencies{
-		Logger:     logger,
-		UserStore:  mus,
-		APIKeyAuth: maka,
-	}
-	tp, err := NewTokenHandler(deps)
-	assert.NoError(t, err)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
-		TokenProvider: tp,
 	})
 
 	t.Run("remove relation happy path", func(tt *testing.T) {
