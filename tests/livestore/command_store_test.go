@@ -307,8 +307,6 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	}, filevault.Dependencies{Logger: logger})
 	err := fileStore.Init()
 	assert.NoError(t, err)
-	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
-	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -322,89 +320,48 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 		Connector: connector,
 	})
 	assert.NoError(t, err)
-	rp := livestore.NewRepositoryStore(livestore.RepositoryDependencies{
+	ps := livestore.NewPlatformStore(livestore.PlatformDependencies{
 		Dependencies: livestore.Dependencies{
 			Converter: env,
 			Logger:    logger,
 		},
 		Connector: connector,
-		Vault:     v,
 	})
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
-		Name:         "Test_Relationship_Flow",
-		Schedule:     "Test_Relationship_Flow-test-schedule",
-		Repositories: nil,
-		Filename:     "Test_Relationship_Flow-test-filename-create",
-		Location:     location,
-		Hash:         "Test_Relationship_Flow-hash1",
-		Enabled:      false,
+		Name:     "Test_Relationship_Flow_Platform",
+		Filename: "Test_Relationship_Flow_Platform",
+		Location: location,
+		Hash:     "Test_Relationship_Flow_Platform-hash1",
+		Enabled:  true,
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
-	// Add repository relation
-	repo, err := rp.Create(ctx, &models.Repository{
-		Name: "TestRepo1",
-		URL:  "https://github.com/Skarlso/test",
-		Auth: &models.Auth{
-			SSH:      "testSSH",
-			Username: "testUsername",
-			Password: "testPassword",
-		},
+	// Add platform relation
+	githubPlatform, err := ps.Create(ctx, &models.Platform{
+		Name:    "Github",
+		Enabled: true,
 	})
 	assert.NoError(t, err)
-	assert.NotNil(t, repo)
-	assert.NoError(t, err)
-	err = cp.AddCommandRelForRepository(ctx, c.ID, repo.ID)
-	assert.NoError(t, err)
-
-	cget, err := cp.Get(ctx, c.ID)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, cget.Repositories)
-	assert.Len(t, cget.Repositories, 1)
-
-	repositories := cget.Repositories
-	assert.NotEmpty(t, repositories)
-	assert.Len(t, repositories, 1)
-
-	// deleting a command removes the relationship from the repository
-	err = cp.Delete(ctx, cget.ID)
-	assert.NoError(t, err)
-	// get again to retrieve repository information
-	repo, err = rp.Get(ctx, repo.ID)
-	assert.NoError(t, err)
-	commands := repo.Commands
-	assert.Empty(t, commands)
-
-	// deleting the repository removes the relationship from the command
-	// Create the second command.
-	c2, err := cp.Create(ctx, &models.Command{
-		Name:         "Test_Relationship_Flow-2",
-		Schedule:     "Test_Relationship_Flow-test-schedule-2",
-		Repositories: nil,
-		Filename:     "Test_Relationship_Flow-test-filename-create-2",
-		Location:     location,
-		Hash:         "Test_Relationship_Flow-hash1-2",
-		Enabled:      false,
-	})
+	assert.NotNil(t, githubPlatform)
+	err = cp.AddCommandRelForPlatform(ctx, c.ID, githubPlatform.ID)
 	assert.NoError(t, err)
 
-	// add repository relationship
-	err = cp.AddCommandRelForRepository(ctx, c2.ID, repo.ID)
+	supported, err := cp.IsPlatformSupported(ctx, c.ID, githubPlatform.ID)
+	assert.NoError(t, err)
+	assert.True(t, supported)
+
+	supported, err = cp.IsPlatformSupported(ctx, c.ID, 999)
+	assert.Error(t, err)
+	assert.True(t, supported)
+
+	// remove the relation
+	err = cp.RemoveCommandRelForPlatform(ctx, c.ID, githubPlatform.ID)
 	assert.NoError(t, err)
 
-	// Get and check the repository connection
-	c2, err = cp.Get(ctx, c2.ID)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, c2.Repositories)
-
-	// Remove the repository
-	err = rp.Delete(ctx, repo.ID)
-	assert.NoError(t, err)
-
-	// get again to get repositories
-	c2, err = cp.Get(ctx, c2.ID)
-	assert.NoError(t, err)
-	assert.Empty(t, c2.Repositories)
+	supported, err = cp.IsPlatformSupported(ctx, c.ID, githubPlatform.ID)
+	assert.Error(t, err)
+	assert.False(t, supported)
+	assert.True(t, errors.Is(err, kerr.ErrNotFound))
 }
