@@ -803,7 +803,8 @@ func (s *CommandStore) IsPlatformSupported(ctx context.Context, commandID, platf
 	log := s.Logger.With().Int("command_id", commandID).Int("platform_id", platformID).Logger()
 	f := func(tx pgx.Tx) error {
 		query := fmt.Sprintf("select count(1) from %s where command_id = $1 and platform_id = $2", commandsPlatformsRelTable)
-		if err := tx.QueryRow(ctx, query, commandID, platformID).Scan(); err != nil {
+		var result int
+		if err := tx.QueryRow(ctx, query, commandID, platformID).Scan(&result); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: query,
