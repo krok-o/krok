@@ -29,7 +29,7 @@ create table repositories (
     id serial primary key,
     name varchar ( 256 ) unique not null,
     url varchar ( 256 ),
-    vcs int
+    vcs int 
 );
 
 create table rel_commands_repositories (
@@ -39,6 +39,28 @@ create table rel_commands_repositories (
     constraint fk_repository_id
         foreign key (repository_id)
             references repositories(id)
+            on delete cascade,
+    constraint fk_command_id
+        foreign key (command_id)
+            references commands(id)
+            on delete cascade
+);
+
+-- platforms that are supported by krok, like Github, Gitlab...
+create table platforms (
+    id serial primary key,
+    name varchar ( 256 ) unique not null,
+    enabled boolean
+);
+
+-- The relationship which defines if a command supports a given platform or not.
+create table rel_commands_platforms (
+    id serial primary key,
+    platform_id int,
+    command_id int,
+    constraint fk_platform_id
+        foreign key (platform_id)
+            references platforms(id)
             on delete cascade,
     constraint fk_command_id
         foreign key (command_id)
@@ -98,6 +120,7 @@ create table command_run (
 );
 
 -- Uncomment for testing
+-- insert into platforms (name) values ('github');
 -- insert into users (email, last_login, display_name) values ('skarlso777@gmail.com', now(), 'shrek');
 -- secret is 'secret'
 -- insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, now() + INTERVAL '130 days');

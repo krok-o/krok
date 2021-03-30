@@ -296,3 +296,115 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_hash_key\""))
 }
+
+func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandStore_PlatformRelationshipFlow")
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	fileStore := filevault.NewFileStorer(filevault.Config{
+		Location: location,
+		Key:      "password123",
+	}, filevault.Dependencies{Logger: logger})
+	err := fileStore.Init()
+	assert.NoError(t, err)
+	v := vault.NewKrokVault(vault.Dependencies{Logger: logger, Storer: fileStore})
+	assert.NoError(t, err)
+	connector := livestore.NewDatabaseConnector(livestore.Config{
+		Hostname: hostname,
+		Database: dbaccess.Db,
+		Username: dbaccess.Username,
+		Password: dbaccess.Password,
+	}, livestore.Dependencies{
+		Logger:    logger,
+		Converter: env,
+	})
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: connector,
+	})
+	assert.NoError(t, err)
+	rp := livestore.NewRepositoryStore(livestore.RepositoryDependencies{
+		Dependencies: livestore.Dependencies{
+			Converter: env,
+			Logger:    logger,
+		},
+		Connector: connector,
+		Vault:     v,
+	})
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_Relationship_Flow",
+		Schedule:     "Test_Relationship_Flow-test-schedule",
+		Repositories: nil,
+		Filename:     "Test_Relationship_Flow-test-filename-create",
+		Location:     location,
+		Hash:         "Test_Relationship_Flow-hash1",
+		Enabled:      false,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+	// Add repository relation
+	repo, err := rp.Create(ctx, &models.Repository{
+		Name: "TestRepo1",
+		URL:  "https://github.com/Skarlso/test",
+		Auth: &models.Auth{
+			SSH:      "testSSH",
+			Username: "testUsername",
+			Password: "testPassword",
+		},
+	})
+	assert.NoError(t, err)
+	assert.NotNil(t, repo)
+	assert.NoError(t, err)
+	err = cp.AddCommandRelForRepository(ctx, c.ID, repo.ID)
+	assert.NoError(t, err)
+
+	cget, err := cp.Get(ctx, c.ID)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, cget.Repositories)
+	assert.Len(t, cget.Repositories, 1)
+
+	repositories := cget.Repositories
+	assert.NotEmpty(t, repositories)
+	assert.Len(t, repositories, 1)
+
+	// deleting a command removes the relationship from the repository
+	err = cp.Delete(ctx, cget.ID)
+	assert.NoError(t, err)
+	// get again to retrieve repository information
+	repo, err = rp.Get(ctx, repo.ID)
+	assert.NoError(t, err)
+	commands := repo.Commands
+	assert.Empty(t, commands)
+
+	// deleting the repository removes the relationship from the command
+	// Create the second command.
+	c2, err := cp.Create(ctx, &models.Command{
+		Name:         "Test_Relationship_Flow-2",
+		Schedule:     "Test_Relationship_Flow-test-schedule-2",
+		Repositories: nil,
+		Filename:     "Test_Relationship_Flow-test-filename-create-2",
+		Location:     location,
+		Hash:         "Test_Relationship_Flow-hash1-2",
+		Enabled:      false,
+	})
+	assert.NoError(t, err)
+
+	// add repository relationship
+	err = cp.AddCommandRelForRepository(ctx, c2.ID, repo.ID)
+	assert.NoError(t, err)
+
+	// Get and check the repository connection
+	c2, err = cp.Get(ctx, c2.ID)
+	assert.NoError(t, err)
+	assert.NotEmpty(t, c2.Repositories)
+
+	// Remove the repository
+	err = rp.Delete(ctx, repo.ID)
+	assert.NoError(t, err)
+
+	// get again to get repositories
+	c2, err = cp.Get(ctx, c2.ID)
+	assert.NoError(t, err)
+	assert.Empty(t, c2.Repositories)
+}

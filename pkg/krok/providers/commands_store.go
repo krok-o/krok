@@ -37,4 +37,17 @@ type CommandStorer interface {
 	ListSettings(ctx context.Context, commandID int) ([]*models.CommandSetting, error)
 	GetSetting(ctx context.Context, id int) (*models.CommandSetting, error)
 	UpdateSetting(ctx context.Context, setting *models.CommandSetting) error
+
+	// Platform Relationship manager
+
+	// AddCommandRelForPlatform adds a relationship for a platform on a command. This means
+	// that this command will support this platform. If the relationship doesn't exist
+	// this command will not run on that platform.
+	AddCommandRelForPlatform(ctx context.Context, commandID int, platformID int) error
+	// RemoveCommandRelForPlatform removes the above relationship, disabling this command
+	// for that platform. Meaning this command will not be executed if that platform is
+	// detected.
+	RemoveCommandRelForPlatform(ctx context.Context, commandID int, platformID int) error
+	// IsPlatformSupported returns if a command supports a platform or not.
+	IsPlatformSupported(ctx context.Context, commandID, platformID int) (bool, error)
 }
