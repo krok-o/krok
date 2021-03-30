@@ -301,12 +301,6 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandStore_PlatformRelationshipFlow")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
-	fileStore := filevault.NewFileStorer(filevault.Config{
-		Location: location,
-		Key:      "password123",
-	}, filevault.Dependencies{Logger: logger})
-	err := fileStore.Init()
-	assert.NoError(t, err)
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
 		Database: dbaccess.Db,
@@ -353,15 +347,14 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	assert.True(t, supported)
 
 	supported, err = cp.IsPlatformSupported(ctx, c.ID, 999)
-	assert.Error(t, err)
-	assert.True(t, supported)
+	assert.NoError(t, err)
+	assert.False(t, supported)
 
 	// remove the relation
 	err = cp.RemoveCommandRelForPlatform(ctx, c.ID, githubPlatform.ID)
 	assert.NoError(t, err)
 
 	supported, err = cp.IsPlatformSupported(ctx, c.ID, githubPlatform.ID)
-	assert.Error(t, err)
+	assert.NoError(t, err)
 	assert.False(t, supported)
-	assert.True(t, errors.Is(err, kerr.ErrNotFound))
 }

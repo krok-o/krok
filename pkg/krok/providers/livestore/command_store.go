@@ -801,9 +801,9 @@ func (s *CommandStore) RemoveCommandRelForPlatform(ctx context.Context, commandI
 // IsPlatformSupported returns if a command supports a platform or not.
 func (s *CommandStore) IsPlatformSupported(ctx context.Context, commandID, platformID int) (bool, error) {
 	log := s.Logger.With().Int("command_id", commandID).Int("platform_id", platformID).Logger()
+	var result int
 	f := func(tx pgx.Tx) error {
 		query := fmt.Sprintf("select count(1) from %s where command_id = $1 and platform_id = $2", commandsPlatformsRelTable)
-		var result int
 		if err := tx.QueryRow(ctx, query, commandID, platformID).Scan(&result); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
@@ -823,5 +823,5 @@ func (s *CommandStore) IsPlatformSupported(ctx context.Context, commandID, platf
 		log.Debug().Err(err).Msg("Failed to query " + commandsPlatformsRelTable)
 		return false, err
 	}
-	return true, nil
+	return result == 1, nil
 }
