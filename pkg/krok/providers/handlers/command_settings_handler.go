@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -35,18 +34,11 @@ func NewCommandSettingsHandler(deps CommandSettingsHandlerDependencies) *Command
 // Delete deletes a setting.
 func (ch *CommandSettingsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
+		n, err := GetParamAsInt("id", c)
+		if err != nil {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		n, err := strconv.Atoi(id)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
 		ctx := c.Request().Context()
 
 		if err := ch.CommandStorer.DeleteSetting(ctx, n); err != nil {
@@ -61,18 +53,11 @@ func (ch *CommandSettingsHandler) Delete() echo.HandlerFunc {
 // List lists commands.
 func (ch *CommandSettingsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
+		n, err := GetParamAsInt("id", c)
+		if err != nil {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		n, err := strconv.Atoi(id)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
 		ctx := c.Request().Context()
 
 		list, err := ch.CommandStorer.ListSettings(ctx, n)
@@ -88,18 +73,11 @@ func (ch *CommandSettingsHandler) List() echo.HandlerFunc {
 // Get returns a specific setting.
 func (ch *CommandSettingsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
+		n, err := GetParamAsInt("id", c)
+		if err != nil {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		n, err := strconv.Atoi(id)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
 		ctx := c.Request().Context()
 
 		repo, err := ch.CommandStorer.GetSetting(ctx, n)

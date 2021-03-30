@@ -109,6 +109,8 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/update", s.Dependencies.CommandHandler.Update())
 	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
+	auth.POST("/command/add-command-rel-for-platform/:cmdid/:pid", s.Dependencies.CommandHandler.AddCommandRelForPlatform())
+	auth.POST("/command/remove-command-rel-for-platform/:cmdid/:pid", s.Dependencies.CommandHandler.RemoveCommandRelForPlatform())
 
 	// command settings
 	auth.GET("/command/settings/:id", s.Dependencies.CommandSettingsHandler.Get())

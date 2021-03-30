@@ -28,7 +28,11 @@ type CommandHandler interface {
 	AddCommandRelForRepository() echo.HandlerFunc
 	// RemoveCommandRelForRepository remove a relation to a repository for a command.
 	RemoveCommandRelForRepository() echo.HandlerFunc
-	// TODO: Add the relationship handling
+
+	// AddCommandRelForPlatform adds an entry for this command id to the given platform id.
+	AddCommandRelForPlatform() echo.HandlerFunc
+	// RemoveCommandRelForRepository remove a relation to a platform for a command.
+	RemoveCommandRelForPlatform() echo.HandlerFunc
 }
 
 // APIKeysHandler provides functions which define operations on api key pairs.

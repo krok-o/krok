@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -35,15 +34,9 @@ func NewCommandsHandler(deps CommandsHandlerDependencies) *CommandsHandler {
 // Delete deletes a command.
 func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		n, err := strconv.Atoi(id)
+		n, err := GetParamAsInt("id", c)
 		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
@@ -82,15 +75,9 @@ func (ch *CommandsHandler) List() echo.HandlerFunc {
 // Get returns a specific command.
 func (ch *CommandsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		n, err := strconv.Atoi(id)
+		n, err := GetParamAsInt("id", c)
 		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
@@ -130,26 +117,14 @@ func (ch *CommandsHandler) Update() echo.HandlerFunc {
 // AddCommandRelForRepository adds a command relationship to a repository.
 func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cmdID := c.Param("cmdid")
-		if cmdID == "" {
+		cn, err := GetParamAsInt("cmdid", c)
+		if err != nil {
 			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		repoID := c.Param("repoid")
-		if repoID == "" {
-			apiError := kerr.APIError("invalid repository id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		cn, err := strconv.Atoi(cmdID)
+		rn, err := GetParamAsInt("repoid", c)
 		if err != nil {
-			apiError := kerr.APIError("failed to convert command id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-		rn, err := strconv.Atoi(repoID)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert repository id to number", http.StatusBadRequest, err)
+			apiError := kerr.APIError("invalid repo id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		ctx := c.Request().Context()
@@ -165,27 +140,14 @@ func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 // RemoveCommandRelForRepository removes a relationship of a command from a repository.
 func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		cmdID := c.Param("cmdid")
-		if cmdID == "" {
+		cn, err := GetParamAsInt("cmdid", c)
+		if err != nil {
 			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		repoID := c.Param("repoid")
-		if repoID == "" {
-			apiError := kerr.APIError("invalid repository id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		cn, err := strconv.Atoi(cmdID)
+		rn, err := GetParamAsInt("repoid", c)
 		if err != nil {
-			apiError := kerr.APIError("failed to convert command id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		rn, err := strconv.Atoi(repoID)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert repository id to number", http.StatusBadRequest, err)
+			apiError := kerr.APIError("invalid repo id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
@@ -194,6 +156,65 @@ func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 		if err := ch.CommandStorer.RemoveCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("RemoveCommandRelForRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to remove command relationship to repository", http.StatusBadRequest, err))
+		}
+
+		return c.NoContent(http.StatusOK)
+	}
+}
+
+// AddCommandRelForPlatform adds a command relationship to a platform.
+func (ch *CommandsHandler) AddCommandRelForPlatform() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		cn, err := GetParamAsInt("cmdid", c)
+		if err != nil {
+			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		pid, err := GetParamAsInt("pid", c)
+		if err != nil {
+			apiError := kerr.APIError("invalid platform id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		found := false
+		for _, p := range models.SupportedPlatforms {
+			if p.ID == pid {
+				found = true
+				break
+			}
+		}
+		if !found {
+			apiError := kerr.APIError("patform id not found in supported platforms", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		ctx := c.Request().Context()
+
+		if err := ch.CommandStorer.AddCommandRelForPlatform(ctx, cn, pid); err != nil {
+			ch.Logger.Debug().Err(err).Msg("AddCommandRelForPlatform failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to add command relationship to platform", http.StatusBadRequest, err))
+		}
+		return c.NoContent(http.StatusOK)
+	}
+}
+
+// RemoveCommandRelForPlatform removes a relationship of a command from a platform.
+func (ch *CommandsHandler) RemoveCommandRelForPlatform() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		cn, err := GetParamAsInt("cmdid", c)
+		if err != nil {
+			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+		pid, err := GetParamAsInt("pid", c)
+		if err != nil {
+			apiError := kerr.APIError("invalid platform id", http.StatusBadRequest, nil)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
+
+		ctx := c.Request().Context()
+
+		if err := ch.CommandStorer.RemoveCommandRelForPlatform(ctx, cn, pid); err != nil {
+			ch.Logger.Debug().Err(err).Msg("RemoveCommandRelForPlatform failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to remove command relationship to platform", http.StatusBadRequest, err))
 		}
 
 		return c.NoContent(http.StatusOK)
