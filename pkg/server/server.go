@@ -50,6 +50,7 @@ type Dependencies struct {
 	TokenHandler           providers.TokenHandler
 	VCSTokenHandler        providers.VCSTokenHandler
 	UserTokenHandler       providers.UserTokenHandler
+	SupportedPlatformList  providers.SupportedPlatformListHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -82,6 +83,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	e.POST("/auth/refresh", s.AuthHandler.Refresh())
 	e.GET("/auth/login", s.AuthHandler.OAuthLogin())
 	e.GET("/auth/callback", s.AuthHandler.OAuthCallback())
+	e.GET("/supported-platforms", s.SupportedPlatformList.ListSupportedPlatforms())
 
 	// Routes
 	// This is the general format of a hook callback url for a repository.

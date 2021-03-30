@@ -314,13 +314,6 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 		Connector: connector,
 	})
 	assert.NoError(t, err)
-	ps := livestore.NewPlatformStore(livestore.PlatformDependencies{
-		Dependencies: livestore.Dependencies{
-			Converter: env,
-			Logger:    logger,
-		},
-		Connector: connector,
-	})
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
@@ -332,17 +325,10 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
-	// Add platform relation
-	githubPlatform, err := ps.Create(ctx, &models.Platform{
-		Name:    "Github",
-		Enabled: true,
-	})
-	assert.NoError(t, err)
-	assert.NotNil(t, githubPlatform)
-	err = cp.AddCommandRelForPlatform(ctx, c.ID, githubPlatform.ID)
+	err = cp.AddCommandRelForPlatform(ctx, c.ID, models.GITHUB)
 	assert.NoError(t, err)
 
-	supported, err := cp.IsPlatformSupported(ctx, c.ID, githubPlatform.ID)
+	supported, err := cp.IsPlatformSupported(ctx, c.ID, models.GITHUB)
 	assert.NoError(t, err)
 	assert.True(t, supported)
 
@@ -351,10 +337,10 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	assert.False(t, supported)
 
 	// remove the relation
-	err = cp.RemoveCommandRelForPlatform(ctx, c.ID, githubPlatform.ID)
+	err = cp.RemoveCommandRelForPlatform(ctx, c.ID, models.GITHUB)
 	assert.NoError(t, err)
 
-	supported, err = cp.IsPlatformSupported(ctx, c.ID, githubPlatform.ID)
+	supported, err = cp.IsPlatformSupported(ctx, c.ID, models.GITHUB)
 	assert.NoError(t, err)
 	assert.False(t, supported)
 }

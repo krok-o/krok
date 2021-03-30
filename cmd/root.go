@@ -307,6 +307,8 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		UATGenerator: auth.NewUserTokenGenerator(),
 	})
 
+	supportedPlatformListHandler := handlers.NewSupportedPlatformListHandler()
+
 	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserMiddlewareConfig{
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 		CookieName:     handlers.AccessTokenCookie,
@@ -320,16 +322,17 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// ************************
 
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
-		Logger:            log,
-		HookHandler:       hookHandler,
-		UserMiddleware:    userMiddleware,
-		CommandHandler:    commandHandler,
-		RepositoryHandler: repoHandler,
-		APIKeyHandler:     apiKeysHandler,
-		AuthHandler:       authHandler,
-		TokenHandler:      tp,
-		VCSTokenHandler:   vcsTokenHandler,
-		UserTokenHandler:  userTokenHandler,
+		Logger:                log,
+		HookHandler:           hookHandler,
+		UserMiddleware:        userMiddleware,
+		CommandHandler:        commandHandler,
+		RepositoryHandler:     repoHandler,
+		APIKeyHandler:         apiKeysHandler,
+		AuthHandler:           authHandler,
+		TokenHandler:          tp,
+		VCSTokenHandler:       vcsTokenHandler,
+		UserTokenHandler:      userTokenHandler,
+		SupportedPlatformList: supportedPlatformListHandler,
 	})
 
 	// Run service & server

@@ -46,22 +46,14 @@ create table rel_commands_repositories (
             on delete cascade
 );
 
--- platforms that are supported by krok, like Github, Gitlab...
-create table platforms (
-    id serial primary key,
-    name varchar ( 256 ) unique not null,
-    enabled boolean
-);
-
 -- The relationship which defines if a command supports a given platform or not.
+-- platform_id is a hardcoded value and only defined in Krok.
+-- It won't be something that is configurable. More will be added as more
+-- platforms start to be supported.
 create table rel_commands_platforms (
     id serial primary key,
     platform_id int,
     command_id int,
-    constraint fk_platform_id
-        foreign key (platform_id)
-            references platforms(id)
-            on delete cascade,
     constraint fk_command_id
         foreign key (command_id)
             references commands(id)

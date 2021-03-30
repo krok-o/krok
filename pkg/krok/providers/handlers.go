@@ -79,3 +79,7 @@ type CommandSettingsHandler interface {
 	List() echo.HandlerFunc
 	Update() echo.HandlerFunc
 }
+
+type SupportedPlatformListHandler interface {
+	ListSupportedPlatforms() echo.HandlerFunc
+}
