@@ -41,12 +41,13 @@ func (e *EventsStore) Create(ctx context.Context, event *models.Event) (*models.
 	log := e.Logger.With().Str("event_id", event.EventID).Int("repository_id", event.RepositoryID).Logger()
 	var returnID int
 	f := func(tx pgx.Tx) error {
-		query := fmt.Sprintf("insert into %s(event_id, created_at, repository_id, payload) values($1, $2, $3, $4) returning id", eventsStoreTable)
+		query := fmt.Sprintf("insert into %s(event_id, created_at, repository_id, payload, vcs) values($1, $2, $3, $4, $5) returning id", eventsStoreTable)
 		row := tx.QueryRow(ctx, query,
 			event.EventID,
 			event.CreateAt,
 			event.RepositoryID,
-			event.Payload)
+			event.Payload,
+			event.VCS)
 		if err := row.Scan(&returnID); err != nil {
 			log.Debug().Err(err).Str("query", query).Msg("Failed to scan row.")
 			return &kerr.QueryError{
@@ -75,7 +76,7 @@ func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 	// Select all commands.
 	result := make([]*models.Event, 0)
 	f := func(tx pgx.Tx) error {
-		sql := fmt.Sprintf("select id, event_id, repository_id, created_at from %s where repository_id = $1", eventsStoreTable)
+		sql := fmt.Sprintf("select id, event_id, repository_id, created_at, vcs from %s where repository_id = $1", eventsStoreTable)
 		args := []interface{}{
 			repoID,
 		}
@@ -107,8 +108,9 @@ func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 				storedEventID      string
 				storedRepositoryID int
 				storedCreatedAt    time.Time
+				storedVCS          int
 			)
-			if err := rows.Scan(&storedID, &storedEventID, &storedRepositoryID, &storedCreatedAt); err != nil {
+			if err := rows.Scan(&storedID, &storedEventID, &storedRepositoryID, &storedCreatedAt, &storedVCS); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: sql,
@@ -120,6 +122,7 @@ func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 				EventID:      storedEventID,
 				CreateAt:     storedCreatedAt,
 				RepositoryID: storedRepositoryID,
+				VCS:          storedVCS,
 			}
 			result = append(result, event)
 		}
@@ -139,11 +142,11 @@ func (e *EventsStore) GetEvent(ctx context.Context, id int) (*models.Event, erro
 	result := &models.Event{}
 	f := func(tx pgx.Tx) error {
 		var (
-			storedID, repoID int
-			eventID, payload string
-			createdAt        time.Time
+			storedID, repoID, vcs int
+			eventID, payload      string
+			createdAt             time.Time
 		)
-		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, event_id, created_at, repository_id, payload from %s where id=$1", eventsStoreTable), id).Scan(&storedID, &eventID, &createdAt, &repoID, &payload); err != nil {
+		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, event_id, created_at, repository_id, payload, vcs from %s where id=$1", eventsStoreTable), id).Scan(&storedID, &eventID, &createdAt, &repoID, &payload, &vcs); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select id in events",
@@ -160,6 +163,7 @@ func (e *EventsStore) GetEvent(ctx context.Context, id int) (*models.Event, erro
 		result.EventID = eventID
 		result.CreateAt = createdAt
 		result.Payload = payload
+		result.VCS = vcs
 		return nil
 	}
 	if err := e.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {

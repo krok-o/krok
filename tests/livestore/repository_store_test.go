@@ -243,7 +243,7 @@ func TestRepositoryStore_Create_WithCommands(t *testing.T) {
 	repo, err := rp.Create(ctx, &models.Repository{
 		Name: "TestRepo_Create_WithCommands",
 		URL:  "https://github.com/krok-o/test",
-		VCS:  models.BITBUCKET,
+		VCS:  models.GITEA,
 	})
 	assert.NoError(t, err)
 	assert.True(t, repo.ID > 0)

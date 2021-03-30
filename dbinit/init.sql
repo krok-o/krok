@@ -46,6 +46,20 @@ create table rel_commands_repositories (
             on delete cascade
 );
 
+-- The relationship which defines if a command supports a given platform or not.
+-- platform_id is a hardcoded value and only defined in Krok.
+-- It won't be something that is configurable. More will be added as more
+-- platforms start to be supported.
+create table rel_commands_platforms (
+    id serial primary key,
+    platform_id int,
+    command_id int,
+    constraint fk_command_id
+        foreign key (command_id)
+            references commands(id)
+            on delete cascade
+);
+
 create table users (
     id serial primary key,
     -- email is coming from openid registration.
@@ -80,7 +94,8 @@ create table events (
     event_id varchar unique not null,
     repository_id int,
     payload varchar,
-    created_at date
+    created_at date,
+    vcs int
 );
 
 -- store a run for a command. This is associated with an event.

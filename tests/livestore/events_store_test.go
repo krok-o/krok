@@ -37,6 +37,7 @@ func TestEventsStore_Create(t *testing.T) {
 		RepositoryID: 1,
 		CommandRuns:  make([]*models.CommandRun, 0),
 		Payload:      "{}",
+		VCS:          1,
 	})
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -47,6 +48,7 @@ func TestEventsStore_Create(t *testing.T) {
 		RepositoryID: 1,
 		CommandRuns:  make([]*models.CommandRun, 0),
 		Payload:      "{}",
+		VCS:          1,
 	})
 	assert.Error(t, err)
 }
@@ -83,6 +85,7 @@ func TestEventsStore_GetWithRuns(t *testing.T) {
 		CreateAt:     time.Now(),
 		RepositoryID: 1,
 		Payload:      "{}",
+		VCS:          1,
 	})
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -137,6 +140,7 @@ func TestEventsStore_List(t *testing.T) {
 			CreateAt:     time.Now(),
 			RepositoryID: 1,
 			Payload:      "{}",
+			VCS:          1,
 		})
 		assert.NoError(t, err)
 		assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -160,6 +164,7 @@ func TestEventsStore_List(t *testing.T) {
 			CreateAt:     time.Date(2021, 03, 12, 13, 0, 0, 0, time.UTC),
 			RepositoryID: 1,
 			Payload:      "{}",
+			VCS:          1,
 		})
 		assert.NoError(t, err)
 		assert.NotEqual(t, 0, event1.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -168,6 +173,7 @@ func TestEventsStore_List(t *testing.T) {
 			CreateAt:     time.Date(2005, 03, 12, 13, 0, 0, 0, time.UTC),
 			RepositoryID: 1,
 			Payload:      "{}",
+			VCS:          1,
 		})
 		assert.NoError(t, err)
 		assert.NotEqual(t, 0, event2.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -209,6 +215,7 @@ func TestEventsStore_List(t *testing.T) {
 			CreateAt:     time.Date(2005, 03, 12, 13, 1, 0, 0, time.UTC),
 			RepositoryID: 1,
 			Payload:      "{}",
+			VCS:          1,
 		})
 		assert.NoError(tt, err)
 		_, err = es.Create(ctx, &models.Event{
@@ -216,6 +223,7 @@ func TestEventsStore_List(t *testing.T) {
 			CreateAt:     time.Date(2005, 03, 12, 13, 2, 0, 0, time.UTC),
 			RepositoryID: 1,
 			Payload:      "{}",
+			VCS:          1,
 		})
 		assert.NoError(tt, err)
 		event3, err := es.Create(ctx, &models.Event{
@@ -223,6 +231,7 @@ func TestEventsStore_List(t *testing.T) {
 			CreateAt:     time.Date(2005, 03, 12, 13, 3, 0, 0, time.UTC),
 			RepositoryID: 1,
 			Payload:      "{}",
+			VCS:          1,
 		})
 		assert.NoError(tt, err)
 

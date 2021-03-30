@@ -1,11 +1,9 @@
 package handlers
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/labstack/echo/v4"
@@ -41,25 +39,13 @@ func NewHookHandler(deps HookDependencies) *KrokHookHandler {
 // HandleHooks creates a hook handler.
 func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		getID := func(id string) (int, error) {
-			i := c.Param(id)
-			if i == "" {
-				return 0, errors.New("id is empty")
-			}
-
-			n, err := strconv.Atoi(i)
-			if err != nil {
-				return 0, errors.New("parameter is not a valid integer")
-			}
-			return n, nil
-		}
-		rid, err := getID("rid")
+		rid, err := GetParamAsInt("rid", c)
 		if err != nil {
 			apiError := kerr.APIError("invalid repository id", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
-		vid, err := getID("vid")
+		vid, err := GetParamAsInt("vid", c)
 		if err != nil {
 			apiError := kerr.APIError("invalid platform id", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
@@ -99,6 +85,7 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			CreateAt:     time.Now(), // TODO: replace this with the timer thingy.
 			EventID:      id,
 			Payload:      string(payload),
+			VCS:          vid,
 		}
 		// Create an ID for this event from the database.
 		storedEvent, err := k.EventsStorer.Create(ctx, event)

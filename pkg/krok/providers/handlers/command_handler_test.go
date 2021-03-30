@@ -11,8 +11,10 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -490,6 +492,209 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 		c := e.NewContext(req, rec)
 		c.SetPath("/command/remove-command-rel-for-repository/:cmdid/:repoid")
 		err = ch.RemoveCommandRelForRepository()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestCommandsHandler_AddCommandRelForPlatform(t *testing.T) {
+	mcs := &mocks.CommandStorer{}
+	mcs.On("Get", mock.Anything, 0).Return(&models.Command{
+		Name:     "test-command",
+		ID:       0,
+		Schedule: "* * * * *",
+		Repositories: []*models.Repository{
+			{
+				Name: "test-repo",
+				ID:   0,
+				URL:  "https://google.com",
+				VCS:  1,
+			},
+		},
+		Filename: "filename",
+		Location: "location",
+		Hash:     "hash",
+		Enabled:  true,
+	}, nil)
+	logger := zerolog.New(os.Stderr)
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
+		Logger:        logger,
+		CommandStorer: mcs,
+	})
+
+	t.Run("add relation happy path", func(tt *testing.T) {
+		mcs.On("AddCommandRelForPlatform", mock.Anything, 0, 1).Return(nil)
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-platform/:cmdid/:pid")
+		c.SetParamNames("cmdid", "pid")
+		c.SetParamValues("0", "1")
+		err = ch.AddCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+	})
+
+	t.Run("add relation invalid command id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-platform/:cmdid/:pid")
+		c.SetParamNames("cmdid", "pid")
+		c.SetParamValues("invalid", "0")
+		err = ch.AddCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("add relation invalid platform id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-platform/:cmdid/:pid")
+		c.SetParamNames("cmdid", "pid")
+		c.SetParamValues("0", "invalid")
+		err = ch.AddCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("add relation empty id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-repository/:cmdid/:pid")
+		err = ch.AddCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("platform id does not exist", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/add-command-rel-for-platform/:cmdid/:pid")
+		c.SetParamNames("cmdid", "pid")
+		c.SetParamValues("0", "999")
+		err = ch.AddCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestCommandsHandler_RemoveCommandRelForPlatform(t *testing.T) {
+	mcs := &mocks.CommandStorer{}
+	mcs.On("Get", mock.Anything, 0).Return(&models.Command{
+		Name:     "test-command",
+		ID:       0,
+		Schedule: "* * * * *",
+		Repositories: []*models.Repository{
+			{
+				Name: "test-repo",
+				ID:   0,
+				URL:  "https://google.com",
+				VCS:  1,
+			},
+		},
+		Filename: "filename",
+		Location: "location",
+		Hash:     "hash",
+		Enabled:  true,
+	}, nil)
+	logger := zerolog.New(os.Stderr)
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
+		Logger:        logger,
+		CommandStorer: mcs,
+	})
+
+	t.Run("remove relation happy path", func(tt *testing.T) {
+		mcs.On("RemoveCommandRelForPlatform", mock.Anything, 0, 1).Return(nil)
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-platform/:cmdid/:pid")
+		c.SetParamNames("cmdid", "pid")
+		c.SetParamValues("0", "1")
+		err = ch.RemoveCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+	})
+
+	t.Run("remove relation invalid command id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-platform/:cmdid/:pid")
+		c.SetParamNames("cmdid", "pid")
+		c.SetParamValues("invalid", "0")
+		err = ch.RemoveCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("remove relation invalid repo id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-platform/:cmdid/:pid")
+		c.SetParamNames("cmdid", "pid")
+		c.SetParamValues("0", "invalid")
+		err = ch.RemoveCommandRelForPlatform()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
+	t.Run("remove relation empty id", func(tt *testing.T) {
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		c.SetPath("/command/remove-command-rel-for-platform/:cmdid/:pid")
+		err = ch.RemoveCommandRelForPlatform()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
 	})

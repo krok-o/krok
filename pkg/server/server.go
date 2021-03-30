@@ -50,6 +50,7 @@ type Dependencies struct {
 	TokenHandler           providers.TokenHandler
 	VCSTokenHandler        providers.VCSTokenHandler
 	UserTokenHandler       providers.UserTokenHandler
+	SupportedPlatformList  providers.SupportedPlatformListHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -82,6 +83,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	e.POST("/auth/refresh", s.AuthHandler.Refresh())
 	e.GET("/auth/login", s.AuthHandler.OAuthLogin())
 	e.GET("/auth/callback", s.AuthHandler.OAuthCallback())
+	e.GET("/supported-platforms", s.SupportedPlatformList.ListSupportedPlatforms())
 
 	// Routes
 	// This is the general format of a hook callback url for a repository.
@@ -107,6 +109,8 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/update", s.Dependencies.CommandHandler.Update())
 	auth.POST("/command/add-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.AddCommandRelForRepository())
 	auth.POST("/command/remove-command-rel-for-repository/:cmdid/:repoid", s.Dependencies.CommandHandler.RemoveCommandRelForRepository())
+	auth.POST("/command/add-command-rel-for-platform/:cmdid/:pid", s.Dependencies.CommandHandler.AddCommandRelForPlatform())
+	auth.POST("/command/remove-command-rel-for-platform/:cmdid/:pid", s.Dependencies.CommandHandler.RemoveCommandRelForPlatform())
 
 	// command settings
 	auth.GET("/command/settings/:id", s.Dependencies.CommandSettingsHandler.Get())

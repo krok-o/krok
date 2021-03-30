@@ -7,7 +7,7 @@ import (
 // ListOptions provides options for List operations with additional filters.
 type ListOptions struct {
 	Name string `json:"name,omitempty"`
-	// List all repositories for Git, Gitea...
+	// List all entries for Git, Gitea...
 	VCS int `json:"vcs,omitempty"`
 	// Current Page
 	Page int `json:"page,omitempty"`

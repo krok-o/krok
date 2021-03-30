@@ -296,3 +296,51 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_hash_key\""))
 }
+
+func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandStore_PlatformRelationshipFlow")
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	connector := livestore.NewDatabaseConnector(livestore.Config{
+		Hostname: hostname,
+		Database: dbaccess.Db,
+		Username: dbaccess.Username,
+		Password: dbaccess.Password,
+	}, livestore.Dependencies{
+		Logger:    logger,
+		Converter: env,
+	})
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: connector,
+	})
+	assert.NoError(t, err)
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:     "Test_Relationship_Flow_Platform",
+		Filename: "Test_Relationship_Flow_Platform",
+		Location: location,
+		Hash:     "Test_Relationship_Flow_Platform-hash1",
+		Enabled:  true,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+	err = cp.AddCommandRelForPlatform(ctx, c.ID, models.GITHUB)
+	assert.NoError(t, err)
+
+	supported, err := cp.IsPlatformSupported(ctx, c.ID, models.GITHUB)
+	assert.NoError(t, err)
+	assert.True(t, supported)
+
+	supported, err = cp.IsPlatformSupported(ctx, c.ID, 999)
+	assert.NoError(t, err)
+	assert.False(t, supported)
+
+	// remove the relation
+	err = cp.RemoveCommandRelForPlatform(ctx, c.ID, models.GITHUB)
+	assert.NoError(t, err)
+
+	supported, err = cp.IsPlatformSupported(ctx, c.ID, models.GITHUB)
+	assert.NoError(t, err)
+	assert.False(t, supported)
+}

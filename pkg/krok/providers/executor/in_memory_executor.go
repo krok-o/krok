@@ -73,6 +73,14 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			continue
 		}
 
+		if ok, err := ime.CommandStorer.IsPlatformSupported(ctx, c.ID, event.VCS); err != nil {
+			log.Debug().Err(err).Msg("Failed to get is platform is supported by command.")
+			return err
+		} else if !ok {
+			log.Debug().Str("name", c.Name).Int("vcs", event.VCS).Msg("Command does not support platform.")
+			continue
+		}
+
 		settings, err := ime.CommandStorer.ListSettings(ctx, c.ID)
 		if err != nil {
 			log.Debug().Err(err).Msg("Failed to get settings for command.")
@@ -104,7 +112,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		cmds = append(cmds, cmd)
 		log.Debug().Str("location", location).Msg("Preparing to run command at location...")
 		// this needs its own context, since the context from above is already cancelled.
-		go ime.runCommand(context.Background(), cmd, commandRun.ID, []byte(event.Payload))
+		go ime.runCommand(cmd, commandRun.ID, []byte(event.Payload))
 	}
 	ime.runsLock.Lock()
 	ime.runs[event.ID] = cmds
@@ -114,11 +122,11 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 
 // runCommand takes a single command and executes it, waiting for it to finish,
 // or time out. Either way, it will update the corresponding command row.
-func (ime *InMemoryExecuter) runCommand(ctx context.Context, cmd *exec.Cmd, commandRunID int, payload []byte) {
+func (ime *InMemoryExecuter) runCommand(cmd *exec.Cmd, commandRunID int, payload []byte) {
 	done := make(chan error, 1)
 	update := func(status string, outcome string) {
 		ime.Logger.Debug().Int("command_run_id", commandRunID).Str("status", status).Str("outcome", outcome).Msg("Updating command run entry.")
-		if err := ime.CommandRuns.UpdateRunStatus(ctx, commandRunID, status, outcome); err != nil {
+		if err := ime.CommandRuns.UpdateRunStatus(context.Background(), commandRunID, status, outcome); err != nil {
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
 		}
 	}

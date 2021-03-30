@@ -39,6 +39,20 @@ func (_m *CommandStorer) AcquireLock(ctx context.Context, name string) (io.Close
 	return r0, r1
 }
 
+// AddCommandRelForPlatform provides a mock function with given fields: ctx, commandID, platformID
+func (_m *CommandStorer) AddCommandRelForPlatform(ctx context.Context, commandID int, platformID int) error {
+	ret := _m.Called(ctx, commandID, platformID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) error); ok {
+		r0 = rf(ctx, commandID, platformID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // AddCommandRelForRepository provides a mock function with given fields: ctx, commandID, repositoryID
 func (_m *CommandStorer) AddCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error {
 	ret := _m.Called(ctx, commandID, repositoryID)
@@ -187,6 +201,27 @@ func (_m *CommandStorer) GetSetting(ctx context.Context, id int) (*models.Comman
 	return r0, r1
 }
 
+// IsPlatformSupported provides a mock function with given fields: ctx, commandID, platformID
+func (_m *CommandStorer) IsPlatformSupported(ctx context.Context, commandID int, platformID int) (bool, error) {
+	ret := _m.Called(ctx, commandID, platformID)
+
+	var r0 bool
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) bool); ok {
+		r0 = rf(ctx, commandID, platformID)
+	} else {
+		r0 = ret.Get(0).(bool)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int, int) error); ok {
+		r1 = rf(ctx, commandID, platformID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // List provides a mock function with given fields: ctx, opts
 func (_m *CommandStorer) List(ctx context.Context, opts *models.ListOptions) ([]*models.Command, error) {
 	ret := _m.Called(ctx, opts)
@@ -231,6 +266,20 @@ func (_m *CommandStorer) ListSettings(ctx context.Context, commandID int) ([]*mo
 	}
 
 	return r0, r1
+}
+
+// RemoveCommandRelForPlatform provides a mock function with given fields: ctx, commandID, platformID
+func (_m *CommandStorer) RemoveCommandRelForPlatform(ctx context.Context, commandID int, platformID int) error {
+	ret := _m.Called(ctx, commandID, platformID)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(context.Context, int, int) error); ok {
+		r0 = rf(ctx, commandID, platformID)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
 }
 
 // RemoveCommandRelForRepository provides a mock function with given fields: ctx, commandID, repositoryID

@@ -739,3 +739,89 @@ func (s *CommandStore) UpdateSetting(ctx context.Context, setting *models.Comman
 	}
 	return nil
 }
+
+// AddCommandRelForPlatform adds a relationship for a platform on a command. This means
+// that this command will support this platform. If the relationship doesn't exist
+// this command will not run on that platform.
+func (s *CommandStore) AddCommandRelForPlatform(ctx context.Context, commandID int, platformID int) error {
+	log := s.Logger.With().Str("func", "AddCommandRelForPlatform").Int("command_id", commandID).Int("platform_id", platformID).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(command_id, platform_id) values($1, $2)", commandsPlatformsRelTable),
+			commandID, platformID); err != nil {
+			log.Debug().Err(err).Msg("Failed to create relationship between command and platform.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "insert into " + commandsPlatformsRelTable,
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.ErrNoRowsAffected,
+				Query: "insert into " + commandsPlatformsRelTable,
+			}
+		}
+		return nil
+	}
+
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to insert into " + commandsPlatformsRelTable)
+		return err
+	}
+	return nil
+}
+
+// RemoveCommandRelForPlatform removes the above relationship, disabling this command
+// for that platform. Meaning this command will not be executed if that platform is
+// detected.
+func (s *CommandStore) RemoveCommandRelForPlatform(ctx context.Context, commandID int, platformID int) error {
+	log := s.Logger.With().Str("func", "RemoveCommandRelForPlatform").Int("command_id", commandID).Int("platform_id", platformID).Logger()
+	f := func(tx pgx.Tx) error {
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where command_id = $1 and platform_id = $2", commandsPlatformsRelTable),
+			commandID, platformID); err != nil {
+			log.Debug().Err(err).Msg("Failed to remove relationship for command and platform.")
+			return &kerr.QueryError{
+				Err:   err,
+				Query: "delete from " + commandsPlatformsRelTable,
+			}
+		} else if tags.RowsAffected() == 0 {
+			return &kerr.QueryError{
+				Err:   kerr.ErrNoRowsAffected,
+				Query: "delete from " + commandsPlatformsRelTable,
+			}
+		}
+		return nil
+	}
+
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to delete from " + commandsPlatformsRelTable)
+		return err
+	}
+	return nil
+}
+
+// IsPlatformSupported returns if a command supports a platform or not.
+func (s *CommandStore) IsPlatformSupported(ctx context.Context, commandID, platformID int) (bool, error) {
+	log := s.Logger.With().Int("command_id", commandID).Int("platform_id", platformID).Logger()
+	var result int
+	f := func(tx pgx.Tx) error {
+		query := fmt.Sprintf("select count(1) from %s where command_id = $1 and platform_id = $2", commandsPlatformsRelTable)
+		if err := tx.QueryRow(ctx, query, commandID, platformID).Scan(&result); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: query,
+					Err:   kerr.ErrNotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query row.")
+			return &kerr.QueryError{
+				Query: query,
+				Err:   err,
+			}
+		}
+		return nil
+	}
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to query " + commandsPlatformsRelTable)
+		return false, err
+	}
+	return result == 1, nil
+}

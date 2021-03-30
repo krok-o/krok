@@ -16,6 +16,7 @@ import (
 const (
 	timeoutForTransactions       = 1 * time.Minute
 	commandsRepositoriesRelTable = "rel_commands_repositories"
+	commandsPlatformsRelTable    = "rel_commands_platforms"
 	databaseType                 = "postgres"
 )
 

@@ -4,7 +4,6 @@ import (
 	"crypto/md5"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -106,19 +105,11 @@ func (a *APIKeysHandler) Delete() echo.HandlerFunc {
 			a.Logger.Debug().Err(err).Msg("error getting user context")
 			return c.String(http.StatusInternalServerError, "failed to get user context")
 		}
-
-		kid := c.Param("keyid")
-		if kid == "" {
+		kn, err := GetParamAsInt("keyid", c)
+		if err != nil {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-
-		kn, err := strconv.Atoi(kid)
-		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
 		ctx := c.Request().Context()
 		if err := a.APIKeysStore.Delete(ctx, kn, uc.UserID); err != nil {
 			a.Logger.Debug().Err(err).Msg("APIKey Delete failed.")
@@ -158,15 +149,9 @@ func (a *APIKeysHandler) Get() echo.HandlerFunc {
 			return c.String(http.StatusInternalServerError, "failed to get user context")
 		}
 
-		kid := c.Param("keyid")
-		if kid == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		kn, err := strconv.Atoi(kid)
+		kn, err := GetParamAsInt("keyid", c)
 		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 

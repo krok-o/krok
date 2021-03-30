@@ -106,15 +106,9 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 // TODO: Delete the hook here as well?
 func (r *RepoHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		n, err := strconv.Atoi(id)
+		n, err := GetParamAsInt("id", c)
 		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		ctx := c.Request().Context()
@@ -131,15 +125,9 @@ func (r *RepoHandler) Delete() echo.HandlerFunc {
 // Get retrieves a repository and displays the unique URL for which this repo is responsible for.
 func (r *RepoHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		id := c.Param("id")
-		if id == "" {
-			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		n, err := strconv.Atoi(id)
+		n, err := GetParamAsInt("id", c)
 		if err != nil {
-			apiError := kerr.APIError("failed to convert id to number", http.StatusBadRequest, err)
+			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 		ctx := c.Request().Context()
