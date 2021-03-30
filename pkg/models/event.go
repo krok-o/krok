@@ -13,4 +13,5 @@ type Event struct {
 	RepositoryID int           `json:"repository_id"`
 	CommandRuns  []*CommandRun `json:"command_runs"`
 	Payload      string        `json:"payload"`
+	VCS          int           `json:"vcs"`
 }

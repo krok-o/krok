@@ -73,6 +73,14 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			continue
 		}
 
+		if ok, err := ime.CommandStorer.IsPlatformSupported(ctx, c.ID, event.VCS); err != nil {
+			log.Debug().Err(err).Msg("Failed to get is platform is supported by command.")
+			return err
+		} else if !ok {
+			log.Debug().Str("name", c.Name).Int("vcs", event.VCS).Msg("Command does not support platform.")
+			continue
+		}
+
 		settings, err := ime.CommandStorer.ListSettings(ctx, c.ID)
 		if err != nil {
 			log.Debug().Err(err).Msg("Failed to get settings for command.")

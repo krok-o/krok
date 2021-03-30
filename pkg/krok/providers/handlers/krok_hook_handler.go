@@ -99,6 +99,7 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			CreateAt:     time.Now(), // TODO: replace this with the timer thingy.
 			EventID:      id,
 			Payload:      string(payload),
+			VCS:          vid,
 		}
 		// Create an ID for this event from the database.
 		storedEvent, err := k.EventsStorer.Create(ctx, event)

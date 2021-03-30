@@ -94,7 +94,8 @@ create table events (
     event_id varchar unique not null,
     repository_id int,
     payload varchar,
-    created_at date
+    created_at date,
+    vcs int
 );
 
 -- store a run for a command. This is associated with an event.
@@ -112,7 +113,6 @@ create table command_run (
 );
 
 -- Uncomment for testing
--- insert into platforms (name) values ('github');
 -- insert into users (email, last_login, display_name) values ('skarlso777@gmail.com', now(), 'shrek');
 -- secret is 'secret'
 -- insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, now() + INTERVAL '130 days');
