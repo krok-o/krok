@@ -269,6 +269,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 	})
 
+	commandSettingsHandler := handlers.NewCommandSettingsHandler(handlers.CommandSettingsHandlerDependencies{
+		CommandStorer: commandStore,
+		Logger:        log,
+	})
+
 	hookHandler := handlers.NewHookHandler(handlers.HookDependencies{
 		RepositoryStore:   repoStore,
 		PlatformProviders: platformProviders,
@@ -322,17 +327,18 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	// ************************
 
 	sv := server.NewKrokServer(krokArgs.server, server.Dependencies{
-		Logger:                log,
-		HookHandler:           hookHandler,
-		UserMiddleware:        userMiddleware,
-		CommandHandler:        commandHandler,
-		RepositoryHandler:     repoHandler,
-		APIKeyHandler:         apiKeysHandler,
-		AuthHandler:           authHandler,
-		TokenHandler:          tp,
-		VCSTokenHandler:       vcsTokenHandler,
-		UserTokenHandler:      userTokenHandler,
-		SupportedPlatformList: supportedPlatformListHandler,
+		Logger:                 log,
+		HookHandler:            hookHandler,
+		UserMiddleware:         userMiddleware,
+		CommandHandler:         commandHandler,
+		CommandSettingsHandler: commandSettingsHandler,
+		RepositoryHandler:      repoHandler,
+		APIKeyHandler:          apiKeysHandler,
+		AuthHandler:            authHandler,
+		TokenHandler:           tp,
+		VCSTokenHandler:        vcsTokenHandler,
+		UserTokenHandler:       userTokenHandler,
+		SupportedPlatformList:  supportedPlatformListHandler,
 	})
 
 	// Run service & server
