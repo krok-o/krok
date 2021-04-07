@@ -102,3 +102,6 @@ The backend will use JWT to authenticate. The pure API login will be handled by 
 the JWT using openid and google log in. The api will generate the JWT using the api key matching. API Keys will be encrypted
 and stored encrypted and matched encrypted.
 
+## Out dates but still relevant
+
+These notes now-a-days are mostly outdated. I will keep them as a reminder from where this came from.
