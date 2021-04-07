@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"testing"
+	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -24,6 +25,8 @@ func TestHandleHooks(t *testing.T) {
 	mgp := &mocks.Platform{}
 	mgp.On("ValidateRequest", mock.Anything, mock.Anything, 1).Return(nil)
 	mgp.On("GetEventID", mock.Anything, mock.Anything).Return("id", nil)
+	mt := &mocks.Clock{}
+	mt.On("Now").Return(time.Date(0, time.January, 1, 1, 1, 1, 1, time.UTC))
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = mgp
 	es := &mocks.EventsStorer{}
@@ -42,6 +45,7 @@ func TestHandleHooks(t *testing.T) {
 		PlatformProviders: platformProviders,
 		EventsStorer:      es,
 		Executer:          ex,
+		Timer:             mt,
 	}
 
 	hh := NewHookHandler(deps)
@@ -63,6 +67,8 @@ func TestHandleHooksWithMissingEventId(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	mrs := &mocks.RepositoryStorer{}
 	mrs.On("Get", mock.Anything, 1).Return(&models.Repository{ID: 1}, nil)
+	mt := &mocks.Clock{}
+	mt.On("Now").Return(time.Date(0, time.January, 1, 1, 1, 1, 1, time.UTC))
 	githubPlatform := github.NewGithubPlatformProvider(github.Config{}, github.Dependencies{})
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = githubPlatform
@@ -82,6 +88,7 @@ func TestHandleHooksWithMissingEventId(t *testing.T) {
 		PlatformProviders: platformProviders,
 		EventsStorer:      es,
 		Executer:          ex,
+		Timer:             mt,
 	}
 
 	hh := NewHookHandler(deps)

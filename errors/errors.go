@@ -16,6 +16,8 @@ type QueryError struct {
 }
 
 func (e *QueryError) Error() string { return e.Query + ": " + e.Err.Error() }
+
+// Unwrap unwraps the query error and returns the internal error.
 func (e *QueryError) Unwrap() error { return e.Err }
 
 // Message represents an error message.

@@ -280,6 +280,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:            log,
 		Executer:          ex,
 		EventsStorer:      eventStorer,
+		Timer:             providers.NewClock(),
 	})
 
 	uuidGenerator := providers.NewUUIDGenerator()

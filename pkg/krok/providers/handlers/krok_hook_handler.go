@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"time"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -22,6 +21,7 @@ type HookDependencies struct {
 	PlatformProviders map[int]providers.Platform
 	Executer          providers.Executor
 	EventsStorer      providers.EventsStorer
+	Timer             providers.Clock
 }
 
 // KrokHookHandler is the main hook handler.
@@ -82,7 +82,7 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		}
 		event := &models.Event{
 			RepositoryID: rid,
-			CreateAt:     time.Now(), // TODO: replace this with the timer thingy.
+			CreateAt:     k.Timer.Now(),
 			EventID:      id,
 			Payload:      string(payload),
 			VCS:          vid,
