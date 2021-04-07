@@ -105,3 +105,4 @@ and stored encrypted and matched encrypted.
 ## Out dates but still relevant
 
 These notes now-a-days are mostly outdated. I will keep them as a reminder from where this came from.
+Ideas and thoughts are saved in tickets under the krok project in Github [here](https://github.com/krok-o/krok/projects/1).
