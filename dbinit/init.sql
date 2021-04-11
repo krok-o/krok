@@ -112,6 +112,9 @@ create table command_run (
     created_at date
 );
 
+-- generate default admin user
+insert into users (email, last_login, display_name, token) values ('admin@admin.com', now(), 'Admin', 'YpK60RD8NPzjOZxB22xYSNfdFzAqgkulJv5c6IQXWf7Trc074yUGcAIXm72f')
+
 -- Uncomment for testing
 -- insert into users (email, last_login, display_name) values ('skarlso777@gmail.com', now(), 'shrek');
 -- secret is 'secret'
