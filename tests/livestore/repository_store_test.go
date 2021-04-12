@@ -75,6 +75,9 @@ func TestRepositoryStore_Flow(t *testing.T) {
 	// Delete repo
 	err = rp.Delete(ctx, getRepo.ID)
 	assert.NoError(t, err)
+	// Delete non-existing repo
+	err = rp.Delete(ctx, 9999)
+	assert.Error(t, err)
 
 	// Try getting the deleted command should result in NotFound
 	_, err = rp.Get(ctx, getRepo.ID)

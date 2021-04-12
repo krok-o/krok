@@ -81,12 +81,14 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 func (r *RepositoryStore) Delete(ctx context.Context, id int) error {
 	log := r.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
-		if _, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", repositoriesTable), id); err != nil {
+		if tag, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", repositoriesTable), id); err != nil {
 			log.Debug().Err(err).Msg("Failed to delete repository.")
 			return &kerr.QueryError{
 				Query: "delete id",
 				Err:   fmt.Errorf("failed to delete repository: %w", err),
 			}
+		} else if tag.RowsAffected() == 0 {
+			return kerr.ErrNoRowsAffected
 		}
 		return nil
 	}
