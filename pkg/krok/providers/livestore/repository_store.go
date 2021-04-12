@@ -103,8 +103,8 @@ func (r *RepositoryStore) Update(ctx context.Context, c *models.Repository) (*mo
 	f := func(tx pgx.Tx) error {
 		// Prevent updating the ID and the creation timestamp.
 		// construct update statement:
-		tags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1", repositoriesTable),
-			c.Name)
+		tags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1 where id = $2", repositoriesTable),
+			c.Name, c.ID)
 		if err != nil {
 			return &kerr.QueryError{
 				Query: "update :" + c.Name,
