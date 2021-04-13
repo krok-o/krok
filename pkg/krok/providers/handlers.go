@@ -31,7 +31,7 @@ type CommandHandler interface {
 
 	// AddCommandRelForPlatform adds an entry for this command id to the given platform id.
 	AddCommandRelForPlatform() echo.HandlerFunc
-	// RemoveCommandRelForRepository remove a relation to a platform for a command.
+	// RemoveCommandRelForPlatform remove a relation to a platform for a command.
 	RemoveCommandRelForPlatform() echo.HandlerFunc
 }
 
