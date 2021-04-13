@@ -265,8 +265,8 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 		}
 
 		// TODO: change this to a reference type on the enabled to check whether it was supplied or not.
-		sets = append(sets, "enabled = $"+strconv.Itoa(len(args)))
 		args = append(args, c.Enabled)
+		sets = append(sets, "enabled = $"+strconv.Itoa(len(args)))
 
 		set := strings.Join(sets, ",")
 		args = append(args, c.ID)
