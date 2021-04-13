@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -251,8 +252,35 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 	f := func(tx pgx.Tx) error {
 		// Prevent updating the ID and the creation timestamp.
 		// construct update statement:
-		commandTags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1, enabled = $2, schedule = $3, filename = $4, location = $5, hash = $6 where id = $7", commandsTable),
-			c.Name, c.Enabled, c.Schedule, c.Filename, c.Location, c.Hash, c.ID)
+		args := make([]interface{}, 0)
+		sets := make([]string, 0)
+
+		if c.Name != "" {
+			args = append(args, c.Name)
+			sets = append(sets, "name = $"+strconv.Itoa(len(args)))
+		}
+		if c.Hash != "" {
+			args = append(args, c.Hash)
+			sets = append(sets, "hash = $"+strconv.Itoa(len(args)))
+		}
+		if c.Schedule != "" {
+			args = append(args, c.Schedule)
+			sets = append(sets, "schedule = $"+strconv.Itoa(len(args)))
+		}
+		if c.Location != "" {
+			args = append(args, c.Location)
+			sets = append(sets, "location = $"+strconv.Itoa(len(args)))
+		}
+		if c.Filename != "" {
+			args = append(args, c.Filename)
+			sets = append(sets, "filename = $"+strconv.Itoa(len(args)))
+		}
+
+		set := strings.Join(sets, ",")
+		args = append(args, c.ID)
+
+		commandTags, err := tx.Exec(ctx, fmt.Sprintf("update %s set %s where id = $%d", commandsTable, set, len(args)),
+			args...)
 		if err != nil {
 			return &kerr.QueryError{
 				Query: "update :" + c.Name,

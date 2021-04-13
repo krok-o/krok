@@ -344,3 +344,44 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, supported)
 }
+
+func TestCommandStore_Update(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	location, _ := ioutil.TempDir("", "TestCommandStore_Create")
+	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
+	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
+		Connector: livestore.NewDatabaseConnector(livestore.Config{
+			Hostname: hostname,
+			Database: dbaccess.Db,
+			Username: dbaccess.Username,
+			Password: dbaccess.Password,
+		}, livestore.Dependencies{
+			Logger:    logger,
+			Converter: env,
+		}),
+	})
+	assert.NoError(t, err)
+	ctx := context.Background()
+	// Create the first command.
+	c, err := cp.Create(ctx, &models.Command{
+		Name:     "Test_Update",
+		Schedule: "test-schedule",
+		Filename: "test-filename-update",
+		Location: location,
+		Hash:     "hash-update",
+		Enabled:  false,
+	})
+	assert.NoError(t, err)
+	assert.True(t, 0 < c.ID)
+
+	// Update command
+	updatedC, err := cp.Update(ctx, &models.Command{ID: c.ID, Name: "UpdatedName2"})
+	assert.NoError(t, err)
+	assert.Equal(t, "UpdatedName2", updatedC.Name)
+	// Make sure nothing else changed.
+	assert.Equal(t, c.Filename, updatedC.Filename)
+	assert.Equal(t, c.Hash, updatedC.Hash)
+	assert.Equal(t, c.Location, updatedC.Location)
+	assert.Equal(t, c.Schedule, updatedC.Schedule)
+	assert.Equal(t, c.Enabled, updatedC.Enabled)
+}
