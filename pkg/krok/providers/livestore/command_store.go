@@ -259,22 +259,14 @@ func (s *CommandStore) Update(ctx context.Context, c *models.Command) (*models.C
 			args = append(args, c.Name)
 			sets = append(sets, "name = $"+strconv.Itoa(len(args)))
 		}
-		if c.Hash != "" {
-			args = append(args, c.Hash)
-			sets = append(sets, "hash = $"+strconv.Itoa(len(args)))
-		}
 		if c.Schedule != "" {
 			args = append(args, c.Schedule)
 			sets = append(sets, "schedule = $"+strconv.Itoa(len(args)))
 		}
-		if c.Location != "" {
-			args = append(args, c.Location)
-			sets = append(sets, "location = $"+strconv.Itoa(len(args)))
-		}
-		if c.Filename != "" {
-			args = append(args, c.Filename)
-			sets = append(sets, "filename = $"+strconv.Itoa(len(args)))
-		}
+
+		// TODO: change this to a reference type on the enabled to check whether it was supplied or not.
+		sets = append(sets, "enabled = $"+strconv.Itoa(len(args)))
+		args = append(args, c.Enabled)
 
 		set := strings.Join(sets, ",")
 		args = append(args, c.ID)
