@@ -11,7 +11,7 @@ import (
 
 func TestSupportedPlatformListHandler(t *testing.T) {
 	handler := NewSupportedPlatformListHandler()
-	expectedSupportPlatformList := `{"list":[{"id":1,"name":"github"},{"id":2,"name":"gitlab"},{"id":3,"name":"gitea"}]}
+	expectedSupportPlatformList := `[{"id":1,"name":"github"},{"id":2,"name":"gitlab"},{"id":3,"name":"gitea"}]
 `
 	e := echo.New()
 	req := httptest.NewRequest(http.MethodGet, "/supported-platforms", nil)

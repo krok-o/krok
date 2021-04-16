@@ -7,6 +7,7 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// SupportedPlatformList is the supporting struct which implements platform listing.
 type SupportedPlatformList struct{}
 
 // NewSupportedPlatformListHandler creates a new supported platform list handler.
@@ -14,15 +15,9 @@ func NewSupportedPlatformListHandler() *SupportedPlatformList {
 	return &SupportedPlatformList{}
 }
 
-type Message struct {
-	List []models.Platform `json:"list"`
-}
-
+// ListSupportedPlatforms lists all platforms which Krok supports.
 func (s *SupportedPlatformList) ListSupportedPlatforms() echo.HandlerFunc {
-	m := Message{
-		List: models.SupportedPlatforms,
-	}
 	return func(c echo.Context) error {
-		return c.JSON(http.StatusOK, m)
+		return c.JSON(http.StatusOK, models.SupportedPlatforms)
 	}
 }

@@ -85,6 +85,7 @@ type CommandSettingsHandler interface {
 	Update() echo.HandlerFunc
 }
 
+// SupportedPlatformListHandler lists all supported platforms.
 type SupportedPlatformListHandler interface {
 	ListSupportedPlatforms() echo.HandlerFunc
 }
