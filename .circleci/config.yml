@@ -39,19 +39,20 @@ jobs:
       - run:
           name: Run integration tests
           command: |
+            go test ./...
             #!/usr/bin/env bash
-            set -e
-            echo "" > coverage.txt
-            for d in $(go list ./... | grep -v vendor); do
-              go test -coverprofile=profile.out -coverpkg=./... $d
-              if [ -f profile.out ]; then
-                cat profile.out >> coverage.txt
-                rm profile.out
-              fi
-            done
-      - run:
-          name: Upload test report to codecov.io
-          command: bash <(curl -s https://codecov.io/bash)
+            #set -e
+            #echo "" > coverage.txt
+            #for d in $(go list ./... | grep -v vendor); do
+            #  go test -coverprofile=profile.out -coverpkg=./... $d
+            #  if [ -f profile.out ]; then
+            #    cat profile.out >> coverage.txt
+            #    rm profile.out
+            #  fi
+            #done
+            #      - run:
+            #          name: Upload test report to codecov.io
+            #          command: bash <(curl -s https://codecov.io/bash)
   compile:
     working_directory: /go/src/github.com/krok-o/krok
     docker:
