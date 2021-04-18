@@ -68,8 +68,13 @@ func (e *EventsStore) Create(ctx context.Context, event *models.Event) (*models.
 // ListEventsForRepository gets paginated list of events for a repository.
 // It does not return the command runs and the payloads to prevent potentially big chunks of transfer data.
 // To get those, one must do a Get.
-func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, options models.ListOptions) ([]*models.Event, error) {
+func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, options *models.ListOptions) ([]*models.Event, error) {
 	log := e.Logger.With().Str("func", "List").Int("repo_id", repoID).Logger()
+	if options == nil {
+		options = &models.ListOptions{
+			PageSize: defaultPageSize,
+		}
+	}
 	if options.PageSize == 0 {
 		options.PageSize = defaultPageSize
 	}
