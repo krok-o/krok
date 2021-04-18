@@ -51,6 +51,7 @@ type Dependencies struct {
 	VCSTokenHandler        providers.VCSTokenHandler
 	UserTokenHandler       providers.UserTokenHandler
 	SupportedPlatformList  providers.SupportedPlatformListHandler
+	EventsHandler          providers.EventHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -130,6 +131,9 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// vcs token handler
 	auth.POST("/vcs-token", s.Dependencies.VCSTokenHandler.Create())
+
+	// events
+	auth.POST("/events/:repoid", s.Dependencies.EventsHandler.List())
 
 	// Start TLS with certificate paths
 	if len(s.Config.ServerKeyPath) > 0 && len(s.Config.ServerCrtPath) > 0 {

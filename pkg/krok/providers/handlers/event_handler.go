@@ -39,7 +39,7 @@ func (r *EventHandler) List() echo.HandlerFunc {
 			// if we don't have anything to bind, just ignore opts.
 			opts = nil
 		}
-		n, err := GetParamAsInt("id", c)
+		n, err := GetParamAsInt("repoid", c)
 		if err != nil {
 			apiError := kerr.APIError("invalid id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
