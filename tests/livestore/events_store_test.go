@@ -145,14 +145,14 @@ func TestEventsStore_List(t *testing.T) {
 		assert.NoError(t, err)
 		assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
 
-		events, err := es.ListEventsForRepository(ctx, 1, models.ListOptions{})
+		events, err := es.ListEventsForRepository(ctx, 1, &models.ListOptions{})
 		assert.NoError(tt, err)
 		assert.NotZero(tt, len(events), "events list should not have come back as empty")
 	})
 
 	t.Run("basic list errors", func(tt *testing.T) {
 		ctx := context.Background()
-		es, err := es.ListEventsForRepository(ctx, 999, models.ListOptions{})
+		es, err := es.ListEventsForRepository(ctx, 999, &models.ListOptions{})
 		assert.NoError(tt, err)
 		assert.Empty(tt, es)
 	})
@@ -180,7 +180,7 @@ func TestEventsStore_List(t *testing.T) {
 
 		from := time.Date(2021, 02, 12, 13, 0, 0, 0, time.UTC)
 		to := time.Date(2021, 03, 13, 13, 0, 0, 0, time.UTC)
-		events, err := es.ListEventsForRepository(ctx, 1, models.ListOptions{
+		events, err := es.ListEventsForRepository(ctx, 1, &models.ListOptions{
 			StartingDate: &from,
 			EndDate:      &to,
 		})
@@ -190,7 +190,7 @@ func TestEventsStore_List(t *testing.T) {
 
 		from = time.Date(2005, 02, 12, 13, 0, 0, 0, time.UTC)
 		to = time.Date(2006, 03, 13, 13, 0, 0, 0, time.UTC)
-		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+		events, err = es.ListEventsForRepository(ctx, 1, &models.ListOptions{
 			StartingDate: &from,
 			EndDate:      &to,
 		})
@@ -200,7 +200,7 @@ func TestEventsStore_List(t *testing.T) {
 
 		from = time.Date(2005, 02, 12, 13, 0, 0, 0, time.UTC)
 		to = time.Date(2021, 03, 13, 13, 0, 0, 0, time.UTC)
-		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+		events, err = es.ListEventsForRepository(ctx, 1, &models.ListOptions{
 			StartingDate: &from,
 			EndDate:      &to,
 		})
@@ -235,14 +235,14 @@ func TestEventsStore_List(t *testing.T) {
 		})
 		assert.NoError(tt, err)
 
-		events, err := es.ListEventsForRepository(ctx, 1, models.ListOptions{
+		events, err := es.ListEventsForRepository(ctx, 1, &models.ListOptions{
 			PageSize: 1,
 		})
 
 		assert.NoError(tt, err)
 		assert.Len(tt, events, 1)
 
-		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+		events, err = es.ListEventsForRepository(ctx, 1, &models.ListOptions{
 			PageSize: 2,
 		})
 
@@ -251,7 +251,7 @@ func TestEventsStore_List(t *testing.T) {
 
 		from := time.Date(2005, 03, 12, 13, 1, 0, 0, time.UTC)
 		to := time.Date(2005, 03, 12, 13, 4, 0, 0, time.UTC)
-		events, err = es.ListEventsForRepository(ctx, 1, models.ListOptions{
+		events, err = es.ListEventsForRepository(ctx, 1, &models.ListOptions{
 			StartingDate: &from,
 			EndDate:      &to,
 			PageSize:     1,

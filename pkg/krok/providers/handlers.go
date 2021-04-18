@@ -89,3 +89,9 @@ type CommandSettingsHandler interface {
 type SupportedPlatformListHandler interface {
 	ListSupportedPlatforms() echo.HandlerFunc
 }
+
+// EventHandler defines a handler for repository events.
+type EventHandler interface {
+	List() echo.HandlerFunc
+	Get() echo.HandlerFunc
+}
