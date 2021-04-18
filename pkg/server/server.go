@@ -134,6 +134,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// events
 	auth.POST("/events/:repoid", s.Dependencies.EventsHandler.List())
+	auth.POST("/event/:id", s.Dependencies.EventsHandler.Get())
 
 	// Start TLS with certificate paths
 	if len(s.Config.ServerKeyPath) > 0 && len(s.Config.ServerCrtPath) > 0 {

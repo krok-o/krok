@@ -49,8 +49,8 @@ func (r *EventHandler) List() echo.HandlerFunc {
 
 		list, err := r.EventsStorer.ListEventsForRepository(ctx, n, opts)
 		if err != nil {
-			r.Logger.Debug().Err(err).Msg("Repository List failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list repository", http.StatusBadRequest, err))
+			r.Logger.Debug().Err(err).Msg("Event List failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list events", http.StatusBadRequest, err))
 		}
 
 		return c.JSON(http.StatusOK, list)
