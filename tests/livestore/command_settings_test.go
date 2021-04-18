@@ -206,59 +206,6 @@ func TestCommandSettings_CascadingDelete(t *testing.T) {
 	assert.True(t, errors.Is(err, kerr.ErrNotFound))
 }
 
-func TestCommandSettings_UpdateError(t *testing.T) {
-	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandSettings_UpdateError")
-	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
-	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
-		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: hostname,
-			Database: dbaccess.Db,
-			Username: dbaccess.Username,
-			Password: dbaccess.Password,
-		}, livestore.Dependencies{
-			Logger:    logger,
-			Converter: env,
-		}),
-	})
-	assert.NoError(t, err)
-	ctx := context.Background()
-	// Create the first command.
-	c, err := cp.Create(ctx, &models.Command{
-		Name:         "Test_Update_Error_Setting_1",
-		Schedule:     "test-schedule-setting-1",
-		Repositories: nil,
-		Filename:     "test-UpdateError",
-		Location:     location,
-		Hash:         "settings-UpdateError",
-		Enabled:      true,
-	})
-	assert.NoError(t, err)
-	assert.True(t, 0 < c.ID)
-
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
-		CommandID: c.ID,
-		Key:       "key-6",
-		Value:     "value",
-		InVault:   false,
-	})
-	assert.NoError(t, err)
-	list, err := cp.ListSettings(ctx, c.ID)
-	assert.NoError(t, err)
-	assert.Len(t, list, 1)
-
-	setting := list[0]
-
-	newSetting := *setting
-	newSetting.InVault = true
-	err = cp.UpdateSetting(ctx, &newSetting)
-	assert.Error(t, err)
-	newSetting.InVault = false
-	newSetting.Key = "newKey"
-	err = cp.UpdateSetting(ctx, &newSetting)
-	assert.Error(t, err)
-}
-
 func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	location, _ := ioutil.TempDir("", "TestCommandSettings_CantCreateSameKeyAndCommandCombination")

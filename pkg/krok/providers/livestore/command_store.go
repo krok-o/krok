@@ -685,6 +685,7 @@ func (s *CommandStore) GetSetting(ctx context.Context, id int) (*models.CommandS
 // UpdateSetting updates the value of a setting. Transferring values is not supported. Aka.:
 // If a value was in Vault it must remain in vault. If it was in db it must remain in db.
 // Updating the key is also not supported.
+// Update: Only the value can be modified.
 func (s *CommandStore) UpdateSetting(ctx context.Context, setting *models.CommandSetting) error {
 	log := s.Logger.
 		With().
@@ -692,23 +693,19 @@ func (s *CommandStore) UpdateSetting(ctx context.Context, setting *models.Comman
 		Str("key", setting.Key).
 		Bool("in_vault", setting.InVault).
 		Logger()
-	rollBackKey := ""
-	var rollBackValue []byte
+	var (
+		rollBackValue []byte
+		rollBackKey   string
+	)
 	f := func(tx pgx.Tx) error {
 		storedSetting, err := s.GetSetting(ctx, setting.ID)
 		if err != nil {
 			return err
 		}
-		if storedSetting.InVault != setting.InVault {
-			return fmt.Errorf("missmatched vault setting for key %s. got: %v want: %v", setting.Key, setting.InVault, storedSetting.InVault)
-		}
-		if storedSetting.Key != setting.Key {
-			return fmt.Errorf("missmatched key setting for key %s. got: %s want: %s", setting.Key, setting.Key, storedSetting.Key)
-		}
 
 		// If it was in vault, it's easier to just overwrite whatever was in vault.
-		if setting.InVault {
-			value := s.generateUniqueVaultID(setting.CommandID, setting.Key)
+		if storedSetting.InVault {
+			value := s.generateUniqueVaultID(storedSetting.CommandID, storedSetting.Key)
 			if err := s.Vault.LoadSecrets(); err != nil {
 				log.Debug().Err(err).Msg("Failed to load secrets.")
 				return err
@@ -726,7 +723,7 @@ func (s *CommandStore) UpdateSetting(ctx context.Context, setting *models.Comman
 			setting.Value = value
 		}
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("update %s set value = $1 where id = $2", commandSettingsTable),
-			setting.Value, setting.ID); err != nil {
+			setting.Value, storedSetting.ID); err != nil {
 			log.Debug().Err(err).Msg("Failed to update setting.")
 			return &kerr.QueryError{
 				Err:   err,
