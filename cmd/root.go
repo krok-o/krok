@@ -313,6 +313,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		UATGenerator: auth.NewUserTokenGenerator(),
 	})
 
+	eventHandler := handlers.NewEventHandler(handlers.EventHandlerDependencies{
+		Logger:       log,
+		EventsStorer: eventStorer,
+	})
+
 	supportedPlatformListHandler := handlers.NewSupportedPlatformListHandler()
 
 	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserMiddlewareConfig{
@@ -340,6 +345,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		VCSTokenHandler:        vcsTokenHandler,
 		UserTokenHandler:       userTokenHandler,
 		SupportedPlatformList:  supportedPlatformListHandler,
+		EventsHandler:          eventHandler,
 	})
 
 	// Run service & server
