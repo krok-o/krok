@@ -148,10 +148,7 @@ type GoogleGithubClient struct {
 	*ggithub.Client
 }
 
-// NewGoogleGithubClient creates a wrapper around the github client. This is
-// needed in order to decouple gaia from github client to be
-// able to unit test createGithubWebhook and ultimately have
-// the ability to replace github with anything else.
+// NewGoogleGithubClient creates a wrapper around the github client.
 func NewGoogleGithubClient(httpClient *http.Client, repoMock GoogleGithubRepoService) GoogleGithubClient {
 	if repoMock != nil {
 		return GoogleGithubClient{

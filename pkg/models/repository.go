@@ -18,6 +18,8 @@ type Repository struct {
 	URL  string `json:"url"`
 	// Defines which handler will be used. For values, see platforms.go.
 	VCS int `json:"vcs"`
+	// ProjectID is an optional ID which defines a project in Gitlab.
+	ProjectID *int `json:"project_id,omitempty"`
 	// Auth an command are all dynamically generated.
 	Auth     *Auth      `json:"auth,omitempty"`
 	Commands []*Command `json:"commands,omitempty"`
