@@ -3,6 +3,7 @@ package gitlab
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,11 +16,6 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-// Config has the configuration options for the plugins.
-type Config struct {
-	Hostname string
-}
-
 // Dependencies defines the dependencies for the plugin provider.
 type Dependencies struct {
 	Logger                zerolog.Logger
@@ -30,16 +26,15 @@ type Dependencies struct {
 
 // Gitlab is a gitlab based platform implementation.
 type Gitlab struct {
-	Config
 	Dependencies
 
 	// Test client for the gitlab client.
 	httpClient *http.Client
 }
 
-// NewGithubPlatformProvider creates a new hook platform provider for Gitlab.
-func NewGithubPlatformProvider(cfg Config, deps Dependencies) *Gitlab {
-	return &Gitlab{Config: cfg, Dependencies: deps}
+// NewGitlabPlatformProvider creates a new hook platform provider for Gitlab.
+func NewGitlabPlatformProvider(deps Dependencies) *Gitlab {
+	return &Gitlab{Dependencies: deps}
 }
 
 var _ providers.Platform = &Gitlab{}
@@ -65,7 +60,6 @@ func (g *Gitlab) ValidateRequest(ctx context.Context, req *http.Request, repoID 
 		return errors.New("no auth specified")
 	}
 
-	// Get the secret from the repo auth provider?
 	hook, _ := gitlab.New(gitlab.Options.Secret(repoAuth.Secret))
 	_, err = hook.Parse(req,
 		gitlab.BuildEvents,
@@ -131,6 +125,37 @@ func (g *Gitlab) CreateHook(ctx context.Context, repo *models.Repository) error 
 	hookOpts := &ggitlab.AddProjectHookOptions{
 		Token: &repo.Auth.Secret,
 		URL:   &repo.UniqueURL,
+	}
+
+	for _, event := range repo.Events {
+		switch event {
+		case "ConfidentialNoteEvents":
+			hookOpts.ConfidentialIssuesEvents = ggitlab.Bool(true)
+		case "PushEvents":
+			hookOpts.PushEvents = ggitlab.Bool(true)
+		case "IssuesEvents":
+			hookOpts.IssuesEvents = ggitlab.Bool(true)
+		case "ConfidentialIssuesEvents":
+			hookOpts.ConfidentialIssuesEvents = ggitlab.Bool(true)
+		case "MergeRequestsEvents":
+			hookOpts.MergeRequestsEvents = ggitlab.Bool(true)
+		case "TagPushEvents":
+			hookOpts.TagPushEvents = ggitlab.Bool(true)
+		case "NoteEvents":
+			hookOpts.NoteEvents = ggitlab.Bool(true)
+		case "JobEvents":
+			hookOpts.JobEvents = ggitlab.Bool(true)
+		case "PipelineEvents":
+			hookOpts.PipelineEvents = ggitlab.Bool(true)
+		case "WikiPageEvents":
+			hookOpts.WikiPageEvents = ggitlab.Bool(true)
+		case "DeploymentEvents":
+			hookOpts.DeploymentEvents = ggitlab.Bool(true)
+		case "ReleasesEvents":
+			hookOpts.ReleasesEvents = ggitlab.Bool(true)
+		default:
+			return fmt.Errorf("invalid event type %q", event)
+		}
 	}
 	// TODO: Project ID can either be a name or an ID. Consider trying to match that. I can store
 	// an integer serialized to bytes in the DB. https://golang.org/pkg/encoding/binary/#example_Write

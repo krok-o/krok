@@ -40,11 +40,6 @@ type Payload struct {
 	Repo Repository `json:"repository"`
 }
 
-// Config has the configuration options for the plugins.
-type Config struct {
-	Hostname string
-}
-
 // Dependencies defines the dependencies for the plugin provider.
 type Dependencies struct {
 	Logger                zerolog.Logger
@@ -54,7 +49,6 @@ type Dependencies struct {
 
 // Github is a github based platform implementation.
 type Github struct {
-	Config
 	Dependencies
 
 	// Used for testing the CreateHook call. There probably is a better way to do this...
@@ -62,8 +56,8 @@ type Github struct {
 }
 
 // NewGithubPlatformProvider creates a new hook platform provider for Github.
-func NewGithubPlatformProvider(cfg Config, deps Dependencies) *Github {
-	return &Github{Config: cfg, Dependencies: deps}
+func NewGithubPlatformProvider(deps Dependencies) *Github {
+	return &Github{Dependencies: deps}
 }
 
 var _ providers.Platform = &Github{}
@@ -85,7 +79,6 @@ func (g *Github) ValidateRequest(ctx context.Context, req *http.Request, repoID 
 		return errors.New("no auth specified")
 	}
 
-	// Get the secret from the repo auth provider?
 	hook, _ := github.New(github.Options.Secret(repoAuth.Secret))
 	h, err := hook.Parse(req,
 		github.CheckRunEvent,
