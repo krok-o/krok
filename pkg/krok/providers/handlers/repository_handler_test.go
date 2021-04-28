@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -84,7 +85,7 @@ func (g *mockGithubPlatformProvider) CreateHook(ctx context.Context, repo *model
 func TestRepoHandler_CreateRepository(t *testing.T) {
 	mrs := &mockRepositoryStorer{}
 	mars := &mocks.RepositoryAuth{}
-	mars.On("CreateRepositoryAuth", mock.Anything, 0, &models.Auth{Secret: "secret"}).Return(nil)
+	mars.On("CreateRepositoryAuth", mock.Anything, mock.Anything, &models.Auth{Secret: "secret"}).Return(nil)
 	mg := &mockGithubPlatformProvider{}
 	logger := zerolog.New(os.Stderr)
 	cfg := RepoConfig{
@@ -101,14 +102,14 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
-
+	var id int
 	t.Run("positive flow of create", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
 		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1, "auth": {"secret": "secret"}}`
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
-`
+		repositoryExpected := fmt.Sprintf(`{"name":"test-name","id":%d,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/%d/1/callback"}
+`, id, id)
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -119,6 +120,7 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusCreated, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
+		id++
 	})
 
 	t.Run("positive flow of create with project id", func(tt *testing.T) {
@@ -126,8 +128,8 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 
 		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1, "project_id": 10, "auth": {"secret": "secret"}}`
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"project_id":10,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
-`
+		repositoryExpected := fmt.Sprintf(`{"name":"test-name","id":%d,"url":"https://github.com/Skarlso/test","vcs":1,"project_id":10,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/%d/1/callback"}
+`, id, id)
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
