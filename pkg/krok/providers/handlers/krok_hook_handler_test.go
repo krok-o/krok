@@ -69,7 +69,7 @@ func TestHandleHooksWithMissingEventId(t *testing.T) {
 	mrs.On("Get", mock.Anything, 1).Return(&models.Repository{ID: 1}, nil)
 	mt := &mocks.Clock{}
 	mt.On("Now").Return(time.Date(0, time.January, 1, 1, 1, 1, 1, time.UTC))
-	githubPlatform := github.NewGithubPlatformProvider(github.Config{}, github.Dependencies{})
+	githubPlatform := github.NewGithubPlatformProvider(github.Dependencies{})
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = githubPlatform
 	es := &mocks.EventsStorer{}
