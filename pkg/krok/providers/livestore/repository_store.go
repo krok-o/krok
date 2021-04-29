@@ -45,10 +45,11 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 	// id will be generated.
 
 	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, url, vcs) values($1, $2, $3)", repositoriesTable),
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, url, vcs, project_id) values($1, $2, $3, $4)", repositoriesTable),
 			c.Name,
 			c.URL,
-			c.VCS); err != nil {
+			c.VCS,
+			c.ProjectID); err != nil {
 			log.Debug().Err(err).Msg("Failed to create repository.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -140,7 +141,7 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 	// Select all repositories.
 	result := make([]*models.Repository, 0)
 	f := func(tx pgx.Tx) error {
-		sql := fmt.Sprintf("select id, name, url, vcs from %s", repositoriesTable)
+		sql := fmt.Sprintf("select id, name, url, vcs, project_id from %s", repositoriesTable)
 		where := " where "
 		filters := make([]string, 0)
 		if opts.Name != "" {
@@ -170,12 +171,13 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 
 		for rows.Next() {
 			var (
-				id   int
-				name string
-				url  string
-				vcs  int
+				id        int
+				name      string
+				url       string
+				vcs       int
+				projectID *int // this field needs to be a pointer because it can be nil which will result in a nil value.
 			)
-			if err := rows.Scan(&id, &name, &url, &vcs); err != nil {
+			if err := rows.Scan(&id, &name, &url, &vcs, &projectID); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select all repositories",
@@ -183,10 +185,11 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 				}
 			}
 			repository := &models.Repository{
-				Name: name,
-				ID:   id,
-				URL:  url,
-				VCS:  vcs,
+				Name:      name,
+				ID:        id,
+				URL:       url,
+				VCS:       vcs,
+				ProjectID: projectID,
 			}
 			result = append(result, repository)
 		}
@@ -220,8 +223,9 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 		var (
 			id, vcs   int
 			name, url string
+			projectID *int
 		)
-		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url, vcs from %s where %s=$1", repositoriesTable, field), value).Scan(&id, &name, &url, &vcs); err != nil {
+		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url, vcs, project_id from %s where %s=$1", repositoriesTable, field), value).Scan(&id, &name, &url, &vcs, &projectID); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: "select id",
@@ -237,6 +241,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 		result.Name = name
 		result.URL = url
 		result.VCS = vcs
+		result.ProjectID = projectID
 		return nil
 	}
 	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {

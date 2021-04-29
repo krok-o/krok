@@ -61,7 +61,7 @@ func TestGithub_CreateHook(t *testing.T) {
 		},
 	}
 	mptp := &mockPlatformTokenProvider{}
-	npp := NewGithubPlatformProvider(Config{Hostname: "https://krok.com"}, Dependencies{
+	npp := NewGithubPlatformProvider(Dependencies{
 		Logger:                cliLogger,
 		PlatformTokenProvider: mptp,
 		AuthProvider:          mp,
@@ -102,7 +102,7 @@ func TestGithub_CreateHook_InvalidURL(t *testing.T) {
 		},
 	}
 	mptp := &mockPlatformTokenProvider{}
-	npp := NewGithubPlatformProvider(Config{Hostname: "https://krok.com"}, Dependencies{
+	npp := NewGithubPlatformProvider(Dependencies{
 		Logger:                cliLogger,
 		PlatformTokenProvider: mptp,
 		AuthProvider:          mp,
@@ -143,7 +143,7 @@ func TestGithub_GetEventID(t *testing.T) {
 		},
 	}
 	mptp := &mockPlatformTokenProvider{}
-	npp := NewGithubPlatformProvider(Config{Hostname: "https://krok.com"}, Dependencies{
+	npp := NewGithubPlatformProvider(Dependencies{
 		Logger:                cliLogger,
 		PlatformTokenProvider: mptp,
 		AuthProvider:          mp,

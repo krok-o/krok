@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -71,11 +72,17 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to get event ID from provider", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+		// create a buffer for the request body since validate kills the body and use that to
+		// read from.
+		buf, _ := ioutil.ReadAll(c.Request().Body)
+		rdr1 := ioutil.NopCloser(bytes.NewBuffer(buf))
+		rdr2 := ioutil.NopCloser(bytes.NewBuffer(buf))
+		c.Request().Body = rdr1
 		if err := provider.ValidateRequest(ctx, c.Request(), repo.ID); err != nil {
 			apiError := kerr.APIError("failed to validate hook request", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		payload, err := ioutil.ReadAll(c.Request().Body)
+		payload, err := ioutil.ReadAll(rdr2)
 		if err != nil {
 			apiError := kerr.APIError("failed to get payload", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)

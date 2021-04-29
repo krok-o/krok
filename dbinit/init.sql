@@ -29,7 +29,8 @@ create table repositories (
     id serial primary key,
     name varchar ( 256 ) unique not null,
     url varchar ( 256 ),
-    vcs int
+    vcs int,
+    project_id int null
 );
 
 create table rel_commands_repositories (

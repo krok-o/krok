@@ -48,10 +48,12 @@ func TestRepositoryStore_Flow(t *testing.T) {
 		Vault:     v,
 	})
 	ctx := context.Background()
+	pid := 10
 	repo, err := rp.Create(ctx, &models.Repository{
-		Name: "TestRepo_Create_No_Auth",
-		URL:  "https://github.com/krok-o/test",
-		VCS:  models.GITHUB,
+		Name:      "TestRepo_Create_No_Auth",
+		URL:       "https://github.com/krok-o/test",
+		VCS:       models.GITHUB,
+		ProjectID: &pid,
 	})
 	assert.NoError(t, err)
 	assert.True(t, repo.ID > 0)
@@ -114,22 +116,26 @@ func TestRepositoryStore_ListByFilter(t *testing.T) {
 		Vault:     v,
 	})
 	ctx := context.Background()
+	pid := 10
 	_, err = rp.Create(ctx, &models.Repository{
-		Name: "TestRepo_ListByName-1",
-		URL:  "https://github.com/krok-o/test",
-		VCS:  models.GITHUB,
+		Name:      "TestRepo_ListByName-1",
+		URL:       "https://github.com/krok-o/test",
+		VCS:       models.GITHUB,
+		ProjectID: &pid,
 	})
 	assert.NoError(t, err)
 	_, err = rp.Create(ctx, &models.Repository{
-		Name: "TestRepo_ListByName-2",
-		URL:  "https://github.com/krok-o/test",
-		VCS:  models.GITHUB,
+		Name:      "TestRepo_ListByName-2",
+		URL:       "https://github.com/krok-o/test",
+		VCS:       models.GITHUB,
+		ProjectID: &pid,
 	})
 	assert.NoError(t, err)
 	_, err = rp.Create(ctx, &models.Repository{
-		Name: "TestRepo_ListByVCS",
-		URL:  "https://github.com/krok-o/test",
-		VCS:  models.GITEA,
+		Name:      "TestRepo_ListByVCS",
+		URL:       "https://github.com/krok-o/test",
+		VCS:       models.GITEA,
+		ProjectID: &pid,
 	})
 	assert.NoError(t, err)
 
@@ -188,10 +194,12 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 		Enabled:  false,
 	})
 	assert.NoError(t, err)
+	pid := 10
 	repo, err := rp.Create(ctx, &models.Repository{
-		Name: "TestRepo_Create_Unique",
-		URL:  "https://github.com/krok-o/test",
-		VCS:  models.GITHUB,
+		Name:      "TestRepo_Create_Unique",
+		URL:       "https://github.com/krok-o/test",
+		VCS:       models.GITHUB,
+		ProjectID: &pid,
 	})
 	assert.NoError(t, err)
 	assert.True(t, repo.ID > 0)

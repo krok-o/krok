@@ -17,6 +17,7 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers/executor"
 	"github.com/krok-o/krok/pkg/krok/providers/filevault"
 	"github.com/krok-o/krok/pkg/krok/providers/github"
+	"github.com/krok-o/krok/pkg/krok/providers/gitlab"
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
 	"github.com/krok-o/krok/pkg/krok/providers/mailgun"
@@ -111,6 +112,8 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		state := base64.StdEncoding.EncodeToString(b)
 		krokArgs.server.GlobalTokenKey = state
 	}
+
+	uuidGenerator := providers.NewUUIDGenerator()
 
 	// ************************
 	// Set up db connection, vault and auth handlers.
@@ -212,14 +215,18 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Vault:  v,
 	})
 
-	githubProvider := github.NewGithubPlatformProvider(github.Config{
-		Hostname: krokArgs.server.Hostname,
-	}, github.Dependencies{
+	githubProvider := github.NewGithubPlatformProvider(github.Dependencies{
 		Logger:                log,
 		AuthProvider:          a,
 		PlatformTokenProvider: platformTokenProvider,
 	})
 
+	gitlabProvider := gitlab.NewGitlabPlatformProvider(gitlab.Dependencies{
+		Logger:                log,
+		PlatformTokenProvider: platformTokenProvider,
+		AuthProvider:          a,
+		UUIDGenerator:         uuidGenerator,
+	})
 	// ************************
 	// Set up handlers
 	// ************************
@@ -248,6 +255,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 
 	platformProviders := make(map[int]providers.Platform)
 	platformProviders[models.GITHUB] = githubProvider
+	platformProviders[models.GITLAB] = gitlabProvider
 	repoHandler, _ := handlers.NewRepositoryHandler(handlers.RepoConfig{
 		Protocol: krokArgs.server.Proto,
 		HookBase: krokArgs.server.HookBase,
@@ -283,7 +291,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Timer:             providers.NewClock(),
 	})
 
-	uuidGenerator := providers.NewUUIDGenerator()
 	oauthProvider := auth.NewOAuthAuthenticator(auth.OAuthAuthenticatorConfig{
 		BaseURL:            krokArgs.server.Addr,
 		GlobalTokenKey:     krokArgs.server.GlobalTokenKey,
