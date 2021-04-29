@@ -66,7 +66,6 @@ var _ providers.Platform = &Github{}
 // Github's rules.
 func (g *Github) ValidateRequest(ctx context.Context, req *http.Request, repoID int) error {
 	req.Header.Set("Content-type", "application/json")
-	defer req.Body.Close()
 
 	repoAuth, err := g.AuthProvider.GetRepositoryAuth(ctx, repoID)
 	if err != nil {

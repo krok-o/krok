@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"net/http"
 
@@ -42,13 +41,6 @@ var _ providers.Platform = &Gitlab{}
 // ValidateRequest will take a hook and verify it being a valid hook request according to Gitlab's rules.
 func (g *Gitlab) ValidateRequest(ctx context.Context, req *http.Request, repoID int) error {
 	req.Header.Set("Content-type", "application/json")
-	defer func(Body io.ReadCloser) {
-		err := Body.Close()
-		if err != nil {
-			g.Logger.Debug().Err(err).Msg("Failed to close body on ValidateRequest request.")
-		}
-	}(req.Body)
-
 	repoAuth, err := g.AuthProvider.GetRepositoryAuth(ctx, repoID)
 	if err != nil {
 		g.Logger.Debug().Err(err).Msg("Failed to get Repository Auth information.")
