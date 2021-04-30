@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -42,6 +43,9 @@ func (ch *CommandSettingsHandler) Delete() echo.HandlerFunc {
 		ctx := c.Request().Context()
 
 		if err := ch.CommandStorer.DeleteSetting(ctx, n); err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("command setting not found", http.StatusNotFound, err))
+			}
 			ch.Logger.Debug().Err(err).Msg("Command Setting Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete command setting", http.StatusBadRequest, err))
 		}
@@ -82,6 +86,9 @@ func (ch *CommandSettingsHandler) Get() echo.HandlerFunc {
 
 		repo, err := ch.CommandStorer.GetSetting(ctx, n)
 		if err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("command setting not found", http.StatusNotFound, err))
+			}
 			apiError := kerr.APIError("failed to get command setting", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
