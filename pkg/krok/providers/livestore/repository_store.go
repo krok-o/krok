@@ -83,6 +83,12 @@ func (r *RepositoryStore) Delete(ctx context.Context, id int) error {
 	log := r.Logger.With().Int("id", id).Logger()
 	f := func(tx pgx.Tx) error {
 		if tag, err := tx.Exec(ctx, fmt.Sprintf("delete from %s where id = $1", repositoriesTable), id); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: "select id",
+					Err:   kerr.ErrNotFound,
+				}
+			}
 			log.Debug().Err(err).Msg("Failed to delete repository.")
 			return &kerr.QueryError{
 				Query: "delete id",
@@ -106,6 +112,12 @@ func (r *RepositoryStore) Update(ctx context.Context, c *models.Repository) (*mo
 		// construct update statement:
 		tags, err := tx.Exec(ctx, fmt.Sprintf("update %s set name = $1 where id = $2", repositoriesTable),
 			c.Name, c.ID)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return &kerr.QueryError{
+				Query: "select id",
+				Err:   kerr.ErrNotFound,
+			}
+		}
 		if err != nil {
 			return &kerr.QueryError{
 				Query: "update :" + c.Name,

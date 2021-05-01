@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -56,7 +57,10 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		repo, err := k.RepositoryStore.Get(ctx, rid)
 		if err != nil {
-			apiError := kerr.APIError("can't find repository", http.StatusBadRequest, err)
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("repository not found", http.StatusNotFound, err))
+			}
+			apiError := kerr.APIError("failed to get repository", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 

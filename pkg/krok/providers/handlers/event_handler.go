@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -70,6 +71,9 @@ func (r *EventHandler) Get() echo.HandlerFunc {
 		// Get the event from store.
 		event, err := r.EventsStorer.GetEvent(ctx, n)
 		if err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("event not found", http.StatusNotFound, err))
+			}
 			apiError := kerr.APIError("failed to get event", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}

@@ -335,6 +335,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		UserStore: userStore,
 	})
 
+	vaultHandler := handlers.NewVaultHandler(handlers.VaultHandlerDependencies{
+		Logger: log,
+		Vault:  v,
+	})
+
 	// ************************
 	// Set up the server
 	// ************************
@@ -353,6 +358,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		UserTokenHandler:       userTokenHandler,
 		SupportedPlatformList:  supportedPlatformListHandler,
 		EventsHandler:          eventHandler,
+		VaultHandler:           vaultHandler,
 	})
 
 	// Run service & server

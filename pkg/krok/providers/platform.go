@@ -28,7 +28,6 @@ type Platform interface {
 // A single platform will manage a single token for now. Later maybe we'll provider the
 // ability to handle multiple tokens.
 type PlatformTokenProvider interface {
-	// Token related CRUD operations
 	GetTokenForPlatform(vcs int) (string, error)
 	SaveTokenForPlatform(token string, vcs int) error
 	// for now, people can manually delete the secret from the vault directly.

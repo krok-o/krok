@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
@@ -43,6 +44,9 @@ func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 		ctx := c.Request().Context()
 
 		if err := ch.CommandStorer.Delete(ctx, n); err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("command not found", http.StatusNotFound, err))
+			}
 			ch.Logger.Debug().Err(err).Msg("Command Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete command", http.StatusBadRequest, err))
 		}
@@ -85,6 +89,9 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 
 		repo, err := ch.CommandStorer.Get(ctx, n)
 		if err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("command not found", http.StatusNotFound, err))
+			}
 			apiError := kerr.APIError("failed to get command", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
@@ -106,6 +113,9 @@ func (ch *CommandsHandler) Update() echo.HandlerFunc {
 
 		updated, err := ch.CommandStorer.Update(ctx, command)
 		if err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("command not found", http.StatusNotFound, err))
+			}
 			ch.Logger.Debug().Err(err).Msg("Command Update failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update command", http.StatusBadRequest, err))
 		}

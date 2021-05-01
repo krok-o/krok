@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -95,6 +96,9 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
 		}
 		if err := provider.CreateHook(ctx, created); err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("token does not exist for platform, please create first.", http.StatusNotFound, err))
+			}
 			r.Logger.Debug().Err(err).Msg("Failed to create Hook")
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create hook", http.StatusInternalServerError, err))
 		}
@@ -114,6 +118,9 @@ func (r *RepoHandler) Delete() echo.HandlerFunc {
 		ctx := c.Request().Context()
 
 		if err := r.RepositoryStorer.Delete(ctx, n); err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("repository not found", http.StatusNotFound, err))
+			}
 			r.Logger.Debug().Err(err).Msg("Repository Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete repository", http.StatusBadRequest, err))
 		}
@@ -135,6 +142,9 @@ func (r *RepoHandler) Get() echo.HandlerFunc {
 		// Get the repo from store.
 		repo, err := r.RepositoryStorer.Get(ctx, n)
 		if err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("repository not found", http.StatusNotFound, err))
+			}
 			apiError := kerr.APIError("failed to get repository", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
@@ -192,6 +202,9 @@ func (r *RepoHandler) Update() echo.HandlerFunc {
 
 		updated, err := r.RepositoryStorer.Update(ctx, repo)
 		if err != nil {
+			if errors.Is(err, kerr.ErrNotFound) {
+				return c.JSON(http.StatusNotFound, kerr.APIError("repository not found", http.StatusNotFound, err))
+			}
 			r.Logger.Debug().Err(err).Msg("Repository UpdateRepository failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update repository", http.StatusBadRequest, err))
 		}

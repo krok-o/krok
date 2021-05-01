@@ -95,3 +95,12 @@ type EventHandler interface {
 	List() echo.HandlerFunc
 	Get() echo.HandlerFunc
 }
+
+// VaultHandler defines operations for the secure vault.
+type VaultHandler interface {
+	GetSecret() echo.HandlerFunc
+	ListSecrets() echo.HandlerFunc
+	DeleteSecret() echo.HandlerFunc
+	UpdateSecret() echo.HandlerFunc
+	CreateSecret() echo.HandlerFunc
+}
