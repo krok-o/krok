@@ -14,10 +14,10 @@ import (
 
 const (
 	prefixFormat   = "%d_"
-	usernameFormat = prefixFormat + "_REPO_USERNAME"
-	passwordFormat = prefixFormat + "_REPO_PASSWORD"
-	sshKeyFormat   = prefixFormat + "_REPO_SSH_KEY"
-	secretFormat   = prefixFormat + "_REPO_SECRET"
+	usernameFormat = prefixFormat + "REPO_USERNAME"
+	passwordFormat = prefixFormat + "REPO_PASSWORD"
+	sshKeyFormat   = prefixFormat + "REPO_SSH_KEY"
+	secretFormat   = prefixFormat + "REPO_SECRET"
 )
 
 // RepositoryAuthDependencies defines the dependencies for the repository auth provider.

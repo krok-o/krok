@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	tokenFormat = prefixFormat + "_VCS_TOKEN"
+	tokenFormat = prefixFormat + "VCS_TOKEN"
 )
 
 // TokenProviderDependencies defines the dependencies for the token provider.
