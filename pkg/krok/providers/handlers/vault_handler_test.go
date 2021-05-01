@@ -18,15 +18,16 @@ import (
 
 func TestVaultHandler_Create(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	vp := &mocks.Vault{}
-	vh := NewVaultHandler(VaultHandlerDependencies{
-		Logger: logger,
-		Vault:  vp,
-	})
+
 	token, err := generateTestToken("test@email.com")
 	assert.NoError(t, err)
 
 	t.Run("create a vault secret", func(tt *testing.T) {
+		vp := &mocks.Vault{}
+		vh := NewVaultHandler(VaultHandlerDependencies{
+			Logger: logger,
+			Vault:  vp,
+		})
 		vp.On("LoadSecrets").Return(nil)
 		vp.On("AddSecret", "key", []byte("value")).Return(nil)
 		vp.On("SaveSecrets").Return(nil)
@@ -41,6 +42,65 @@ func TestVaultHandler_Create(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusCreated, rec.Code)
 	})
+
+	t.Run("create a vault secret -- load fails", func(tt *testing.T) {
+		vp := &mocks.Vault{}
+		vh := NewVaultHandler(VaultHandlerDependencies{
+			Logger: logger,
+			Vault:  vp,
+		})
+		vp.On("LoadSecrets").Return(errors.New("nope"))
+		vaultSettingPost := `{"key": "key", "value": "value"}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/vault/secret", strings.NewReader(vaultSettingPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = vh.CreateSecret()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
+	})
+
+	t.Run("create a vault secret -- save fails", func(tt *testing.T) {
+		vp := &mocks.Vault{}
+		vh := NewVaultHandler(VaultHandlerDependencies{
+			Logger: logger,
+			Vault:  vp,
+		})
+		vp.On("LoadSecrets").Return(nil)
+		vp.On("AddSecret", "key", []byte("value")).Return(nil)
+		vp.On("SaveSecrets").Return(errors.New("nope"))
+		vaultSettingPost := `{"key": "key", "value": "value"}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/vault/secret", strings.NewReader(vaultSettingPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = vh.CreateSecret()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
+	})
+
+	t.Run("create a vault secret -- invalid body", func(tt *testing.T) {
+		vp := &mocks.Vault{}
+		vh := NewVaultHandler(VaultHandlerDependencies{
+			Logger: logger,
+			Vault:  vp,
+		})
+		e := echo.New()
+		body := `yaml: content`
+		req := httptest.NewRequest(http.MethodPost, "/vault/secret", strings.NewReader(body))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = vh.CreateSecret()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+
 }
 
 func TestVaultHandler_Update(t *testing.T) {
@@ -227,5 +287,52 @@ func TestVaultHandler_Delete(t *testing.T) {
 		err = vh.GetSecret()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestVaultHandler_List(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	token, err := generateTestToken("test@email.com")
+	assert.NoError(t, err)
+
+	t.Run("list vault secrets", func(tt *testing.T) {
+		vp := &mocks.Vault{}
+		vh := NewVaultHandler(VaultHandlerDependencies{
+			Logger: logger,
+			Vault:  vp,
+		})
+		vp.On("LoadSecrets").Return(nil)
+		vp.On("ListSecrets").Return([]string{"key1", "key2"}, nil)
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/vault/secrets", nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = vh.ListSecrets()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusOK, rec.Code)
+		expected := `["key1","key2"]
+`
+		body, err := ioutil.ReadAll(rec.Body)
+		assert.NoError(tt, err)
+		assert.Equal(tt, expected, string(body))
+	})
+	t.Run("list vault secrets with error", func(tt *testing.T) {
+		vp := &mocks.Vault{}
+		vh := NewVaultHandler(VaultHandlerDependencies{
+			Logger: logger,
+			Vault:  vp,
+		})
+		vp.On("LoadSecrets").Return(errors.New("nope"))
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/vault/secrets", nil)
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = vh.ListSecrets()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusInternalServerError, rec.Code)
 	})
 }
