@@ -13,12 +13,15 @@ import (
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/tests/dbaccess"
 )
 
 func TestUserStore_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
+	clock := &mocks.Clock{}
+	clock.On("Now").Return(time.Now())
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
@@ -35,6 +38,7 @@ func TestUserStore_Flow(t *testing.T) {
 	up := livestore.NewUserStore(livestore.UserDependencies{
 		Connector: connector,
 		APIKeys:   ap,
+		Time:      clock,
 	})
 	ctx := context.Background()
 	user, err := up.Create(ctx, &models.User{
@@ -73,6 +77,8 @@ func TestUserStore_Flow(t *testing.T) {
 
 func TestUserStore_Create_Unique(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
+	clock := &mocks.Clock{}
+	clock.On("Now").Return(time.Now())
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
@@ -89,6 +95,7 @@ func TestUserStore_Create_Unique(t *testing.T) {
 	up := livestore.NewUserStore(livestore.UserDependencies{
 		Connector: connector,
 		APIKeys:   ap,
+		Time:      clock,
 	})
 	ctx := context.Background()
 	_, err := up.Create(ctx, &models.User{

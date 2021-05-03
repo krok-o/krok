@@ -25,6 +25,7 @@ type UserDependencies struct {
 	Dependencies
 	Connector *Connector
 	APIKeys   providers.APIKeysStorer
+	Time      providers.Clock
 }
 
 // NewUserStore creates a new UserStore
@@ -39,7 +40,7 @@ func (s *UserStore) Create(ctx context.Context, user *models.User) (*models.User
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, "insert into users(email, last_login, display_name) values($1, $2, $3)",
 			user.Email,
-			time.Now(),
+			s.Time.Now(),
 			user.DisplayName); err != nil {
 			log.Debug().Err(err).Msg("Failed to create user.")
 			return &kerr.QueryError{
