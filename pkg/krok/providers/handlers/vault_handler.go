@@ -120,8 +120,8 @@ func (v *VaultHandler) UpdateSecret() echo.HandlerFunc {
 // CreateSecret will create a new secret.
 func (v *VaultHandler) CreateSecret() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		var update *models.VaultSetting
-		if err := c.Bind(&update); err != nil {
+		var vaultSetting *models.VaultSetting
+		if err := c.Bind(&vaultSetting); err != nil {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind vault settings", http.StatusBadRequest, err))
 		}
 		// open the vault
@@ -129,7 +129,7 @@ func (v *VaultHandler) CreateSecret() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to open vault", http.StatusInternalServerError, err))
 		}
 
-		v.Vault.AddSecret(update.Key, []byte(update.Value))
+		v.Vault.AddSecret(vaultSetting.Key, []byte(vaultSetting.Value))
 		if err := v.Vault.SaveSecrets(); err != nil {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to save the vault after creation", http.StatusInternalServerError, err))
 		}
