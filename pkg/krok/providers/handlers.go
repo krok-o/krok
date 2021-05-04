@@ -104,3 +104,12 @@ type VaultHandler interface {
 	UpdateSecret() echo.HandlerFunc
 	CreateSecret() echo.HandlerFunc
 }
+
+// UserHandler defines operations for the users.
+type UserHandler interface {
+	GetUser() echo.HandlerFunc
+	ListUsers() echo.HandlerFunc
+	DeleteUser() echo.HandlerFunc
+	UpdateUser() echo.HandlerFunc
+	CreateUser() echo.HandlerFunc
+}

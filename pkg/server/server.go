@@ -53,6 +53,7 @@ type Dependencies struct {
 	SupportedPlatformList  providers.SupportedPlatformListHandler
 	EventsHandler          providers.EventHandler
 	VaultHandler           providers.VaultHandler
+	UserHandler            providers.UserHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -143,6 +144,13 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.GET("/vault/secret/:name", s.Dependencies.VaultHandler.GetSecret())
 	auth.POST("/vault/secret/update", s.Dependencies.VaultHandler.UpdateSecret())
 	auth.DELETE("/vault/secret/:name", s.Dependencies.VaultHandler.DeleteSecret())
+
+	// users
+	auth.POST("/user", s.Dependencies.UserHandler.CreateUser())
+	auth.POST("/users", s.Dependencies.UserHandler.ListUsers())
+	auth.GET("/user/:id", s.Dependencies.UserHandler.GetUser())
+	auth.POST("/user/update", s.Dependencies.UserHandler.UpdateUser())
+	auth.DELETE("/user/:id", s.Dependencies.UserHandler.DeleteUser())
 
 	// Start TLS with certificate paths
 	if len(s.Config.ServerKeyPath) > 0 && len(s.Config.ServerCrtPath) > 0 {

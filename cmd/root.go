@@ -114,6 +114,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	}
 
 	uuidGenerator := providers.NewUUIDGenerator()
+	clock := providers.NewClock()
 
 	// ************************
 	// Set up db connection, vault and auth handlers.
@@ -173,6 +174,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Dependencies: deps,
 		Connector:    connector,
 		APIKeys:      apiKeyStore,
+		Time:         clock,
 	})
 
 	commandRunStore := livestore.NewCommandRunStore(livestore.CommandRunDependencies{
@@ -239,7 +241,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		GlobalTokenKey: krokArgs.server.GlobalTokenKey,
 	}, auth.TokenIssuerDependencies{
 		UserStore: userStore,
-		Clock:     providers.NewClock(),
+		Clock:     clock,
 	})
 
 	handlerDeps := handlers.Dependencies{
@@ -325,6 +327,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		EventsStorer: eventStorer,
 	})
 
+	userHandler := handlers.NewUserHandler(handlers.UserHandlerDependencies{
+		Logger:    log,
+		UserStore: userStore,
+	})
+
 	supportedPlatformListHandler := handlers.NewSupportedPlatformListHandler()
 
 	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserMiddlewareConfig{
@@ -359,6 +366,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		SupportedPlatformList:  supportedPlatformListHandler,
 		EventsHandler:          eventHandler,
 		VaultHandler:           vaultHandler,
+		UserHandler:            userHandler,
 	})
 
 	// Run service & server
