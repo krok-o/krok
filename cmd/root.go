@@ -327,6 +327,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		EventsStorer: eventStorer,
 	})
 
+	userHandler := handlers.NewUserHandler(handlers.UserHandlerDependencies{
+		Logger:    log,
+		UserStore: userStore,
+	})
+
 	supportedPlatformListHandler := handlers.NewSupportedPlatformListHandler()
 
 	userMiddleware := krokmiddleware.NewUserMiddleware(krokmiddleware.UserMiddlewareConfig{
@@ -361,6 +366,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		SupportedPlatformList:  supportedPlatformListHandler,
 		EventsHandler:          eventHandler,
 		VaultHandler:           vaultHandler,
+		UserHandler:            userHandler,
 	})
 
 	// Run service & server
