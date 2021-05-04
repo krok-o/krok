@@ -48,8 +48,8 @@ func (u *UserHandler) GetUser() echo.HandlerFunc {
 			if errors.Is(err, kerr.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, kerr.APIError("user not found", http.StatusNotFound, err))
 			}
-			apiError := kerr.APIError("failed to get user", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			apiError := kerr.APIError("failed to get user", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
 		return c.JSON(http.StatusOK, user)
