@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4"
@@ -77,6 +78,12 @@ func (s *UserStore) Delete(ctx context.Context, id int) error {
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, "delete from users where id = $1",
 			id); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: "select id",
+					Err:   kerr.ErrNotFound,
+				}
+			}
 			return &kerr.QueryError{
 				Err:   err,
 				Query: "delete from users",
@@ -150,7 +157,7 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		ID:          storedID,
 		APIKeys:     apiKeys,
 		LastLogin:   storedLastLogin,
-		Token:       storedToken.String,
+		Token:       &storedToken.String,
 	}, nil
 }
 
@@ -159,8 +166,23 @@ func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User
 	log := s.Logger.With().Int("id", user.ID).Str("email", user.Email).Logger()
 
 	f := func(tx pgx.Tx) error {
-		query := "update users set display_name=$1, token=$2 where id=$3"
-		if tags, err := tx.Exec(ctx, query, user.DisplayName, user.Token, user.ID); err != nil {
+		// Update shouldn't update the token if it isn't provided.
+		args := []interface{}{user.DisplayName}
+		sets := []string{"display_name=$1"}
+		if user.Token != nil {
+			sets = append(sets, "token=$2")
+			args = append(args, *user.Token)
+		}
+		args = append(args, user.ID)
+		set := strings.Join(sets, ", ")
+		query := fmt.Sprintf("update users set %s where id=$%d", set, len(args))
+		if tags, err := tx.Exec(ctx, query, args...); err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: "update user",
+					Err:   kerr.ErrNotFound,
+				}
+			}
 			log.Debug().Err(err).Msg("Failed to update user.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -191,7 +213,7 @@ func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User
 func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
 	log := s.Logger.With().Str("func", "List").Logger()
 	// Select all users.
-	result := make([]*models.User, 0)
+	var result []*models.User
 	f := func(tx pgx.Tx) error {
 		rows, err := tx.Query(ctx, "select id, email, display_name, last_login from users")
 		if err != nil {

@@ -54,7 +54,7 @@ func (h *UserTokenHandler) Generate() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, apiErr)
 		}
 
-		user.Token = token
+		user.Token = &token
 		updated, err := h.UserStore.Update(ctx, user)
 		if err != nil {
 			h.Logger.Error().Int("user_id", uc.UserID).Err(err).Msg("failed to update the user")
@@ -63,6 +63,6 @@ func (h *UserTokenHandler) Generate() echo.HandlerFunc {
 		}
 
 		h.Logger.Debug().Int("user_id", updated.ID).Msg("successfully generated a new token")
-		return c.JSON(http.StatusOK, map[string]string{"token": updated.Token})
+		return c.JSON(http.StatusOK, map[string]string{"token": *updated.Token})
 	}
 }

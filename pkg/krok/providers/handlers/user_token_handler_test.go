@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
+	"github.com/krok-o/krok/pkg/converter"
 	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/pkg/server/middleware"
@@ -102,7 +103,7 @@ func TestNewUserTokenHandler(t *testing.T) {
 
 		mockUserStore := &mocks.UserStorer{}
 		mockUserStore.On("Get", mock.Anything, 1).Return(&models.User{}, nil)
-		mockUserStore.On("Update", mock.Anything, &models.User{Token: "npTywmVKFENU4IVVIyb0LdqwL8RdAkcuRtdNVvO6hf9vQomVLlI35XQIwlMP"}).Return(&models.User{Token: "1234"}, nil)
+		mockUserStore.On("Update", mock.Anything, &models.User{Token: converter.ToPointer("npTywmVKFENU4IVVIyb0LdqwL8RdAkcuRtdNVvO6hf9vQomVLlI35XQIwlMP")}).Return(&models.User{Token: converter.ToPointer("1234")}, nil)
 
 		handler := NewUserTokenHandler(UserTokenHandlerDeps{
 			UserStore:    mockUserStore,
