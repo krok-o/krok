@@ -13,13 +13,13 @@ type Plugins struct {
 	mock.Mock
 }
 
-// Load provides a mock function with given fields: ctx
-func (_m *Plugins) Load(ctx context.Context) error {
-	ret := _m.Called(ctx)
+// Create provides a mock function with given fields: ctx, src
+func (_m *Plugins) Create(ctx context.Context, src string) error {
+	ret := _m.Called(ctx, src)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context) error); ok {
-		r0 = rf(ctx)
+	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = rf(ctx, src)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -27,13 +27,13 @@ func (_m *Plugins) Load(ctx context.Context) error {
 	return r0
 }
 
-// Upload provides a mock function with given fields: ctx, id
-func (_m *Plugins) Upload(ctx context.Context, id string) error {
-	ret := _m.Called(ctx, id)
+// Delete provides a mock function with given fields: ctx, name
+func (_m *Plugins) Delete(ctx context.Context, name string) error {
+	ret := _m.Called(ctx, name)
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = rf(ctx, id)
+		r0 = rf(ctx, name)
 	} else {
 		r0 = ret.Error(0)
 	}

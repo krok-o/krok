@@ -2,7 +2,11 @@ package handlers
 
 import (
 	"errors"
+	"io"
+	"io/ioutil"
 	"net/http"
+	"os"
+	"path/filepath"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -16,6 +20,7 @@ import (
 type CommandsHandlerDependencies struct {
 	Logger        zerolog.Logger
 	CommandStorer providers.CommandStorer
+	Plugins       providers.Plugins
 }
 
 // CommandsHandler is a handler taking care of commands related api calls.
@@ -97,6 +102,56 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, repo)
+	}
+}
+
+// Upload a command. To set up anything for the command, like schedules etc,
+// the command has to be edited.
+func (ch *CommandsHandler) Upload() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		// Flow:
+		// Check if file already exists with name -- the uploaded file name must match the tarred command
+		// Do this before uploading so time is not wasted
+		// Get file content
+		// untar to temp location
+		// calculate hash, name, etc.
+		// copy to permanent storage
+		// create command in db --> fails, delete the file.
+		file, err := c.FormFile("file")
+		if err != nil {
+			return err
+		}
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer src.Close()
+
+		// Destination
+		tmp, err := ioutil.TempDir("", "upload_folder")
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err := os.RemoveAll(tmp); err != nil {
+				ch.Logger.Debug().Err(err).Msg("Warning, failed to clean up temporary folder. Please do that manually.")
+			}
+		}()
+		dst, err := os.Create(filepath.Join(tmp, file.Filename))
+		if err != nil {
+			return err
+		}
+		defer dst.Close()
+
+		// Copy
+		if _, err = io.Copy(dst, src); err != nil {
+			return err
+		}
+
+		// Calculate Hash, set name, etc.
+
+		// Later on -> command content
+		return c.NoContent(http.StatusCreated)
 	}
 }
 
