@@ -91,7 +91,7 @@ func (p *Plugins) Create(ctx context.Context, file string) (string, string, erro
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
 		return "", "", err
 	}
-	log.Debug().Msg("New command successfully created.")
+	log.Debug().Str("dst", dst).Msg("New command successfully created.")
 	return dst, hash, nil
 }
 
@@ -124,12 +124,11 @@ func (p *Plugins) Copy(src, dst string) error {
 // Delete will handle deleting a plugin from permanent storage.
 func (p *Plugins) Delete(ctx context.Context, name string) error {
 	// bail early if file doesn't exist so we don't acquire the lock.
-	stat, err := os.Stat(filepath.Join(p.Location, name))
-	if err != nil {
+	file := filepath.Join(p.Location, name)
+	if _, err := os.Stat(file); err != nil {
 		p.Logger.Debug().Err(err).Str("name", name).Msg("Failed to find file with name in permanent storage.")
 		return err
 	}
-	file := stat.Name()
 	log := log.With().Str("file", file).Logger()
 	l, err := p.Store.AcquireLock(ctx, file)
 	if err != nil {

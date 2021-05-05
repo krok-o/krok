@@ -68,11 +68,18 @@ func (mcs *mockCommandStorer) RemoveCommandRelForRepository(ctx context.Context,
 }
 
 func TestCommandsHandler_DeleteCommand(t *testing.T) {
-	mcs := &mockCommandStorer{}
+	mcs := &mockCommandStorer{
+		getCommand: &models.Command{
+			Name: "test",
+		},
+	}
 	logger := zerolog.New(os.Stderr)
+	mp := &mocks.Plugins{}
+	mp.On("Delete", mock.Anything, "test").Return(nil)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
+		Plugins:       mp,
 	})
 
 	t.Run("delete normal flow", func(tt *testing.T) {

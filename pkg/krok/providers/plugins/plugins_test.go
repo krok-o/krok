@@ -7,11 +7,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/krok-o/krok/pkg/krok/providers/mocks"
-	"github.com/krok-o/krok/pkg/krok/providers/tar"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
+	"github.com/krok-o/krok/pkg/krok/providers/tar"
 )
 
 type mockLock struct {
@@ -29,7 +30,7 @@ func TestPluginProviderFlow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
 	dst := filepath.Join(tmp, "test.tar.gz")
 	mcs := &mocks.CommandStorer{}
-	mcs.On("AcquireLock", mock.Anything, dst).Return(&mockLock{}, nil)
+	mcs.On("AcquireLock", mock.Anything, mock.AnythingOfType("string")).Return(&mockLock{}, nil)
 	tarer := tar.NewTarer(tar.Dependencies{
 		Logger: logger,
 	})
@@ -49,4 +50,12 @@ func TestPluginProviderFlow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotEmpty(t, hash)
 	assert.Equal(t, filepath.Join(location, "test"), loc)
+	_, err = os.Stat(loc)
+	assert.NoError(t, err)
+
+	// test delete
+	err = p.Delete(context.Background(), filepath.Base(loc))
+	assert.NoError(t, err)
+	_, err = os.Stat(loc)
+	assert.Error(t, err)
 }

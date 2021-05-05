@@ -49,15 +49,27 @@ func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-
-		if err := ch.CommandStorer.Delete(ctx, n); err != nil {
+		// Get first for the name
+		command, err := ch.CommandStorer.Get(ctx, n)
+		if err != nil {
 			if errors.Is(err, kerr.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, kerr.APIError("command not found", http.StatusNotFound, err))
 			}
+			ch.Logger.Debug().Err(err).Msg("Command Get failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to get command", http.StatusBadRequest, err))
+		}
+
+		// Delete from database
+		if err := ch.CommandStorer.Delete(ctx, command.ID); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete command", http.StatusBadRequest, err))
 		}
 
+		// Delete from storage
+		if err := ch.Plugins.Delete(ctx, command.Name); err != nil {
+			ch.Logger.Debug().Err(err).Msg("Failed to delete file from permanent storage.")
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to delete file from permanent storage", http.StatusInternalServerError, err))
+		}
 		return c.NoContent(http.StatusOK)
 	}
 }
@@ -108,7 +120,9 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 }
 
 // Upload a command. To set up anything for the command, like schedules etc,
-// the command has to be edited.
+// the command has to be edited. We don't support uploading the same thing twice.
+// If the command binary needs to be updated, delete the command and upload the
+// new binary.
 func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		file, err := c.FormFile("file")
