@@ -4,9 +4,11 @@ import (
 	"errors"
 	"io"
 	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -109,23 +111,31 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 // the command has to be edited.
 func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		// Flow:
-		// Check if file already exists with name -- the uploaded file name must match the tarred command
-		// Do this before uploading so time is not wasted
-		// Get file content
-		// untar to temp location
-		// calculate hash, name, etc.
-		// copy to permanent storage
-		// create command in db --> fails, delete the file.
 		file, err := c.FormFile("file")
 		if err != nil {
 			return err
 		}
+
+		dots := strings.Split(file.Filename, ".")
+		if len(dots) == 0 {
+			return errors.New("file name does not contain a dot")
+		}
+		name := dots[0]
+		ctx := c.Request().Context()
+		// check if name is already taken:
+		if _, err := ch.CommandStorer.GetByName(ctx, name); err == nil {
+			return errors.New("command with name already taken")
+		}
+
 		src, err := file.Open()
 		if err != nil {
 			return err
 		}
-		defer src.Close()
+		defer func(src multipart.File) {
+			if err := src.Close(); err != nil {
+				ch.Logger.Debug().Err(err).Msg("Failed to close src.")
+			}
+		}(src)
 
 		// Destination
 		tmp, err := ioutil.TempDir("", "upload_folder")
@@ -141,17 +151,36 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 		if err != nil {
 			return err
 		}
-		defer dst.Close()
+		defer func(dst *os.File) {
+			if err := dst.Close(); err != nil {
+				ch.Logger.Debug().Err(err).Msg("Failed to close destination file.")
+			}
+		}(dst)
 
-		// Copy
 		if _, err = io.Copy(dst, src); err != nil {
 			return err
 		}
 
-		// Calculate Hash, set name, etc.
+		// Create the file first, then the command.
+		f, hash, err := ch.Plugins.Create(ctx, dst.Name())
+		if err != nil {
+			return err
+		}
 
-		// Later on -> command content
-		return c.NoContent(http.StatusCreated)
+		command := &models.Command{
+			Name:     name,
+			Filename: filepath.Base(f),
+			Location: filepath.Dir(f),
+			Hash:     hash,
+			Enabled:  true,
+		}
+
+		command, err = ch.CommandStorer.Create(ctx, command)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusCreated, command)
 	}
 }
 

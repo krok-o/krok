@@ -45,7 +45,8 @@ func TestPluginProviderFlow(t *testing.T) {
 	assert.NoError(t, err)
 
 	// test create
-	hash, err := p.Create(context.Background(), dst)
+	loc, hash, err := p.Create(context.Background(), dst)
 	assert.NoError(t, err)
 	assert.NotEmpty(t, hash)
+	assert.Equal(t, filepath.Join(location, "test"), loc)
 }

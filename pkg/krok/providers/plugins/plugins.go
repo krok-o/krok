@@ -43,16 +43,16 @@ func NewPluginsProvider(cfg Config, deps Dependencies) *Plugins {
 
 // Create will handle creating a plugin, including un-taring and copying the plugin into the right location.
 // It returns the hash of the command. Creating the command is not its responsibility.
-func (p *Plugins) Create(ctx context.Context, file string) (string, error) {
+func (p *Plugins) Create(ctx context.Context, file string) (string, string, error) {
 	log := p.Logger.With().Str("file", file).Logger()
 
 	l, err := p.Store.AcquireLock(ctx, file)
 	if err != nil {
 		if errors.Is(err, pglock.ErrNotAcquired) {
 			log.Debug().Msg("Some other process is already handling this file's create event.")
-			return "", nil
+			return "", "", nil
 		}
-		return "", err
+		return "", "", err
 	}
 	defer func() {
 		if err := l.Close(); err != nil {
@@ -66,15 +66,15 @@ func (p *Plugins) Create(ctx context.Context, file string) (string, error) {
 	f, err := os.Open(file)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to open archive.")
-		return "", err
+		return "", "", err
 	}
 	if err := p.Tar.Untar(dir, f); err != nil {
 		log.Debug().Err(err).Msg("Failed to un-tar archive.")
-		return "", err
+		return "", "", err
 	}
 	dots := strings.Split(base, ".")
 	if len(dots) < 1 {
-		return "", errors.New("no extensions found in filename")
+		return "", "", errors.New("no extensions found in filename")
 	}
 	extractedFile := filepath.Join(dir, dots[0])
 	dst := filepath.Join(p.Location, dots[0])
@@ -82,17 +82,17 @@ func (p *Plugins) Create(ctx context.Context, file string) (string, error) {
 	// Copy file to permanent storage
 	if err := p.Copy(extractedFile, dst); err != nil {
 		log.Debug().Err(err).Str("extracted_file", extractedFile).Msg("Failed to copy file to permanent storage.")
-		return "", err
+		return "", "", err
 	}
 
 	log.Debug().Msg("New file added.")
 	hash, err := p.generateHash(dst)
 	if err != nil || hash == "" {
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
-		return "", err
+		return "", "", err
 	}
 	log.Debug().Msg("New command successfully created.")
-	return hash, nil
+	return dst, hash, nil
 }
 
 // Copy the src file to dst. Any existing file will be overwritten and will not
