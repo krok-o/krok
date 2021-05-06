@@ -102,13 +102,18 @@ func (p *Plugins) Copy(src, dst string) error {
 		p.Logger.Debug().Err(err).Str("src", src).Msg("Failed to open source.")
 		return err
 	}
+	stat, err := os.Stat(src)
+	if err != nil {
+		p.Logger.Debug().Err(err).Msg("Failed to stat src.")
+		return err
+	}
 	defer func(in *os.File) {
 		if err := in.Close(); err != nil {
 			p.Logger.Debug().Err(err).Str("in", in.Name()).Msg("Failed to close source file.")
 		}
 	}(in)
-
-	out, err := os.Create(dst)
+	// Create the target with the original's permissions.
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_RDWR, stat.Mode())
 	if err != nil {
 		p.Logger.Debug().Err(err).Str("dst", dst).Msg("Failed to create destination.")
 		return err
