@@ -1,13 +1,18 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
+	kerr "github.com/krok-o/krok/errors"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
@@ -63,11 +68,18 @@ func (mcs *mockCommandStorer) RemoveCommandRelForRepository(ctx context.Context,
 }
 
 func TestCommandsHandler_DeleteCommand(t *testing.T) {
-	mcs := &mockCommandStorer{}
+	mcs := &mockCommandStorer{
+		getCommand: &models.Command{
+			Name: "test",
+		},
+	}
 	logger := zerolog.New(os.Stderr)
+	mp := &mocks.Plugins{}
+	mp.On("Delete", mock.Anything, "test").Return(nil)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
+		Plugins:       mp,
 	})
 
 	t.Run("delete normal flow", func(tt *testing.T) {
@@ -697,5 +709,60 @@ func TestCommandsHandler_RemoveCommandRelForPlatform(t *testing.T) {
 		err = ch.RemoveCommandRelForPlatform()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+	})
+}
+
+func TestCommandsHandler_Update(t *testing.T) {
+	mcs := &mocks.CommandStorer{}
+	mcs.On("GetByName", mock.Anything, "test").Return(nil, kerr.ErrNotFound)
+	mcs.On("Create", mock.Anything, &models.Command{
+		Name:     "test",
+		ID:       0,
+		Filename: "test",
+		Location: ".",
+		Hash:     "hash",
+		Enabled:  true,
+	}).Return(&models.Command{
+		Name:     "test",
+		ID:       1,
+		Filename: "test",
+		Location: ".",
+		Hash:     "hash",
+		Enabled:  true,
+	}, nil)
+	mp := &mocks.Plugins{}
+	mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
+	logger := zerolog.New(os.Stderr)
+	ch := NewCommandsHandler(CommandsHandlerDependencies{
+		Logger:        logger,
+		CommandStorer: mcs,
+		Plugins:       mp,
+	})
+	content, err := ioutil.ReadFile(filepath.Join("testdata", "test.tar.gz"))
+	assert.NoError(t, err)
+	t.Run("successful file upload", func(tt *testing.T) {
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+		err = writer.WriteField("bu", "HFL")
+		assert.NoError(tt, err)
+		err = writer.WriteField("wk", "10")
+		assert.NoError(tt, err)
+		part, _ := writer.CreateFormFile("file", "test.tar.gz")
+		_, err = part.Write(content)
+		assert.NoError(tt, err)
+		err = writer.Close() // <<< important part
+		assert.NoError(tt, err)
+
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/endpoint", body)
+		req.Header.Set("Content-Type", writer.FormDataContentType()) // <<< important part
+		rec := httptest.NewRecorder()
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		c := e.NewContext(req, rec)
+		err = ch.Upload()(c)
+		assert.NoError(tt, err)
 	})
 }

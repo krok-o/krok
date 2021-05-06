@@ -2,7 +2,13 @@ package handlers
 
 import (
 	"errors"
+	"io"
+	"io/ioutil"
+	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -16,6 +22,7 @@ import (
 type CommandsHandlerDependencies struct {
 	Logger        zerolog.Logger
 	CommandStorer providers.CommandStorer
+	Plugins       providers.Plugins
 }
 
 // CommandsHandler is a handler taking care of commands related api calls.
@@ -42,15 +49,27 @@ func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-
-		if err := ch.CommandStorer.Delete(ctx, n); err != nil {
+		// Get first for the name
+		command, err := ch.CommandStorer.Get(ctx, n)
+		if err != nil {
 			if errors.Is(err, kerr.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, kerr.APIError("command not found", http.StatusNotFound, err))
 			}
+			ch.Logger.Debug().Err(err).Msg("Command Get failed.")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to get command", http.StatusBadRequest, err))
+		}
+
+		// Delete from database
+		if err := ch.CommandStorer.Delete(ctx, command.ID); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command Delete failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete command", http.StatusBadRequest, err))
 		}
 
+		// Delete from storage
+		if err := ch.Plugins.Delete(ctx, command.Name); err != nil {
+			ch.Logger.Debug().Err(err).Msg("Failed to delete file from permanent storage.")
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to delete file from permanent storage", http.StatusInternalServerError, err))
+		}
 		return c.NoContent(http.StatusOK)
 	}
 }
@@ -97,6 +116,85 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 		}
 
 		return c.JSON(http.StatusOK, repo)
+	}
+}
+
+// Upload a command. To set up anything for the command, like schedules etc,
+// the command has to be edited. We don't support uploading the same thing twice.
+// If the command binary needs to be updated, delete the command and upload the
+// new binary.
+func (ch *CommandsHandler) Upload() echo.HandlerFunc {
+	return func(c echo.Context) error {
+		file, err := c.FormFile("file")
+		if err != nil {
+			return err
+		}
+
+		dots := strings.Split(file.Filename, ".")
+		if len(dots) == 0 {
+			return errors.New("file name does not contain a dot")
+		}
+		name := dots[0]
+		ctx := c.Request().Context()
+		// check if name is already taken:
+		if _, err := ch.CommandStorer.GetByName(ctx, name); err == nil {
+			return errors.New("command with name already taken")
+		}
+
+		src, err := file.Open()
+		if err != nil {
+			return err
+		}
+		defer func(src multipart.File) {
+			if err := src.Close(); err != nil {
+				ch.Logger.Debug().Err(err).Msg("Failed to close src.")
+			}
+		}(src)
+
+		// Destination
+		tmp, err := ioutil.TempDir("", "upload_folder")
+		if err != nil {
+			return err
+		}
+		defer func() {
+			if err := os.RemoveAll(tmp); err != nil {
+				ch.Logger.Debug().Err(err).Msg("Warning, failed to clean up temporary folder. Please do that manually.")
+			}
+		}()
+		dst, err := os.Create(filepath.Join(tmp, file.Filename))
+		if err != nil {
+			return err
+		}
+		defer func(dst *os.File) {
+			if err := dst.Close(); err != nil {
+				ch.Logger.Debug().Err(err).Msg("Failed to close destination file.")
+			}
+		}(dst)
+
+		if _, err = io.Copy(dst, src); err != nil {
+			return err
+		}
+
+		// Create the file first, then the command.
+		f, hash, err := ch.Plugins.Create(ctx, dst.Name())
+		if err != nil {
+			return err
+		}
+
+		command := &models.Command{
+			Name:     name,
+			Filename: filepath.Base(f),
+			Location: filepath.Dir(f),
+			Hash:     hash,
+			Enabled:  true,
+		}
+
+		command, err = ch.CommandStorer.Create(ctx, command)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusCreated, command)
 	}
 }
 

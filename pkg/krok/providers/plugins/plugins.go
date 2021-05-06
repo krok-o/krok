@@ -7,22 +7,18 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path"
-	"time"
+	"path/filepath"
+	"strings"
 
 	"cirello.io/pglock"
-	"github.com/fsnotify/fsnotify"
-	"github.com/rs/zerolog"
-	"golang.org/x/sync/errgroup"
-
-	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
-	"github.com/krok-o/krok/pkg/models"
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 )
 
 // Config has the configuration options for the plugins.
 type Config struct {
-	// Location is the folder to watch.
+	// Location is the folder to put the plugin into.
 	Location string
 }
 
@@ -30,108 +26,33 @@ type Config struct {
 type Dependencies struct {
 	Logger zerolog.Logger
 	Store  providers.CommandStorer
+	Tar    providers.Tar
 }
 
-// GoPlugins is a plugin handler which uses basic Go plugins and the plugins package.
-type GoPlugins struct {
+// Plugins is a plugin handler which uses basic Go plugins and the plugins package.
+type Plugins struct {
 	Config
 	Dependencies
 }
 
-// NewGoPluginsProvider creates a new Go based plugin provider.
+// NewPluginsProvider creates a new Go based plugin provider.
 // Starts the folder watcher.
-func NewGoPluginsProvider(cfg Config, deps Dependencies) (*GoPlugins, error) {
-	p := &GoPlugins{Config: cfg, Dependencies: deps}
-	if _, err := os.Stat(cfg.Location); os.IsNotExist(err) {
-		deps.Logger.Err(err).Str("location", cfg.Location).Msg("Location does not exist.")
-		return nil, err
-	}
-	return p, nil
+func NewPluginsProvider(cfg Config, deps Dependencies) *Plugins {
+	return &Plugins{Config: cfg, Dependencies: deps}
 }
 
-// Run starts the watcher and run until context is done.
-func (p *GoPlugins) Run(ctx context.Context) {
-	failureTry := time.Second * 15
-	for {
-		g, ctx := errgroup.WithContext(ctx)
-		g.Go(func() error {
-			return p.watch(ctx)
-		})
-		if err := g.Wait(); err != nil {
-			p.Logger.
-				Error().
-				Err(err).
-				Msgf("Failed to start the watcher or watcher encountered an error. Try again in %s.",
-					failureTry.String())
-		}
-		select {
-		case <-time.After(failureTry):
-			// try starting the watcher again
-		case <-ctx.Done():
-			return
-		}
-	}
-}
-
-// watch a folder for new plugins/commands to load.
-// If a file appears in the watched folder, it will be picked up and saved into the commands.
-func (p *GoPlugins) watch(ctx context.Context) error {
-	log := p.Logger.With().Str("location", p.Location).Logger()
-	watcher, err := fsnotify.NewWatcher()
-	if err != nil {
-		log.Debug().Err(err).Msg("Failed to start folder watcher.")
-		return err
-	}
-	defer func() {
-		if err := watcher.Close(); err != nil {
-			log.Debug().Err(err).Msg("Failed to close watcher.")
-		}
-	}()
-	if err := watcher.Add(p.Location); err != nil {
-		log.Debug().Err(err).Msg("Failed to add folder to watcher.")
-		return err
-	}
-	log.Debug().Str("location", p.Location).Msg("Started watching location...")
-	for {
-		select {
-		case event, ok := <-watcher.Events:
-			if !ok {
-				log.Debug().Err(err).Msg("Events channel closed.")
-				return errors.New("events channel closed")
-			}
-			switch {
-			case event.Op&fsnotify.Create == fsnotify.Create:
-				log.Debug().Msg("received create event")
-				if err := p.handleCreateEvent(ctx, event, log); err != nil {
-					log.Error().Err(err).Msg("Failed to handle create event.")
-				}
-			case event.Op&fsnotify.Remove == fsnotify.Remove:
-				if err := p.handleRemoveEvent(ctx, event, log); err != nil {
-					log.Error().Err(err).Msg("Failed to handle remove event.")
-				}
-			}
-		case err, ok := <-watcher.Errors:
-			if !ok {
-				return errors.New("errors channel closed")
-			}
-			log.Warn().Err(err).Msg("Error from file watcher.")
-		}
-	}
-}
-
-// handleCreateEvent will handle a create event from the file system. Generally
-// these are non-blocking events and can be re-tried by doing the same steps again.
-func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
-	file := event.Name
-	log = log.With().Str("file", file).Logger()
+// Create will handle creating a plugin, including un-taring and copying the plugin into the right location.
+// It returns the hash of the command. Creating the command is not its responsibility.
+func (p *Plugins) Create(ctx context.Context, file string) (string, string, error) {
+	log := p.Logger.With().Str("file", file).Logger()
 
 	l, err := p.Store.AcquireLock(ctx, file)
 	if err != nil {
 		if errors.Is(err, pglock.ErrNotAcquired) {
 			log.Debug().Msg("Some other process is already handling this file's create event.")
-			return nil
+			return "", "", nil
 		}
-		return err
+		return "", "", err
 	}
 	defer func() {
 		if err := l.Close(); err != nil {
@@ -139,56 +60,81 @@ func (p *GoPlugins) handleCreateEvent(ctx context.Context, event fsnotify.Event,
 		}
 	}()
 
+	// un-tar
+	dir := filepath.Dir(file)
+	base := filepath.Base(file)
+	f, err := os.Open(file)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to open archive.")
+		return "", "", err
+	}
+	if err := p.Tar.Untar(dir, f); err != nil {
+		log.Debug().Err(err).Msg("Failed to un-tar archive.")
+		return "", "", err
+	}
+	dots := strings.Split(base, ".")
+	if len(dots) < 1 {
+		return "", "", errors.New("no extensions found in filename")
+	}
+	extractedFile := filepath.Join(dir, dots[0])
+	dst := filepath.Join(p.Location, dots[0])
+
+	// Copy file to permanent storage
+	if err := p.Copy(extractedFile, dst); err != nil {
+		log.Debug().Err(err).Str("extracted_file", extractedFile).Msg("Failed to copy file to permanent storage.")
+		return "", "", err
+	}
+
 	log.Debug().Msg("New file added.")
-	hash, err := p.generateHash(file)
+	hash, err := p.generateHash(dst)
 	if err != nil || hash == "" {
 		log.Debug().Err(err).Str("hash", hash).Msg("Failed to generate hash for the file.")
-		return err
+		return "", "", err
 	}
-	name := path.Base(file)
-	command, err := p.Store.GetByName(ctx, name)
-	if err != nil {
-		if !errors.Is(err, kerr.ErrNotFound) {
-			log.Debug().Err(err).Msg("Failed to get command.")
-			return err
-		}
-		// The command doesn't exist yet, so we create it.
-		if _, err := p.Store.Create(ctx, &models.Command{
-			Name:     name,
-			Filename: name,
-			Location: p.Location,
-			Hash:     hash,
-			Enabled:  true,
-		}); err != nil {
-			log.Debug().Err(err).Msg("Failed to add new command.")
-		}
-		log.Debug().Msg("Created new entry for not existing command file.")
-		return nil
-	}
-	// the command exists in the db check if it is enabled, if not and the hash equals,
-	// enable it. If the hash does not equal, throw an error that command exists with different hash.
-	// The user should delete the command in this case.
-	if !command.Enabled && command.Hash == hash {
-		command.Enabled = true
-		if _, err := p.Store.Update(ctx, command); err != nil {
-			log.Debug().Err(err).Msg("Failed to update command to enabled.")
-			return err
-		}
-		log.Info().Msg("Existing command file was re-added with the same hash. Command has been enabled.")
-		return nil
-	}
-	if !command.Enabled && command.Hash != hash {
-		return errors.New("new file's hash does not equal with the stored command's hash")
-	}
-	// command is enabled and hash equals stored hash, nothing to do.
-	log.Info().Msg("File successfully processed.")
-	return nil
+	log.Debug().Str("dst", dst).Msg("New command successfully created.")
+	return dst, hash, nil
 }
 
-// handleRemoveEvent will handle a remove event from the file system.
-func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event, log zerolog.Logger) error {
-	file := event.Name
-	log = log.With().Str("file", file).Logger()
+// Copy the src file to dst. Any existing file will be overwritten and will not
+func (p *Plugins) Copy(src, dst string) error {
+	in, err := os.Open(src)
+	if err != nil {
+		p.Logger.Debug().Err(err).Str("src", src).Msg("Failed to open source.")
+		return err
+	}
+	stat, err := os.Stat(src)
+	if err != nil {
+		p.Logger.Debug().Err(err).Msg("Failed to stat src.")
+		return err
+	}
+	defer func(in *os.File) {
+		if err := in.Close(); err != nil {
+			p.Logger.Debug().Err(err).Str("in", in.Name()).Msg("Failed to close source file.")
+		}
+	}(in)
+	// Create the target with the original's permissions.
+	out, err := os.OpenFile(dst, os.O_CREATE|os.O_RDWR, stat.Mode())
+	if err != nil {
+		p.Logger.Debug().Err(err).Str("dst", dst).Msg("Failed to create destination.")
+		return err
+	}
+
+	_, err = io.Copy(out, in)
+	if err != nil {
+		return err
+	}
+	return out.Close()
+}
+
+// Delete will handle deleting a plugin from permanent storage.
+func (p *Plugins) Delete(ctx context.Context, name string) error {
+	// bail early if file doesn't exist so we don't acquire the lock.
+	file := filepath.Join(p.Location, name)
+	if _, err := os.Stat(file); err != nil {
+		p.Logger.Debug().Err(err).Str("name", name).Msg("Failed to find file with name in permanent storage.")
+		return err
+	}
+	log := log.With().Str("file", file).Logger()
 	l, err := p.Store.AcquireLock(ctx, file)
 	if err != nil {
 		if errors.Is(err, pglock.ErrNotAcquired) {
@@ -203,27 +149,16 @@ func (p *GoPlugins) handleRemoveEvent(ctx context.Context, event fsnotify.Event,
 		}
 	}()
 
-	log.Debug().Msg("File deleted. Disabling plugin.")
-	name := path.Base(file)
-	command, err := p.Store.GetByName(ctx, name)
-	if errors.Is(err, kerr.ErrNotFound) {
-		// no command with this name, nothing to do.
-		return nil
-	} else if err != nil {
-		log.Debug().Err(err).Msg("GetByName failed")
+	if err := os.Remove(file); err != nil {
+		log.Debug().Err(err).Msg("Failed to remove file.")
 		return err
 	}
-
-	command.Enabled = false
-	if _, err := p.Store.Update(ctx, command); err != nil {
-		log.Debug().Err(err).Msg("Update command failed")
-		return err
-	}
+	log.Debug().Msg("File deleted.")
 	return nil
 }
 
 // generateHash generates a hash for a file.
-func (p *GoPlugins) generateHash(file string) (string, error) {
+func (p *Plugins) generateHash(file string) (string, error) {
 	log := p.Logger.With().Str("file", file).Logger()
 	hasher := sha256.New()
 	f, err := os.Open(file)

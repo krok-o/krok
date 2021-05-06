@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/krok-o/krok/pkg/krok/providers/tar"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
@@ -194,19 +195,20 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	// ************************
-	// Set up the plugin watcher
+	// Set up the plugin
 	// ************************
+	tarer := tar.NewTarer(tar.Dependencies{
+		Logger: log,
+	})
 
-	pw, err := plugins.NewGoPluginsProvider(krokArgs.plugins, plugins.Dependencies{
+	pw := plugins.NewPluginsProvider(krokArgs.plugins, plugins.Dependencies{
 		Logger: log,
 		Store:  commandStore,
+		Tar:    tarer,
 	})
 	if err != nil {
 		log.Fatal().Err(err).Msg("Failed to start command watcher.")
 	}
-
-	// start the watcher
-	go pw.Run(context.Background())
 
 	// ************************
 	// Set up platforms
@@ -277,6 +279,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	commandHandler := handlers.NewCommandsHandler(handlers.CommandsHandlerDependencies{
 		CommandStorer: commandStore,
 		Logger:        log,
+		Plugins:       pw,
 	})
 
 	commandSettingsHandler := handlers.NewCommandSettingsHandler(handlers.CommandSettingsHandlerDependencies{
