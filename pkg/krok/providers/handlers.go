@@ -114,3 +114,8 @@ type UserHandler interface {
 	UpdateUser() echo.HandlerFunc
 	CreateUser() echo.HandlerFunc
 }
+
+// CommandRunHandler deals with command run details.
+type CommandRunHandler interface {
+	GetCommandRun() echo.HandlerFunc
+}

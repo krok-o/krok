@@ -73,6 +73,7 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
+		Clock:         providers.NewClock(),
 	})
 
 	t.Run("create happy path", func(tt *testing.T) {
@@ -106,7 +107,6 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		err = akh.Create()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
-		fmt.Println(rec.Body.String())
 		var key models.APIKey
 		err = json.Unmarshal(rec.Body.Bytes(), &key)
 		assert.NoError(tt, err)
@@ -143,6 +143,7 @@ func TestAPIKeysHandler_DeleteAPIKeyPair(t *testing.T) {
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
+		Clock:         providers.NewClock(),
 	})
 
 	t.Run("delete happy path", func(tt *testing.T) {
@@ -222,6 +223,7 @@ func TestAPIKeysHandler_GetAPIKeyPair(t *testing.T) {
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
+		Clock:         providers.NewClock(),
 	})
 
 	t.Run("get apikey happy path", func(tt *testing.T) {
@@ -335,6 +337,7 @@ func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
 		Dependencies:  deps,
 		APIKeysStore:  aks,
 		TokenProvider: tp,
+		Clock:         providers.NewClock(),
 	})
 
 	t.Run("list apikey happy path", func(tt *testing.T) {

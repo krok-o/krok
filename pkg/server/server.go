@@ -44,6 +44,7 @@ type Dependencies struct {
 	UserMiddleware         providers.UserMiddleware
 	CommandHandler         providers.CommandHandler
 	CommandSettingsHandler providers.CommandSettingsHandler
+	CommandRunHandler      providers.CommandRunHandler
 	RepositoryHandler      providers.RepositoryHandler
 	APIKeyHandler          providers.APIKeysHandler
 	AuthHandler            providers.AuthHandler
@@ -122,6 +123,9 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/command/:id/settings", s.Dependencies.CommandSettingsHandler.List())
 	auth.POST("/command/settings/update", s.Dependencies.CommandSettingsHandler.Update())
 	auth.POST("/command/setting", s.Dependencies.CommandSettingsHandler.Create())
+
+	// command runs
+	auth.GET("/command/run/:id", s.Dependencies.CommandRunHandler.GetCommandRun())
 
 	// api keys related actions
 	auth.POST("/user/apikey/generate/:name", s.Dependencies.APIKeyHandler.Create())

@@ -24,6 +24,7 @@ type APIKeysHandlerDependencies struct {
 	Dependencies
 	APIKeysStore  providers.APIKeysStorer
 	TokenProvider *TokenHandler
+	Clock         providers.Clock
 }
 
 // APIKeysHandler is a handler taking care of api keys related api calls.
@@ -82,7 +83,7 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 			UserID:       uc.UserID,
 			APIKeyID:     keyID,
 			APIKeySecret: string(encrypted),
-			TTL:          time.Now().Add(keyTTL),
+			TTL:          a.Clock.Now().Add(keyTTL),
 		}
 
 		generatedKey, err := a.APIKeysStore.Create(ctx, key)

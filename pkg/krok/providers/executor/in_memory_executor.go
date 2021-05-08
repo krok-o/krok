@@ -28,6 +28,7 @@ type Dependencies struct {
 	Logger        zerolog.Logger
 	CommandRuns   providers.CommandRunStorer
 	CommandStorer providers.CommandStorer
+	Clock         providers.Clock
 }
 
 // InMemoryExecuter defines an Executor which runs commands
@@ -99,7 +100,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			CommandName: c.Name,
 			Status:      "created",
 			Outcome:     "",
-			CreateAt:    time.Now(),
+			CreateAt:    ime.Clock.Now(),
 		}
 		commandRun, err = ime.CommandRuns.CreateRun(ctx, commandRun)
 		if err != nil {

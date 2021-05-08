@@ -287,6 +287,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 	})
 
+	commandRunHandler := handlers.NewCommandRunHandler(handlers.CommandRunHandlerDependencies{
+		CommandRunStorer: commandRunStore,
+		Logger:           log,
+	})
+
 	hookHandler := handlers.NewHookHandler(handlers.HookDependencies{
 		RepositoryStore:   repoStore,
 		PlatformProviders: platformProviders,
@@ -360,6 +365,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		UserMiddleware:         userMiddleware,
 		CommandHandler:         commandHandler,
 		CommandSettingsHandler: commandSettingsHandler,
+		CommandRunHandler:      commandRunHandler,
 		RepositoryHandler:      repoHandler,
 		APIKeyHandler:          apiKeysHandler,
 		AuthHandler:            authHandler,
