@@ -175,7 +175,7 @@ func (e *EventsStore) GetEvent(ctx context.Context, id int) (*models.Event, erro
 		return nil, fmt.Errorf("failed to execute Get: %w", err)
 	}
 
-	commands, err := e.getCommandRunForEvent(ctx, result.ID)
+	commands, err := e.getCommandRunsForEvent(ctx, result.ID)
 	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
 		log.Debug().Err(err).Msg("Get failed to get event command runs.")
 		return nil, err
@@ -184,8 +184,8 @@ func (e *EventsStore) GetEvent(ctx context.Context, id int) (*models.Event, erro
 	return result, nil
 }
 
-// getCommandRunForEvent returns a list of command runs for an event.
-func (e *EventsStore) getCommandRunForEvent(ctx context.Context, id int) ([]*models.CommandRun, error) {
+// getCommandRunsForEvent returns a list of command runs for an event.
+func (e *EventsStore) getCommandRunsForEvent(ctx context.Context, id int) ([]*models.CommandRun, error) {
 	log := e.Logger.With().Int("id", id).Logger()
 
 	// Select the related commands.
@@ -235,7 +235,7 @@ func (e *EventsStore) getCommandRunForEvent(ctx context.Context, id int) ([]*mod
 		return nil
 	}
 	if err := e.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
-		return nil, fmt.Errorf("failed to execute getCommandRunForEvent: %w", err)
+		return nil, fmt.Errorf("failed to execute getCommandRunsForEvent: %w", err)
 	}
 	return result, nil
 }

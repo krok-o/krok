@@ -3,7 +3,6 @@ package mailgun
 import (
 	"bytes"
 	"fmt"
-	"time"
 
 	mg "github.com/mailgun/mailgun-go"
 	"github.com/rs/zerolog"
@@ -38,6 +37,7 @@ type Config struct {
 // Dependencies contains dependencies this provider uses.
 type Dependencies struct {
 	Logger zerolog.Logger
+	Clock  providers.Clock
 }
 
 // Sender is an email sender using Mailgun as a backend.
@@ -60,7 +60,7 @@ func (e *Sender) Notify(email string, event providers.Event, payload providers.P
 	domain := e.Domain
 	apiKey := e.APIKey
 	sender := fmt.Sprintf("no-reply@%s", domain)
-	subject := fmt.Sprintf("[%s] %s Notification", time.Now().Format("2006-01-02"), event)
+	subject := fmt.Sprintf("[%s] %s Notification", e.Clock.Now().Format("2006-01-02"), event)
 	log := e.Logger.With().Str("email", email).Str("payload", string(payload)).Logger()
 
 	if domain == "" && apiKey == "" {
