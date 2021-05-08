@@ -41,7 +41,8 @@ func (cm *CommandRunHandler) GetCommandRun() echo.HandlerFunc {
 		cr, err := cm.CommandRunStorer.Get(c.Request().Context(), n)
 		if err != nil {
 			if errors.Is(err, kerr.ErrNotFound) {
-				return c.NoContent(http.StatusNotFound)
+				kapiErr := kerr.APIError("command run not found", http.StatusNotFound, err)
+				return c.JSON(http.StatusNotFound, kapiErr)
 			}
 			kapiErr := kerr.APIError("failed to get command run", http.StatusInternalServerError, err)
 			return c.JSON(http.StatusInternalServerError, kapiErr)
