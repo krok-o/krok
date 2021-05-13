@@ -13,3 +13,14 @@ type User struct {
 	APIKeys     []*APIKey `json:"api_keys,omitempty"`
 	Token       *string   `json:"-"`
 }
+
+// NewUser is a new user in the Krok system. Specifically this exposes the token and should only be used when creating
+// a user for the first time.
+type NewUser struct {
+	DisplayName string    `json:"display_name,omitempty"`
+	Email       string    `json:"email"`
+	ID          int       `json:"id"`
+	LastLogin   time.Time `json:"last_login,omitempty"`
+	APIKeys     []*APIKey `json:"api_keys,omitempty"`
+	Token       *string   `json:"token"`
+}

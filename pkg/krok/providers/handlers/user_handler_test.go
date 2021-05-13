@@ -21,31 +21,38 @@ import (
 )
 
 func TestUserHandler_CreateUser(t *testing.T) {
+	uat := "abcdef"
+
 	t.Run("normal flow", func(tt *testing.T) {
 		// setup handler
 		mus := &mocks.UserStorer{}
+		mutg := &mocks.UserTokenGenerator{}
 		log := zerolog.New(os.Stderr)
 		uh := NewUserHandler(UserHandlerDependencies{
-			Logger:    log,
-			UserStore: mus,
+			Logger:       log,
+			UserStore:    mus,
+			UATGenerator: mutg,
 		})
 
 		// setup expected mock calls
+		mutg.On("Generate", 60).Return(uat, nil)
 		mus.On("Create", mock.Anything, &models.User{
 			DisplayName: "Gergely",
 			Email:       "bla@bla.com",
+			Token:       &uat,
 		}).Return(&models.User{
 			DisplayName: "Gergely",
 			Email:       "bla@bla.com",
 			ID:          0,
 			LastLogin:   time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC),
 			APIKeys:     nil,
+			Token:       &uat,
 		}, nil)
 
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(t, err)
 		userPost := `{"display_name":"Gergely","email":"bla@bla.com"}`
-		userExpected := `{"display_name":"Gergely","email":"bla@bla.com","id":0,"last_login":"1981-01-01T01:01:01.000000001Z"}
+		userExpected := `{"display_name":"Gergely","email":"bla@bla.com","id":0,"last_login":"1981-01-01T01:01:01.000000001Z","token":"abcdef"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/user", strings.NewReader(userPost))
@@ -58,21 +65,25 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, rec.Code)
 		content, err := ioutil.ReadAll(rec.Body)
 		assert.NoError(t, err)
-		assert.Equal(t, string(content), userExpected)
+		assert.Equal(t, userExpected, string(content))
 	})
 	t.Run("when there is an error creating a user", func(tt *testing.T) {
 		// setup handler
 		mus := &mocks.UserStorer{}
+		mutg := &mocks.UserTokenGenerator{}
 		log := zerolog.New(os.Stderr)
 		uh := NewUserHandler(UserHandlerDependencies{
-			Logger:    log,
-			UserStore: mus,
+			Logger:       log,
+			UserStore:    mus,
+			UATGenerator: mutg,
 		})
 
 		// setup expected mock calls
+		mutg.On("Generate", 60).Return(uat, nil)
 		mus.On("Create", mock.Anything, &models.User{
 			DisplayName: "Gergely",
 			Email:       "bla@bla.com",
+			Token:       &uat,
 		}).Return(nil, errors.New("nope"))
 
 		token, err := generateTestToken("test@email.com")
@@ -110,6 +121,33 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		mus.AssertNumberOfCalls(tt, "Create", 0)
+	})
+	t.Run("when there is an error generating the user token errors", func(tt *testing.T) {
+		// setup handler
+		mus := &mocks.UserStorer{}
+		mutg := &mocks.UserTokenGenerator{}
+		log := zerolog.New(os.Stderr)
+		uh := NewUserHandler(UserHandlerDependencies{
+			Logger:       log,
+			UserStore:    mus,
+			UATGenerator: mutg,
+		})
+
+		// setup expected mock calls
+		mutg.On("Generate", 60).Return(uat, errors.New("generate err"))
+
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(t, err)
+		userPost := `{"display_name":"Gergely","email":"bla@bla.com"}`
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/user", strings.NewReader(userPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = uh.CreateUser()(c)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	})
 }
 
