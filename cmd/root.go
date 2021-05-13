@@ -324,10 +324,12 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		TokenProvider: platformTokenProvider,
 	})
 
+	userTokenGenerator := auth.NewUserTokenGenerator()
+
 	userTokenHandler := handlers.NewUserTokenHandler(handlers.UserTokenHandlerDeps{
 		Logger:       log,
 		UserStore:    userStore,
-		UATGenerator: auth.NewUserTokenGenerator(),
+		UATGenerator: userTokenGenerator,
 	})
 
 	eventHandler := handlers.NewEventHandler(handlers.EventHandlerDependencies{
@@ -336,8 +338,9 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	userHandler := handlers.NewUserHandler(handlers.UserHandlerDependencies{
-		Logger:    log,
-		UserStore: userStore,
+		Logger:       log,
+		UserStore:    userStore,
+		UATGenerator: userTokenGenerator,
 	})
 
 	supportedPlatformListHandler := handlers.NewSupportedPlatformListHandler()

@@ -19,8 +19,9 @@ type UserHandler struct {
 
 // UserHandlerDependencies .
 type UserHandlerDependencies struct {
-	Logger    zerolog.Logger
-	UserStore providers.UserStorer
+	Logger       zerolog.Logger
+	UserStore    providers.UserStorer
+	UATGenerator providers.UserTokenGenerator
 }
 
 // NewUserHandler .
@@ -124,12 +125,20 @@ func (u *UserHandler) CreateUser() echo.HandlerFunc {
 		if err := c.Bind(&create); err != nil {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind user", http.StatusBadRequest, err))
 		}
+
+		token, err := u.UATGenerator.Generate(60)
+		if err != nil {
+			apiError := kerr.APIError("failed to generate uat", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
+		}
+		create.Token = &token
+
 		result, err := u.UserStore.Create(c.Request().Context(), create)
 		if err != nil {
 			apiError := kerr.APIError("failed to create user", http.StatusInternalServerError, err)
 			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
-		return c.JSON(http.StatusCreated, result)
+		return c.JSON(http.StatusCreated, models.NewUser(*result))
 	}
 }
