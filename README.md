@@ -5,3 +5,4 @@
 [![Discord Chat](https://img.shields.io/discord/799290432567771146.svg)](https://discord.gg/)  
 
 The main server of the hook management system.
+
