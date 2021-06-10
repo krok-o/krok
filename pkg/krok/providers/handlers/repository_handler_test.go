@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -83,7 +82,7 @@ func (g *mockGithubPlatformProvider) CreateHook(ctx context.Context, repo *model
 }
 
 func TestRepoHandler_CreateRepository(t *testing.T) {
-	mrs := &mockRepositoryStorer{}
+	mrs := &mocks.RepositoryStorer{}
 	mars := &mocks.RepositoryAuth{}
 	mars.On("CreateRepositoryAuth", mock.Anything, mock.Anything, &models.Auth{Secret: "secret"}).Return(nil)
 	mg := &mockGithubPlatformProvider{}
@@ -92,24 +91,38 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		Protocol: "http",
 		HookBase: "hookbase",
 	}
-	rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
-		Logger:           logger,
-		RepositoryStorer: mrs,
-		PlatformProviders: map[int]providers.Platform{
-			models.GITHUB: mg,
-		},
-		Auth: mars,
-	})
-
-	assert.NoError(t, err)
-	var id int
 	t.Run("positive flow of create", func(tt *testing.T) {
+		mrs = &mocks.RepositoryStorer{}
+		mrs.On("Create", mock.Anything, &models.Repository{
+			Name: "test-name",
+			URL:  "https://github.com/Skarlso/test",
+			VCS:  1,
+			Auth: &models.Auth{
+				Secret: "secret",
+			},
+		}).Return(&models.Repository{
+			Name: "test-name",
+			URL:  "https://github.com/Skarlso/test",
+			ID:   1,
+			VCS:  1,
+			Auth: &models.Auth{
+				Secret: "secret",
+			}}, nil)
+		rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
+			Logger:           logger,
+			RepositoryStorer: mrs,
+			PlatformProviders: map[int]providers.Platform{
+				models.GITHUB: mg,
+			},
+			Auth: mars,
+		})
+		assert.NoError(t, err)
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
 		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1, "auth": {"secret": "secret"}}`
-		repositoryExpected := fmt.Sprintf(`{"name":"test-name","id":%d,"url":"https://github.com/Skarlso/test","vcs":1,"GitLab":null,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/%d/1/callback"}
-`, id, id)
+		repositoryExpected := `{"name":"test-name","id":1,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/1/1/callback"}
+`
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -120,16 +133,42 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusCreated, rec.Code)
 		assert.Equal(tt, repositoryExpected, rec.Body.String())
-		id++
 	})
 
 	t.Run("positive flow of create with project id", func(tt *testing.T) {
+		mrs = &mocks.RepositoryStorer{}
+		mrs.On("Create", mock.Anything, &models.Repository{
+			Name:   "test-name",
+			URL:    "https://github.com/Skarlso/test",
+			VCS:    1,
+			GitLab: &models.GitLab{ProjectID: 10},
+			Auth: &models.Auth{
+				Secret: "secret",
+			},
+		}).Return(&models.Repository{
+			Name:   "test-name",
+			URL:    "https://github.com/Skarlso/test",
+			ID:     1,
+			VCS:    1,
+			GitLab: &models.GitLab{ProjectID: 10},
+			Auth: &models.Auth{
+				Secret: "secret",
+			}}, nil)
+		rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
+			Logger:           logger,
+			RepositoryStorer: mrs,
+			PlatformProviders: map[int]providers.Platform{
+				models.GITHUB: mg,
+			},
+			Auth: mars,
+		})
+		assert.NoError(t, err)
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1, "GitLab":{"project_id": 10}, "auth": {"secret": "secret"}}`
-		repositoryExpected := fmt.Sprintf(`{"name":"test-name","id":%d,"url":"https://github.com/Skarlso/test","vcs":1,"GitLab":{"project_id":10},"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/%d/1/callback"}
-`, id, id)
+		repositoryPost := `{"name" : "test-name", "url" : "https://github.com/Skarlso/test", "vcs" : 1, "git_lab":{"project_id": 10}, "auth": {"secret": "secret"}}`
+		repositoryExpected := `{"name":"test-name","id":1,"url":"https://github.com/Skarlso/test","vcs":1,"git_lab":{"project_id":10},"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/1/1/callback"}
+`
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository", strings.NewReader(repositoryPost))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -143,6 +182,16 @@ func TestRepoHandler_CreateRepository(t *testing.T) {
 	})
 
 	t.Run("invalid post data", func(tt *testing.T) {
+		mrs = &mocks.RepositoryStorer{}
+		rh, err := NewRepositoryHandler(cfg, RepoHandlerDependencies{
+			Logger:           logger,
+			RepositoryStorer: mrs,
+			PlatformProviders: map[int]providers.Platform{
+				models.GITHUB: mg,
+			},
+			Auth: mars,
+		})
+		assert.NoError(t, err)
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
@@ -179,7 +228,7 @@ func TestRepoHandler_UpdateRepository(t *testing.T) {
 		assert.NoError(tt, err)
 
 		repositoryPost := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1}`
-		repositoryExpected := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"GitLab":null,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
+		repositoryExpected := `{"name":"updated-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/repository/update", strings.NewReader(repositoryPost))
@@ -239,7 +288,7 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"GitLab":null,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -259,9 +308,8 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		pid := 10
-		mrs.getRepo.GitLab = &models.GitLab{ProjectID: &pid}
-		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"GitLab":{"project_id":10},"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
+		mrs.getRepo.GitLab = &models.GitLab{ProjectID: 10}
+		repositoryExpected := `{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"git_lab":{"project_id":10},"auth":{"secret":"secret"},"unique_url":"http://hookbase/rest/api/1/hooks/0/1/callback"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
@@ -311,7 +359,6 @@ func TestRepoHandler_GetRepository(t *testing.T) {
 }
 
 func TestRepoHandler_ListRepositories(t *testing.T) {
-	pid := 10
 	mrs := &mockRepositoryStorer{
 		listRepo: []*models.Repository{
 			{
@@ -326,7 +373,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 				URL:  "https://github.com/Skarlso/test2",
 				VCS:  0,
 				GitLab: &models.GitLab{
-					ProjectID: &pid,
+					ProjectID: 10,
 				},
 			},
 		},
@@ -346,7 +393,7 @@ func TestRepoHandler_ListRepositories(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryExpected := `[{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1,"GitLab":null},{"name":"test-name2","id":1,"url":"https://github.com/Skarlso/test2","vcs":0,"GitLab":{"project_id":10}}]
+		repositoryExpected := `[{"name":"test-name","id":0,"url":"https://github.com/Skarlso/test","vcs":1},{"name":"test-name2","id":1,"url":"https://github.com/Skarlso/test2","vcs":0,"git_lab":{"project_id":10}}]
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)

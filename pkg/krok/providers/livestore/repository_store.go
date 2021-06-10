@@ -187,7 +187,7 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 				name      string
 				url       string
 				vcs       int
-				projectID *int // this field needs to be a pointer because it can be nil which will result in a nil value.
+				projectID int // this field needs to be a pointer because it can be nil which will result in a nil value.
 			)
 			if err := rows.Scan(&id, &name, &url, &vcs, &projectID); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
@@ -237,7 +237,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 		var (
 			id, vcs   int
 			name, url string
-			projectID *int
+			projectID int
 		)
 		if err := tx.QueryRow(ctx, fmt.Sprintf("select id, name, url, vcs, project_id from %s where %s=$1", repositoriesTable, field), value).Scan(&id, &name, &url, &vcs, &projectID); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {

@@ -161,7 +161,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		commandExpected := `{"name":"test-command","id":0,"schedule":"* * * * *","repositories":[{"name":"test-repo","id":0,"url":"https://google.com","vcs":1,"GitLab":null}],"filename":"filename","location":"location","hash":"hash","enabled":true}
+		commandExpected := `{"name":"test-command","id":0,"schedule":"* * * * *","repositories":[{"name":"test-repo","id":0,"url":"https://google.com","vcs":1}],"filename":"filename","location":"location","hash":"hash","enabled":true}
 `
 
 		e := echo.New()

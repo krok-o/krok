@@ -101,7 +101,7 @@ func (g *Gitlab) CreateHook(ctx context.Context, repo *models.Repository) error 
 		log.Error().Msg("Unique callback url is empty.")
 		return errors.New("unique callback url is empty")
 	}
-	if repo.GitLab.GetProjectID() == nil {
+	if repo.GitLab.GetProjectID() == -1 {
 		log.Error().Msg("Project ID must not be empty for a gitlab repository.")
 	}
 
@@ -151,7 +151,7 @@ func (g *Gitlab) CreateHook(ctx context.Context, repo *models.Repository) error 
 	}
 	// TODO: Project ID can either be a name or an ID. Consider trying to match that. I can store
 	// an integer serialized to bytes in the DB. https://golang.org/pkg/encoding/binary/#example_Write
-	pid := *repo.GitLab.GetProjectID()
+	pid := repo.GitLab.GetProjectID()
 	hook, response, err := git.Projects.AddProjectHook(pid, hookOpts)
 	if err != nil {
 		log.Debug().Err(err).Msg("Failed to create hook.")
