@@ -49,7 +49,7 @@ func (r *RepositoryStore) Create(ctx context.Context, c *models.Repository) (*mo
 			c.Name,
 			c.URL,
 			c.VCS,
-			c.ProjectID); err != nil {
+			c.GitLab.GetProjectID()); err != nil {
 			log.Debug().Err(err).Msg("Failed to create repository.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -197,11 +197,13 @@ func (r *RepositoryStore) List(ctx context.Context, opts *models.ListOptions) ([
 				}
 			}
 			repository := &models.Repository{
-				Name:      name,
-				ID:        id,
-				URL:       url,
-				VCS:       vcs,
-				ProjectID: projectID,
+				Name: name,
+				ID:   id,
+				URL:  url,
+				VCS:  vcs,
+				GitLab: &models.GitLab{
+					ProjectID: projectID,
+				},
 			}
 			result = append(result, repository)
 		}
@@ -253,7 +255,7 @@ func (r *RepositoryStore) getByX(ctx context.Context, log zerolog.Logger, field 
 		result.Name = name
 		result.URL = url
 		result.VCS = vcs
-		result.ProjectID = projectID
+		result.GitLab = &models.GitLab{ProjectID: projectID}
 		return nil
 	}
 	if err := r.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {

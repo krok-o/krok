@@ -11,6 +11,20 @@ type Auth struct {
 	Secret string `json:"secret"`
 }
 
+// GitLab contains gitLab specific settings.
+type GitLab struct {
+	// ProjectID is an optional ID which defines a project in Gitlab.
+	ProjectID *int `json:"project_id,omitempty"`
+}
+
+// GetProjectID returns the project id.
+func (g *GitLab) GetProjectID() *int {
+	if g != nil {
+		return g.ProjectID
+	}
+	return nil
+}
+
 // Repository is a repository which can be managed by Krok.
 type Repository struct {
 	Name string `json:"name"`
@@ -18,8 +32,8 @@ type Repository struct {
 	URL  string `json:"url"`
 	// Defines which handler will be used. For values, see platforms.go.
 	VCS int `json:"vcs"`
-	// ProjectID is an optional ID which defines a project in Gitlab.
-	ProjectID *int `json:"project_id,omitempty"`
+	// GitLab specific settings.
+	GitLab *GitLab
 	// Auth an command are all dynamically generated.
 	Auth     *Auth      `json:"auth,omitempty"`
 	Commands []*Command `json:"commands,omitempty"`
