@@ -59,7 +59,7 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 		// this will be displayed once, then never shown again, ever.
 		secret, err := a.generateUniqueKey()
 		if err != nil {
-			apiError := kerr.APIError("failed to generate unique api key id", http.StatusBadRequest, err)
+			apiError := kerr.APIError("failed to generate unique api key", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
@@ -67,7 +67,7 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 		// this will be displayed once, then never shown again, ever.
 		keyID, err := a.generateKeyID()
 		if err != nil {
-			apiError := kerr.APIError("failed to generate unique api key id", http.StatusBadRequest, err)
+			apiError := kerr.APIError("failed to generate unique api id", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
 
