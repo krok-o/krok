@@ -43,6 +43,455 @@ definitions:
       the frontend.
     type: object
     x-go-package: github.com/krok-o/krok/pkg/models
+  Auth:
+    properties:
+      password:
+        description: Password is the password required to access the platform for
+          this repositroy.
+        type: string
+        x-go-name: Password
+      secret:
+        description: Hook secret to create a hook with on the respective platform.
+        type: string
+        x-go-name: Secret
+      ssh:
+        description: SSH private key.
+        type: string
+        x-go-name: SSH
+      username:
+        description: Username is the username required to access the platform for
+          this repositroy.
+        type: string
+        x-go-name: Username
+    required:
+    - secret
+    title: Auth is authentication option for a repository.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  Command:
+    properties:
+      enabled:
+        description: Enabled defines if this command can be executed or not.
+        example: false
+        type: boolean
+        x-go-name: Enabled
+      filename:
+        description: Filename is the name of the file which holds this command.
+        example: my_awesome_command
+        type: string
+        x-go-name: Filename
+      hash:
+        description: Hash is the hash of the command file.
+        type: string
+        x-go-name: Hash
+      id:
+        description: ID of the command. Generated.
+        format: int64
+        type: integer
+        x-go-name: ID
+      location:
+        description: Location is where this command is located at. This is the full
+          path of the containing folder.
+        example: /tmp/krok-commands
+        type: string
+        x-go-name: Location
+      name:
+        description: Name of the command.
+        type: string
+        x-go-name: Name
+      repositories:
+        description: Repositories that this command can execute on.
+        items:
+          $ref: '#/definitions/Repository'
+        type: array
+        x-go-name: Repositories
+      schedule:
+        description: Schedule of the command.
+        example: 0 * * * * // follows cron job syntax.
+        type: string
+        x-go-name: Schedule
+    required:
+    - name
+    - id
+    - filename
+    - location
+    - hash
+    title: Command is a command which can be executed by Krok.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  CommandRun:
+    description: |-
+      CommandRun is a single run of a command belonging to an event
+      including things like, state, event, and created at.
+    properties:
+      command_name:
+        description: CommandName is the name of the command that is being executed.
+        type: string
+        x-go-name: CommandName
+      create_at:
+        description: CreatedAt is the time when this command run was created.
+        format: date-time
+        type: string
+        x-go-name: CreateAt
+      event_id:
+        description: EventID is the ID of the event that this run belongs to.
+        format: int64
+        type: integer
+        x-go-name: EventID
+      id:
+        description: ID is a generatd identifier.
+        format: int64
+        type: integer
+        x-go-name: ID
+      outcome:
+        description: Outcome is any output of the command. Stdout and stderr combined.
+        type: string
+        x-go-name: Outcome
+      status:
+        description: Status is the current state of the command run.
+        example: running, failed, success
+        type: string
+        x-go-name: Status
+    required:
+    - id
+    - event_id
+    - command_name
+    - status
+    - create_at
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  CommandSetting:
+    properties:
+      command_id:
+        description: CommandID is the ID of the command to which these settings belong
+          to.
+        format: int64
+        type: integer
+        x-go-name: CommandID
+      id:
+        description: ID is a generated ID.
+        format: int64
+        type: integer
+        x-go-name: ID
+      in_vault:
+        description: InVault defines if this is sensitive information and should be
+          stored securely.
+        type: boolean
+        x-go-name: InVault
+      key:
+        description: Key is the name of the setting.
+        type: string
+        x-go-name: Key
+      value:
+        description: Value is the value of the setting.
+        type: string
+        x-go-name: Value
+    required:
+    - id
+    - command_id
+    - key
+    - value
+    title: CommandSetting defines the settings a command can have.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  Event:
+    description: |-
+      Event contains details about a platform event, such as
+      the repository it belongs to and the event that created it...
+    properties:
+      command_runs:
+        description: CommandRuns contains a list of CommandRuns which executed for
+          this event.
+        items:
+          $ref: '#/definitions/CommandRun'
+        type: array
+        x-go-name: CommandRuns
+      create_at:
+        description: CreatedAt contains the timestamp when this event occurred.
+        format: date-time
+        type: string
+        x-go-name: CreateAt
+      event_id:
+        description: |-
+          EvenID is the ID of the corresponding event on the given platform. If that cannot be determined
+          an ID is generated.
+        type: string
+        x-go-name: EventID
+      id:
+        description: ID is a generated ID.
+        format: int64
+        type: integer
+        x-go-name: ID
+      payload:
+        description: Payload defines the information received from the platform for
+          this event.
+        type: string
+        x-go-name: Payload
+      repository_id:
+        description: RepositoryID contains the ID of the repository for which this
+          event occurred.
+        format: int64
+        type: integer
+        x-go-name: RepositoryID
+      vcs:
+        description: VCS is the ID of the platform on which this even occurred.
+        format: int64
+        type: integer
+        x-go-name: VCS
+    required:
+    - id
+    - event_id
+    - create_at
+    - repository_id
+    - payload
+    - vcs
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  GitLab:
+    properties:
+      project_id:
+        description: ProjectID is an optional ID which defines a project in Gitlab.
+        format: int64
+        type: integer
+        x-go-name: ProjectID
+    title: GitLab contains gitLab specific settings.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  ListOptions:
+    properties:
+      end_date:
+        description: EndDate defines a date of end to look for events. Not Inclusive.
+        example: "2021-02-03"
+        format: date-time
+        type: string
+        x-go-name: EndDate
+      name:
+        description: Name of the context for which this option is used.
+        type: string
+        x-go-name: Name
+      page:
+        description: Current Page
+        format: int64
+        type: integer
+        x-go-name: Page
+      page_size:
+        description: |-
+          Items per Page
+
+          required false
+        format: int64
+        type: integer
+        x-go-name: PageSize
+      starting_date:
+        description: StartingDate defines a date of start to look for events. Inclusive.
+        example: "2021-02-02"
+        format: date-time
+        type: string
+        x-go-name: StartingDate
+      vcs:
+        description: Only list all entries for a given platform ID.
+        format: int64
+        type: integer
+        x-go-name: VCS
+    title: ListOptions provides options for List operations with additional filters.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  NewUser:
+    description: |-
+      NewUser is a new user in the Krok system. Specifically this exposes the token and should only be used when creating
+      a user for the first time.
+    properties:
+      api_keys:
+        description: APIKeys contains generated api access keys for this user.
+        items:
+          $ref: '#/definitions/APIKey'
+        type: array
+        x-go-name: APIKeys
+      display_name:
+        description: DisplayName is the name of the user.
+        type: string
+        x-go-name: DisplayName
+      email:
+        description: Email of the user.
+        type: string
+        x-go-name: Email
+      id:
+        description: ID of the user. This is auto-generated.
+        format: int64
+        type: integer
+        x-go-name: ID
+      last_login:
+        description: LastLogin contains the timestamp of the last successful login
+          of this user.
+        format: date-time
+        type: string
+        x-go-name: LastLogin
+      token:
+        description: Token is displayed once for new users. Then never again.
+        type: string
+        x-go-name: Token
+    required:
+    - email
+    - id
+    - last_login
+    - token
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  Platform:
+    properties:
+      id:
+        description: ID of the platform. This is choosen.
+        format: int64
+        type: integer
+        x-go-name: ID
+      name:
+        description: Name of the platform.
+        example: github, gitlab, gitea
+        type: string
+        x-go-name: Name
+    required:
+    - id
+    - name
+    title: Platform defines a platform like Github, Gitlab etc.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  Repository:
+    properties:
+      auth:
+        $ref: '#/definitions/Auth'
+      commands:
+        description: Commands contains all the commands which this repository is attached
+          to.
+        items:
+          $ref: '#/definitions/Command'
+        type: array
+        x-go-name: Commands
+      events:
+        description: 'TODO: Think about storing this'
+        items:
+          type: string
+        type: array
+        x-go-name: Events
+      git_lab:
+        $ref: '#/definitions/GitLab'
+      id:
+        description: ID of the repository. Auto-generated.
+        format: int64
+        type: integer
+        x-go-name: ID
+      name:
+        description: Name of the repository.
+        type: string
+        x-go-name: Name
+      unique_url:
+        description: |-
+          This field is not saved in the DB but generated every time the repository
+          details needs to be displayed.
+        type: string
+        x-go-name: UniqueURL
+      url:
+        description: URL of the repository.
+        type: string
+        x-go-name: URL
+      vcs:
+        description: VCS Defines which handler will be used. For values, see platforms.go.
+        format: int64
+        type: integer
+        x-go-name: VCS
+    required:
+    - id
+    - url
+    - vcs
+    - auth
+    - unique_url
+    title: Repository is a repository which can be managed by Krok.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  User:
+    properties:
+      api_keys:
+        description: APIKeys contains generated api access keys for this user.
+        items:
+          $ref: '#/definitions/APIKey'
+        type: array
+        x-go-name: APIKeys
+      display_name:
+        description: DisplayName is the name of the user.
+        type: string
+        x-go-name: DisplayName
+      email:
+        description: Email of the user.
+        type: string
+        x-go-name: Email
+      id:
+        description: ID of the user. This is auto-generated.
+        format: int64
+        type: integer
+        x-go-name: ID
+      last_login:
+        description: LastLogin contains the timestamp of the last successful login
+          of this user.
+        format: date-time
+        type: string
+        x-go-name: LastLogin
+    required:
+    - email
+    - id
+    - last_login
+    title: User is a user in the Krok system.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  UserAuthDetails:
+    properties:
+      Email:
+        description: Email is the email of the registered user.
+        type: string
+      FirstName:
+        description: FirstName is the first name of the user.
+        type: string
+      LastName:
+        description: LastName is the last name of the user.
+        type: string
+    required:
+    - Email
+    - FirstName
+    - LastName
+    title: UserAuthDetails represents the authenticated user details.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  VCSToken:
+    properties:
+      token:
+        description: Token is the actual token.
+        type: string
+        x-go-name: Token
+      vcs:
+        description: VCS is the ID of the platform to which this token belongs to.
+        format: int64
+        type: integer
+        x-go-name: VCS
+    required:
+    - token
+    - vcs
+    title: VCSToken represents a token for a platform.
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
+  VaultSetting:
+    description: VaultSetting defines a setting that comes from the vault
+    properties:
+      key:
+        description: Key is the name of the setting.
+        type: string
+        x-go-name: Key
+      value:
+        description: Value is the value of the setting.
+        type: string
+        x-go-name: Value
+    required:
+    - key
+    - value
+    type: object
+    x-go-package: github.com/krok-o/krok/pkg/models
 host: krok-o.io
 info:
   description: Documentation the Krok API.

@@ -12,8 +12,16 @@ const (
 )
 
 // Platform defines a platform like Github, Gitlab etc.
+// swagger:model
 type Platform struct {
-	ID   int    `json:"id"`
+	// ID of the platform. This is choosen.
+	//
+	// required: true
+	ID int `json:"id"`
+	// Name of the platform.
+	//
+	// required: true
+	// example: github, gitlab, gitea
 	Name string `json:"name"`
 }
 
