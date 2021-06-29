@@ -92,6 +92,19 @@ func (h *UserAuthHandler) OAuthCallback() echo.HandlerFunc {
 }
 
 // Refresh handles user token refreshing.
+// swagger:route POST /auth/refresh tokens users
+//
+// Refresh the authentication token.
+//
+// This will refresh the authentication refresh
+// Token in the cookie.
+//     Schemes: http
+//     Security:
+//       oauth: read, write
+//     Responses:
+//       200: description: "OK"
+//       401: description: "error getting refresh token"
+//       401: description: "error refreshing token"
 func (h *UserAuthHandler) Refresh() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -110,7 +123,7 @@ func (h *UserAuthHandler) Refresh() echo.HandlerFunc {
 		}
 		setCookies(c, token)
 
-		return c.String(http.StatusOK, "")
+		return c.NoContent(http.StatusOK)
 	}
 }
 

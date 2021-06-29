@@ -500,7 +500,27 @@ info:
     url: http://www.apache.org/licenses/LICENSE-2.0.html
   title: Krok.
   version: 0.0.1
-paths: {}
+paths:
+  /auth/refresh:
+    post:
+      description: |-
+        This will refresh the authentication refresh
+        Token in the cookie.
+      operationId: users
+      responses:
+        "200":
+          description: ' "OK"'
+        "401":
+          description: ' "error refreshing token"'
+      schemes:
+      - http
+      security:
+      - oauth:
+        - read
+        - write
+      summary: Refresh the authentication token.
+      tags:
+      - tokens
 produces:
 - application/json
 schemes:
