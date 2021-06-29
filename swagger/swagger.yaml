@@ -501,26 +501,68 @@ info:
   title: Krok.
   version: 0.0.1
 paths:
+  /auth/callback:
+    get:
+      description: Creates a cookie which will hold the authenticated user.
+      operationId: userCallback
+      parameters:
+      - description: the state variable defined by Google
+        in: query
+        name: state
+        required: true
+        type: string
+      - description: the authorization code provided by Google
+        in: query
+        name: code
+        required: true
+        type: string
+      responses:
+        "308":
+          description: the permanent redirect url
+        "401":
+          description: error verifying state | error during token exchange
+        "404":
+          description: error invalid state|code
+      summary: This is the url to which Google calls back after a successful login.
+  /auth/login:
+    get:
+      operationId: userLogin
+      parameters:
+      - description: the redirect URL coming from Goolge to redirect login to
+        in: query
+        name: redirect_url
+        required: true
+        type: string
+      responses:
+        "307":
+          description: the redirect url to the login
+        "401":
+          description: error generating state
+        "404":
+          description: error invalid redirect_url
+      summary: User login.
   /auth/refresh:
     post:
-      description: |-
-        This will refresh the authentication refresh
-        Token in the cookie.
-      operationId: users
+      operationId: refreshToken
       responses:
         "200":
-          description: ' "OK"'
+          description: Status OK
         "401":
-          description: ' "error refreshing token"'
-      schemes:
-      - http
-      security:
-      - oauth:
-        - read
-        - write
+          description: refresh token cookie not found|error refreshing token
       summary: Refresh the authentication token.
-      tags:
-      - tokens
+  /supported-platforms:
+    get:
+      operationId: listSupportedPlatforms
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: the list of supported platform ids
+          schema:
+            items:
+              $ref: '#/definitions/Platform'
+            type: array
+      summary: Lists all supported platforms.
 produces:
 - application/json
 schemes:
