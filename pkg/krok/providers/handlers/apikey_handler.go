@@ -42,6 +42,20 @@ func NewAPIKeysHandler(deps APIKeysHandlerDependencies) *APIKeysHandler {
 }
 
 // Create creates an api key pair for a given user.
+// swagger:operation POST /user/apikey/generate/{name} createApiKey
+// Creates an api key pair for a given user.
+// ---
+// produces:
+// - application/json
+// responses:
+//   '200':
+//     description: 'the generated api key pair'
+//     schema:
+//       "$ref": "#/responses/APIKey"
+//   '400':
+//     description: 'failed to generate unique key or value'
+//   '500':
+//     description: 'when failed to get user context'
 func (a *APIKeysHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)

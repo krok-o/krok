@@ -528,7 +528,7 @@ paths:
     get:
       operationId: userLogin
       parameters:
-      - description: the redirect URL coming from Goolge to redirect login to
+      - description: the redirect URL coming from Google to redirect login to
         in: query
         name: redirect_url
         required: true
@@ -550,6 +550,45 @@ paths:
         "401":
           description: refresh token cookie not found|error refreshing token
       summary: Refresh the authentication token.
+  /get-token:
+    post:
+      deprecated: true
+      operationId: getToken
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: the generated JWT token
+          schema:
+            $ref: '#/responses/tokenResponse'
+        "500":
+          description: when there was a problem with matching the email, or the api
+            key or generating the token
+      summary: Creates a JWT token for a given api key pair.
+  /hooks/{rid}/{vid}/callback:
+    post:
+      operationId: hookHandler
+      parameters:
+      - description: The ID of the repository.
+        in: query
+        name: rid
+        required: true
+        type: string
+      - description: The ID of the provider.
+        in: query
+        name: vid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: success in case the hook event was processed without problems
+        "400":
+          description: for invalid parameters
+        "404":
+          description: if the repository or the provider does not exist
+      summary: Handle the hooks created by the platform.
   /supported-platforms:
     get:
       operationId: listSupportedPlatforms
@@ -563,8 +602,26 @@ paths:
               $ref: '#/definitions/Platform'
             type: array
       summary: Lists all supported platforms.
+  /user/apikey/generate/{name}:
+    post:
+      operationId: createApiKey
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: the generated api key pair
+          schema:
+            $ref: '#/responses/APIKey'
+        "400":
+          description: failed to generate unique key or value
+        "500":
+          description: when failed to get user context
+      summary: Creates an api key pair for a given user.
 produces:
 - application/json
+responses:
+  tokenResponse:
+    description: tokenResponse contains the generated JWT token.
 schemes:
 - http
 securityDefinitions:

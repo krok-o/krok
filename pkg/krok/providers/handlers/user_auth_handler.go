@@ -42,7 +42,7 @@ func NewUserAuthHandler(deps UserAuthHandlerDeps) *UserAuthHandler {
 // parameters:
 // - name: redirect_url
 //   in: query
-//   description: the redirect URL coming from Goolge to redirect login to
+//   description: the redirect URL coming from Google to redirect login to
 //   required: true
 //   type: string
 // responses:
