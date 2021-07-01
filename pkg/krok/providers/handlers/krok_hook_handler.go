@@ -46,12 +46,12 @@ func NewHookHandler(deps HookDependencies) *KrokHookHandler {
 // - application/json
 // parameters:
 // - name: rid
-//   in: query
+//   in: path
 //   description: The ID of the repository.
 //   required: true
 //   type: string
 // - name: vid
-//   in: query
+//   in: path
 //   description: The ID of the provider.
 //   required: true
 //   type: string

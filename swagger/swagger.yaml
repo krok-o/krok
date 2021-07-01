@@ -267,10 +267,12 @@ definitions:
         x-go-name: EndDate
       name:
         description: Name of the context for which this option is used.
+        example: '"partialNameOfACommand"'
         type: string
         x-go-name: Name
       page:
         description: Current Page
+        example: 0
         format: int64
         type: integer
         x-go-name: Page
@@ -279,6 +281,7 @@ definitions:
           Items per Page
 
           required false
+        example: 10
         format: int64
         type: integer
         x-go-name: PageSize
@@ -550,6 +553,83 @@ paths:
         "401":
           description: refresh token cookie not found|error refreshing token
       summary: Refresh the authentication token.
+  /command:
+    post:
+      description: |-
+        the command has to be edited. We don't support uploading the same thing twice.
+        If the command binary needs to be updated, delete the command and upload the
+        new binary.
+      operationId: uploadCommand
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: in case of successful file upload
+          schema:
+            $ref: '#/definitions/Command'
+        "400":
+          description: invalid file format or command already exists
+        "500":
+          description: failed to upload file, create plugin, create command or copy
+            operations
+      summary: Upload a command. To set up anything for the command, like schedules
+        etc,
+  /command/{id}:
+    delete:
+      operationId: deleteCommand
+      parameters:
+      - description: The ID of the command to delete
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK in case the deletion was successful
+        "400":
+          description: in case of missing user context or invalid ID
+        "500":
+          description: when the deletion operation failed
+      summary: Deletes given command.
+    get:
+      operationId: getCommand
+      parameters:
+      - in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/Command'
+        "400":
+          description: invalid command id
+        "500":
+          description: failed to get user context
+      summary: Returns a specific command.
+  /commands:
+    post:
+      description: List commands
+      operationId: listCommands
+      parameters:
+      - in: body
+        name: listOptions
+        schema:
+          $ref: '#/definitions/ListOptions'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            items:
+              $ref: '#/definitions/Command'
+            type: array
+        "500":
+          description: failed to get user context
   /get-token:
     post:
       deprecated: true
@@ -570,12 +650,12 @@ paths:
       operationId: hookHandler
       parameters:
       - description: The ID of the repository.
-        in: query
+        in: path
         name: rid
         required: true
         type: string
       - description: The ID of the provider.
-        in: query
+        in: path
         name: vid
         required: true
         type: string
@@ -602,16 +682,73 @@ paths:
               $ref: '#/definitions/Platform'
             type: array
       summary: Lists all supported platforms.
+  /user/apikey:
+    post:
+      operationId: listApiKeys
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            items:
+              $ref: '#/definitions/APIKey'
+            type: array
+        "500":
+          description: failed to get user context
+      summary: Lists all api keys for a given user.
+  /user/apikey/{keyid}:
+    get:
+      operationId: getApiKeys
+      parameters:
+      - description: The ID of the key to return
+        in: path
+        name: keyid
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/APIKey'
+        "500":
+          description: failed to get user context
+      summary: Returns a given api key.
+  /user/apikey/delete/{keyid}:
+    delete:
+      operationId: deleteApiKey
+      parameters:
+      - description: The ID of the key to delete
+        in: path
+        name: keyid
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK in case the deletion was successful
+        "400":
+          description: in case of missing user context or invalid ID
+        "500":
+          description: when the deletion operation failed
+      summary: Deletes a set of api keys for a given user with a given id.
   /user/apikey/generate/{name}:
     post:
       operationId: createApiKey
+      parameters:
+      - description: the name of the key
+        in: path
+        name: name
+        required: true
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: the generated api key pair
           schema:
-            $ref: '#/responses/APIKey'
+            $ref: '#/definitions/APIKey'
         "400":
           description: failed to generate unique key or value
         "500":
@@ -624,8 +761,4 @@ responses:
     description: tokenResponse contains the generated JWT token.
 schemes:
 - http
-securityDefinitions:
-  basic:
-    in: header
-    type: basic
 swagger: "2.0"

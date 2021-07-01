@@ -65,3 +65,7 @@ swagger:
 .PHONY: swagger-server
 swagger-serve:
 	swagger serve -F=swagger ./swagger/swagger.yaml
+
+.PHONY: swagger-docs
+swagger-docs:
+	swagger generate markdown -f ./swagger/swagger.yaml --output ./swagger/swagger.md

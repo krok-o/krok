@@ -10,18 +10,22 @@ type ListOptions struct {
 	// Name of the context for which this option is used.
 	//
 	// required: false
+	// example: "partialNameOfACommand"
 	Name string `json:"name,omitempty"`
 	// Only list all entries for a given platform ID.
 	//
 	// required: false
+	// example:
 	VCS int `json:"vcs,omitempty"`
 	// Current Page
 	//
 	// required: false
+	// example: 0
 	Page int `json:"page,omitempty"`
 	// Items per Page
 	//
 	// required false
+	// example: 10
 	PageSize int `json:"page_size,omitempty"`
 	// StartingDate defines a date of start to look for events. Inclusive.
 	//

@@ -47,11 +47,17 @@ func NewAPIKeysHandler(deps APIKeysHandlerDependencies) *APIKeysHandler {
 // ---
 // produces:
 // - application/json
+// parameters:
+// - name: name
+//   in: path
+//   required: true
+//   description: "the name of the key"
+//   type: string
 // responses:
 //   '200':
 //     description: 'the generated api key pair'
 //     schema:
-//       "$ref": "#/responses/APIKey"
+//       "$ref": "#/definitions/APIKey"
 //   '400':
 //     description: 'failed to generate unique key or value'
 //   '500':
@@ -113,6 +119,22 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 }
 
 // Delete deletes a set of api keys for a given user with a given id.
+// swagger:operation DELETE /user/apikey/delete/{keyid} deleteApiKey
+// Deletes a set of api keys for a given user with a given id.
+// ---
+// parameters:
+// - name: keyid
+//   in: path
+//   description: 'The ID of the key to delete'
+//   required: true
+//   type: string
+// responses:
+//   '200':
+//     description: 'OK in case the deletion was successful'
+//   '400':
+//     description: 'in case of missing user context or invalid ID'
+//   '500':
+//     description: 'when the deletion operation failed'
 func (a *APIKeysHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
@@ -136,6 +158,19 @@ func (a *APIKeysHandler) Delete() echo.HandlerFunc {
 }
 
 // List lists all api keys for a given user.
+// swagger:operation POST /user/apikey listApiKeys
+// Lists all api keys for a given user.
+// ---
+// produces:
+// - application/json
+// responses:
+//   '200':
+//     schema:
+//       type: array
+//       items:
+//         "$ref": "#/definitions/APIKey"
+//   '500':
+//     description: 'failed to get user context'
 func (a *APIKeysHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
@@ -156,6 +191,23 @@ func (a *APIKeysHandler) List() echo.HandlerFunc {
 }
 
 // Get returns a given api key.
+// swagger:operation GET /user/apikey/{keyid} getApiKeys
+// Returns a given api key.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: keyid
+//   in: path
+//   description: "The ID of the key to return"
+//   required: true
+//   type: string
+// responses:
+//   '200':
+//     schema:
+//       "$ref": "#/definitions/APIKey"
+//   '500':
+//     description: 'failed to get user context'
 func (a *APIKeysHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)

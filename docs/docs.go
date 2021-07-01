@@ -10,17 +10,7 @@
 //
 //     Consumes:
 //     - application/json
-//
 //     Produces:
 //     - application/json
-//
-//     Security:
-//     - basic
-//
-//    SecurityDefinitions:
-//    basic:
-//      type: basic
-//      in: header
-//
 // swagger:meta
 package docs
