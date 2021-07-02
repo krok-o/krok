@@ -40,6 +40,22 @@ func NewCommandsHandler(deps CommandsHandlerDependencies) *CommandsHandler {
 }
 
 // Delete deletes a command.
+// swagger:operation DELETE /command/{id} deleteCommand
+// Deletes given command.
+// ---
+// parameters:
+// - name: id
+//   in: path
+//   description: 'The ID of the command to delete'
+//   required: true
+//   type: string
+// responses:
+//   '200':
+//     description: 'OK in case the deletion was successful'
+//   '400':
+//     description: 'in case of missing user context or invalid ID'
+//   '500':
+//     description: 'when the deletion operation failed'
 func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -75,6 +91,25 @@ func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 }
 
 // List lists commands.
+// swagger:operation POST /commands listCommands
+// List commands
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: listOptions
+//   in: body
+//   required: false
+//   schema:
+//     "$ref": "#/definitions/ListOptions"
+// responses:
+//   '200':
+//     schema:
+//       type: array
+//       items:
+//         "$ref": "#/definitions/Command"
+//   '500':
+//     description: 'failed to get user context'
 func (ch *CommandsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
@@ -96,6 +131,24 @@ func (ch *CommandsHandler) List() echo.HandlerFunc {
 }
 
 // Get returns a specific command.
+// swagger:operation GET /command/{id} getCommand
+// Returns a specific command.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: id
+//   in: path
+//   type: string
+//   required: true
+// responses:
+//   '200':
+//     schema:
+//       "$ref": "#/definitions/Command"
+//   '400':
+//     description: 'invalid command id'
+//   '500':
+//     description: 'failed to get user context'
 func (ch *CommandsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -123,6 +176,23 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 // the command has to be edited. We don't support uploading the same thing twice.
 // If the command binary needs to be updated, delete the command and upload the
 // new binary.
+// swagger:operation POST /command uploadCommand
+// Upload a command. To set up anything for the command, like schedules etc,
+// the command has to be edited. We don't support uploading the same thing twice.
+// If the command binary needs to be updated, delete the command and upload the
+// new binary.
+// ---
+// produces:
+// - application/json
+// responses:
+//   '201':
+//     description: 'in case of successful file upload'
+//     schema:
+//       "$ref": "#/definitions/Command"
+//   '400':
+//     description: 'invalid file format or command already exists'
+//   '500':
+//     description: 'failed to upload file, create plugin, create command or copy operations'
 func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		file, err := c.FormFile("file")
@@ -132,13 +202,13 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 
 		dots := strings.Split(file.Filename, ".")
 		if len(dots) == 0 {
-			return errors.New("file name does not contain a dot")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("file name does not contain a dot", http.StatusBadRequest, err))
 		}
 		name := dots[0]
 		ctx := c.Request().Context()
 		// check if name is already taken:
 		if _, err := ch.CommandStorer.GetByName(ctx, name); err == nil {
-			return errors.New("command with name already taken")
+			return c.JSON(http.StatusBadRequest, kerr.APIError("command with name already taken", http.StatusBadRequest, err))
 		}
 
 		src, err := file.Open()
@@ -154,7 +224,7 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 		// Destination
 		tmp, err := ioutil.TempDir("", "upload_folder")
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create upload folder", http.StatusInternalServerError, err))
 		}
 		defer func() {
 			if err := os.RemoveAll(tmp); err != nil {
@@ -163,7 +233,7 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 		}()
 		dst, err := os.Create(filepath.Join(tmp, file.Filename))
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create upload file", http.StatusInternalServerError, err))
 		}
 		defer func(dst *os.File) {
 			if err := dst.Close(); err != nil {
@@ -172,13 +242,13 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 		}(dst)
 
 		if _, err = io.Copy(dst, src); err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to copy over uploaded file", http.StatusInternalServerError, err))
 		}
 
 		// Create the file first, then the command.
 		f, hash, err := ch.Plugins.Create(ctx, dst.Name())
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create plugin", http.StatusInternalServerError, err))
 		}
 
 		command := &models.Command{
@@ -191,7 +261,7 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 
 		command, err = ch.CommandStorer.Create(ctx, command)
 		if err != nil {
-			return err
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusCreated, command)

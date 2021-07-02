@@ -16,6 +16,18 @@ func NewSupportedPlatformListHandler() *SupportedPlatformList {
 }
 
 // ListSupportedPlatforms lists all platforms which Krok supports.
+// swagger:operation GET /supported-platforms listSupportedPlatforms
+// Lists all supported platforms.
+// ---
+// produces:
+// - application/json
+// responses:
+//   '200':
+//     description: 'the list of supported platform ids'
+//     schema:
+//       type: array
+//       items:
+//         "$ref": "#/definitions/Platform"
 func (s *SupportedPlatformList) ListSupportedPlatforms() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		return c.JSON(http.StatusOK, models.SupportedPlatforms)

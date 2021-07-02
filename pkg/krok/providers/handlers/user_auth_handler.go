@@ -35,6 +35,23 @@ func NewUserAuthHandler(deps UserAuthHandlerDeps) *UserAuthHandler {
 }
 
 // OAuthLogin handles a user login.
+// swagger:operation GET /auth/login userLogin
+//
+// User login.
+// ---
+// parameters:
+// - name: redirect_url
+//   in: query
+//   description: the redirect URL coming from Google to redirect login to
+//   required: true
+//   type: string
+// responses:
+//   '307':
+//     description: 'the redirect url to the login'
+//   '404':
+//     description: 'error invalid redirect_url'
+//   '401':
+//     description: 'error generating state'
 func (h *UserAuthHandler) OAuthLogin() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		redirectURL := c.QueryParam("redirect_url")
@@ -57,6 +74,29 @@ func (h *UserAuthHandler) OAuthLogin() echo.HandlerFunc {
 }
 
 // OAuthCallback handles the user login callback.
+// swagger:operation GET /auth/callback userCallback
+//
+// This is the url to which Google calls back after a successful login.
+// Creates a cookie which will hold the authenticated user.
+// ---
+// parameters:
+// - name: state
+//   in: query
+//   description: the state variable defined by Google
+//   required: true
+//   type: string
+// - name: code
+//   in: query
+//   description: the authorization code provided by Google
+//   required: true
+//   type: string
+// responses:
+//   '308':
+//     description: 'the permanent redirect url'
+//   '404':
+//     description: 'error invalid state|code'
+//   '401':
+//     description: 'error verifying state | error during token exchange'
 func (h *UserAuthHandler) OAuthCallback() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -92,6 +132,16 @@ func (h *UserAuthHandler) OAuthCallback() echo.HandlerFunc {
 }
 
 // Refresh handles user token refreshing.
+// swagger:operation POST /auth/refresh refreshToken
+//
+// Refresh the authentication token.
+//
+// ---
+// responses:
+//  '200':
+//     description: 'Status OK'
+//  '401':
+//     description: 'refresh token cookie not found|error refreshing token'
 func (h *UserAuthHandler) Refresh() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
@@ -110,7 +160,7 @@ func (h *UserAuthHandler) Refresh() echo.HandlerFunc {
 		}
 		setCookies(c, token)
 
-		return c.String(http.StatusOK, "")
+		return c.NoContent(http.StatusOK)
 	}
 }
 

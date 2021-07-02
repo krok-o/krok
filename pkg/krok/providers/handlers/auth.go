@@ -48,7 +48,28 @@ type APIKeyAuthRequest struct {
 	APIKeySecret string `json:"api_key_secret"`
 }
 
+// tokenResponse contains the generated JWT token.
+// swagger:response tokenResponse
+type tokenResponse struct {
+	// The generated token
+	// in: body
+	Token string
+}
+
 // TokenHandler creates a JWT token for a given api key pair.
+// swagger:operation POST /get-token getToken
+// Creates a JWT token for a given api key pair.
+// ---
+// deprecated: true
+// produces:
+// - application/json
+// responses:
+//   '200':
+//     description: 'the generated JWT token'
+//     schema:
+//       "$ref": "#/responses/tokenResponse"
+//   '500':
+//     description: 'when there was a problem with matching the email, or the api key or generating the token'
 func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		request := &APIKeyAuthRequest{}
@@ -80,8 +101,9 @@ func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to generate token", http.StatusInternalServerError, err))
 		}
 
-		return c.JSON(http.StatusOK, map[string]string{
-			"token": t.AccessToken,
-		})
+		tr := &tokenResponse{
+			Token: t.AccessToken,
+		}
+		return c.JSON(http.StatusOK, tr)
 	}
 }

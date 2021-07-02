@@ -50,14 +50,22 @@ lint:
 
 .PHONY: run
 run:
-	go run cmd/root.go
-
-.PHONY: start-https
-start-https:
-	go run cmd/root.go --server-key-path ./certs/key.pem --server-crt-path ./certs/cert.pem
+	go run main.go
 
 docker_image:
 	docker build -t $(image):$(version) .
 
 generate_mocks:
 	go build -o pkg/krok/providers/interfaces generate_interface_mocks/main.go && cd pkg/krok/providers && ./interfaces && rm ./interfaces
+
+.PHONY: swagger
+swagger:
+	swagger generate spec -o ./swagger/swagger.yaml -c server -c handlers -c main -c docs -c models --scan-models
+
+.PHONY: swagger-server
+swagger-serve:
+	swagger serve -F=swagger ./swagger/swagger.yaml
+
+.PHONY: swagger-docs
+swagger-docs:
+	swagger generate markdown -f ./swagger/swagger.yaml --output ./swagger/swagger.md

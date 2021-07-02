@@ -39,6 +39,29 @@ func NewHookHandler(deps HookDependencies) *KrokHookHandler {
 }
 
 // HandleHooks creates a hook handler.
+// swagger:operation POST /hooks/{rid}/{vid}/callback hookHandler
+// Handle the hooks created by the platform.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: rid
+//   in: path
+//   description: The ID of the repository.
+//   required: true
+//   type: string
+// - name: vid
+//   in: path
+//   description: The ID of the provider.
+//   required: true
+//   type: string
+// responses:
+//   '200':
+//     description: 'success in case the hook event was processed without problems'
+//   '400':
+//     description: 'for invalid parameters'
+//   '404':
+//     description: 'if the repository or the provider does not exist'
 func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		rid, err := GetParamAsInt("rid", c)
