@@ -37,6 +37,29 @@ func (_m *APIKeysAuthenticator) Encrypt(ctx context.Context, secret []byte) ([]b
 	return r0, r1
 }
 
+// Generate provides a mock function with given fields: ctx, name, userID
+func (_m *APIKeysAuthenticator) Generate(ctx context.Context, name string, userID int) (*models.APIKey, error) {
+	ret := _m.Called(ctx, name, userID)
+
+	var r0 *models.APIKey
+	if rf, ok := ret.Get(0).(func(context.Context, string, int) *models.APIKey); ok {
+		r0 = rf(ctx, name, userID)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.APIKey)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, string, int) error); ok {
+		r1 = rf(ctx, name, userID)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Match provides a mock function with given fields: ctx, key
 func (_m *APIKeysAuthenticator) Match(ctx context.Context, key *models.APIKey) error {
 	ret := _m.Called(ctx, key)

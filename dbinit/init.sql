@@ -114,9 +114,6 @@ create table command_run (
 );
 
 -- generate default admin user
-insert into users (email, last_login, display_name, token) values ('admin@admin.com', now(), 'Admin', 'YpK60RD8NPzjOZxB22xYSNfdFzAqgkulJv5c6IQXWf7Trc074yUGcAIXm72f')
-
--- Uncomment for testing
--- insert into users (email, last_login, display_name) values ('skarlso777@gmail.com', now(), 'shrek');
+insert into users (email, last_login, display_name, token) values ('admin@admin.com', now(), 'Admin', 'YpK60RD8NPzjOZxB22xYSNfdFzAqgkulJv5c6IQXWf7Trc074yUGcAIXm72f');
 -- secret is 'secret'
--- insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, now() + INTERVAL '130 days');
+insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, now() + INTERVAL '130 days');

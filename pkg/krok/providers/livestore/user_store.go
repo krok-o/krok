@@ -157,7 +157,6 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		ID:          storedID,
 		APIKeys:     apiKeys,
 		LastLogin:   storedLastLogin,
-		Token:       &storedToken.String,
 	}, nil
 }
 
@@ -169,10 +168,6 @@ func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User
 		// Update shouldn't update the token if it isn't provided.
 		args := []interface{}{user.DisplayName}
 		sets := []string{"display_name=$1"}
-		if user.Token != nil {
-			sets = append(sets, "token=$2")
-			args = append(args, *user.Token)
-		}
 		args = append(args, user.ID)
 		set := strings.Join(sets, ", ")
 		query := fmt.Sprintf("update users set %s where id=$%d", set, len(args))

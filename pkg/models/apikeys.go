@@ -33,3 +33,10 @@ type APIKey struct {
 	// example: time.Now().Add(10 * time.Minute)
 	TTL time.Time `json:"ttl"`
 }
+
+// APIKeyAuthRequest contains a user email and their api key.
+type APIKeyAuthRequest struct {
+	Email        string `json:"email"`
+	APIKeyID     string `json:"api_key_id"`
+	APIKeySecret string `json:"api_key_secret"`
+}

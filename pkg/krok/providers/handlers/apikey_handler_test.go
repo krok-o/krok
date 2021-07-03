@@ -47,6 +47,7 @@ func (m *mockAPIKeysStore) List(ctx context.Context, userID int) ([]*models.APIK
 
 type mockAPIKeyAuth struct {
 	providers.APIKeysAuthenticator
+	res *models.APIKey
 }
 
 func (maka *mockAPIKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
@@ -57,8 +58,20 @@ func (maka *mockAPIKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte,
 	return nil, nil
 }
 
+func (maka *mockAPIKeyAuth) Generate(ctx context.Context, name string, userID int) (*models.APIKey, error) {
+	return maka.res, nil
+}
+
 func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 	maka := &mockAPIKeyAuth{}
+	maka.res = &models.APIKey{
+		ID:           0,
+		Name:         "test-key",
+		UserID:       0,
+		APIKeyID:     "random",
+		APIKeySecret: "random",
+		TTL:          time.Now().Add(15 * time.Minute),
+	}
 	mus := &mockUserStorer{}
 	aks := &mockAPIKeysStore{}
 	logger := zerolog.New(os.Stderr)
@@ -113,7 +126,7 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		assert.NotEmpty(tt, key.APIKeySecret)
 		assert.NotEmpty(tt, key.APIKeyID)
 		assert.True(tt, key.TTL.After(time.Now()))
-		assert.Equal(tt, "My API Key", key.Name)
+		assert.Equal(tt, "test-key", key.Name)
 	})
 	t.Run("create no user context", func(tt *testing.T) {
 		e := echo.New()

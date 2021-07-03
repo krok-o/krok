@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/krok-o/krok/pkg/converter"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 
@@ -61,19 +60,15 @@ func TestUserStore_Flow(t *testing.T) {
 
 	// Update users
 	getUser.DisplayName = "UpdatedName"
-	getUser.Token = converter.ToPointer("UpdatedToken")
 	updatedU, err := up.Update(ctx, getUser)
 	assert.NoError(t, err)
 	assert.Equal(t, "UpdatedName", updatedU.DisplayName)
-	assert.Equal(t, "UpdatedToken", *updatedU.Token)
 
 	// Update shouldn't update the token if it isn't provided
 	getUser.DisplayName = "UpdatedName2"
-	getUser.Token = nil
 	updatedU, err = up.Update(ctx, getUser)
 	assert.NoError(t, err)
 	assert.Equal(t, "UpdatedName2", updatedU.DisplayName)
-	assert.Equal(t, "UpdatedToken", *updatedU.Token)
 
 	// Delete user
 	err = up.Delete(ctx, getUser.ID)

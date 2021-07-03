@@ -16,3 +16,11 @@ type UserAuthDetails struct {
 	// required: true
 	LastName string
 }
+
+// TokenResponse contains the generated JWT token.
+// swagger:response TokenResponse
+type TokenResponse struct {
+	// The generated token
+	// in: body
+	Token string
+}
