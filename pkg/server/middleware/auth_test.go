@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -10,11 +9,7 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"github.com/labstack/echo/v4"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-
-	"github.com/krok-o/krok/pkg/krok/providers/mocks"
-	"github.com/krok-o/krok/pkg/models"
 )
 
 func generateTestToken(t *testing.T) string {
@@ -87,42 +82,6 @@ func TestUserAuthentication(t *testing.T) {
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		res := httptest.NewRecorder()
 		req.Header.Set("Cookie", "_a_token_="+invalidToken)
-		c := e.NewContext(req, res)
-		err := hf(c)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusUnauthorized, c.Response().Status)
-		assert.Nil(t, c.Get("user"))
-	})
-
-	t.Run("valid api token via header", func(t *testing.T) {
-		mockUserStore := &mocks.UserStorer{}
-		hf := NewUserMiddleware(cfg, UserMiddlewareDeps{UserStore: mockUserStore}).JWT()(handler)
-
-		testToken := "$2a$10$v5Gkd/DL2BpUPbEwrgXOpeMG.T/eU4e7doEY/VcGHQ5dtIn.zTn8G"
-		mockUserStore.On("GetByToken", mock.Anything, testToken).Return(&models.User{ID: 1}, nil)
-
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		res := httptest.NewRecorder()
-		req.Header.Set("Authorization", "Bearer "+testToken)
-		c := e.NewContext(req, res)
-		err := hf(c)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, c.Response().Status)
-		uc := c.Get("user").(*UserContext)
-		assert.Equal(t, &UserContext{UserID: 1}, uc)
-		mockUserStore.AssertExpectations(t)
-	})
-
-	t.Run("invalid api token via header returns 401", func(t *testing.T) {
-		mockUserStore := &mocks.UserStorer{}
-		hf := NewUserMiddleware(cfg, UserMiddlewareDeps{UserStore: mockUserStore}).JWT()(handler)
-
-		testToken := "$2a$10$v5Gkd/DL2BpUPbEwrgXOpeMG.T/eU4e7doEY/VcGHQ5dtIn.zTn8G"
-		mockUserStore.On("GetByToken", mock.Anything, testToken).Return(nil, errors.New("err"))
-
-		req := httptest.NewRequest(http.MethodGet, "/", nil)
-		res := httptest.NewRecorder()
-		req.Header.Set("Authorization", "Bearer "+testToken)
 		c := e.NewContext(req, res)
 		err := hf(c)
 		assert.NoError(t, err)

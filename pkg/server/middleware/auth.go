@@ -71,22 +71,9 @@ func GetUserContext(c echo.Context) (*UserContext, error) {
 func (um *UserMiddleware) JWT() echo.MiddlewareFunc {
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-			ctx := c.Request().Context()
-
 			token, err := um.extractToken(c)
 			if err != nil {
 				return c.JSON(http.StatusUnauthorized, "failed to extract token")
-			}
-
-			// User API Keys are max 60 bytes.
-			if len(token) == providers.UserPersonalTokenLength {
-				user, err := um.UserStore.GetByToken(ctx, token)
-				if err != nil {
-					um.Logger.Warn().Err(err).Msg("token authentication failed")
-					return c.String(http.StatusUnauthorized, "Personal token authentication failed.")
-				}
-				um.setUser(c, user.ID)
-				return next(c)
 			}
 
 			var claims jwt.StandardClaims
