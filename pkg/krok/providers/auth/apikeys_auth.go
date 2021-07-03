@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"crypto/md5"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,7 +16,8 @@ import (
 )
 
 const (
-	keyTTL = 7 * 24 * time.Hour
+	// Note: consider adding editing apikeys, for now, an api key has a ttl of a year.
+	keyTTL = 130 * 24 * time.Hour
 )
 
 // APIKeysDependencies defines the dependencies for the apikeys provider.
@@ -47,6 +49,16 @@ func (a *APIKeysProvider) Match(ctx context.Context, key *models.APIKey) error {
 	if err != nil {
 		log.Debug().Err(err).Msg("APIKeys Get failed.")
 		return fmt.Errorf("failed to get api key: %w", err)
+	}
+	ttl, err := time.ParseDuration(storedKey.TTL)
+	if err != nil {
+		log.Debug().Err(err).Str("ttl", storedKey.TTL).Msg("Failed to parse duration.")
+		return fmt.Errorf("failed to parse duration: %w", err)
+	}
+	now := a.Clock.Now()
+	if now.After(storedKey.CreateAt.Add(ttl)) {
+		log.Debug().Str("create_at", key.CreateAt.String()).Str("ttl", ttl.String()).Msg("Key expired.")
+		return errors.New("key expired")
 	}
 	return bcrypt.CompareHashAndPassword([]byte(storedKey.APIKeySecret), []byte(key.APIKeySecret))
 }
@@ -82,7 +94,8 @@ func (a *APIKeysProvider) Generate(ctx context.Context, name string, userID int)
 		UserID:       userID,
 		APIKeyID:     keyID,
 		APIKeySecret: string(encrypted),
-		TTL:          a.Clock.Now().Add(keyTTL),
+		TTL:          keyTTL.String(),
+		CreateAt:     a.Clock.Now(),
 	}
 
 	generatedKey, err := a.APIKeysStore.Create(ctx, key)

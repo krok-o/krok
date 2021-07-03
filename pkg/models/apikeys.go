@@ -27,11 +27,16 @@ type APIKey struct {
 	//
 	// required: true
 	APIKeySecret string `json:"api_key_secret"`
-	// TTL defines how long this key can live.
+	// TTL defines how long this key can live in duration.
 	//
 	// required: true
-	// example: time.Now().Add(10 * time.Minute)
-	TTL time.Time `json:"ttl"`
+	// example: 1h10m10s
+	TTL string `json:"ttl"`
+	// CreateAt defines when this key was created.
+	//
+	// required: true
+	// example: time.Now()
+	CreateAt time.Time `json:"create_at"`
 }
 
 // APIKeyAuthRequest contains a user email and their api key.

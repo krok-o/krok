@@ -77,7 +77,8 @@ create table apikeys (
     -- this will be shown once then never again as it will be stored encrypted.
     api_key_secret varchar not null,
     user_id int not null,
-    ttl date
+    ttl varchar,
+    created_at date
 );
 
 -- The files lock which will contain the lock for a file with a timestamp of creation.
@@ -115,4 +116,4 @@ create table command_run (
 -- generate default admin user
 insert into users (email, last_login, display_name) values ('admin@admin.com', now(), 'Admin');
 -- secret is 'secret'
-insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, now() + INTERVAL '130 days');
+insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl, created_at) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, '3120h', now());

@@ -129,7 +129,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// api keys related actions
 	auth.POST("/user/apikey/generate/:name", s.Dependencies.APIKeyHandler.Create())
 	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.APIKeyHandler.Delete())
-	auth.GET("/user/apikey", s.Dependencies.APIKeyHandler.List())
+	auth.GET("/user/apikeys", s.Dependencies.APIKeyHandler.List())
 	auth.GET("/user/apikey/:keyid", s.Dependencies.APIKeyHandler.Get())
 
 	// vcs token handler

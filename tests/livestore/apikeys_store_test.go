@@ -38,7 +38,8 @@ func TestAPIKeys_Flow(t *testing.T) {
 		UserID:       1,
 		APIKeyID:     "keyid",
 		APIKeySecret: "secret",
-		TTL:          time.Now(),
+		TTL:          "10m",
+		CreateAt:     time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC),
 	})
 	assert.NoError(t, err)
 	assert.True(t, apiKey.ID > 0)

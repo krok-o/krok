@@ -355,11 +355,11 @@ func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
 
 	t.Run("list apikey happy path", func(tt *testing.T) {
 		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
-		c.SetPath("/user/apikey")
+		c.SetPath("/user/apikeys")
 		err = akh.List()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)
