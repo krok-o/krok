@@ -1,0 +1,14 @@
+# .golangci.yml
+linters-settings:
+  unused:
+    go: "1.16"
+linters:
+  enable:
+    - gofmt
+    - goimports
+    - deadcode
+    - errcheck
+    - gosimple
+    - govet
+    - staticcheck
+check-exported: true

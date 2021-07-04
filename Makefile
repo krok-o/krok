@@ -38,7 +38,7 @@ rm-test-db:
 
 # Check if we are in circleci. If yes, start a postgres docker instance.
 .PHONY: test
-test:
+test: lint
 	go test -count=1 ./...
 
 .PHONY: clean
@@ -46,7 +46,7 @@ clean:
 	go clean -i
 
 lint:
-	golint ./...
+	golangci-lint run ./...
 
 .PHONY: run
 run:
