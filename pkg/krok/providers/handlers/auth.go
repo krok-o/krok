@@ -41,21 +41,6 @@ func NewTokenHandler(deps Dependencies) (*TokenHandler, error) {
 	return tp, nil
 }
 
-// APIKeyAuthRequest contains a user email and their api key.
-type APIKeyAuthRequest struct {
-	Email        string `json:"email"`
-	APIKeyID     string `json:"api_key_id"`
-	APIKeySecret string `json:"api_key_secret"`
-}
-
-// tokenResponse contains the generated JWT token.
-// swagger:response tokenResponse
-type tokenResponse struct {
-	// The generated token
-	// in: body
-	Token string
-}
-
 // TokenHandler creates a JWT token for a given api key pair.
 // swagger:operation POST /get-token getToken
 // Creates a JWT token for a given api key pair.
@@ -72,7 +57,7 @@ type tokenResponse struct {
 //     description: 'when there was a problem with matching the email, or the api key or generating the token'
 func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		request := &APIKeyAuthRequest{}
+		request := &models.APIKeyAuthRequest{}
 		err := c.Bind(request)
 		if err != nil {
 			p.Logger.Error().Err(err).Msg("Failed to bind request")
@@ -101,7 +86,7 @@ func (p *TokenHandler) TokenHandler() echo.HandlerFunc {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to generate token", http.StatusInternalServerError, err))
 		}
 
-		tr := &tokenResponse{
+		tr := &models.TokenResponse{
 			Token: t.AccessToken,
 		}
 		return c.JSON(http.StatusOK, tr)

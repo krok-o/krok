@@ -50,7 +50,6 @@ type Dependencies struct {
 	AuthHandler            providers.AuthHandler
 	TokenHandler           providers.TokenHandler
 	VCSTokenHandler        providers.VCSTokenHandler
-	UserTokenHandler       providers.UserTokenHandler
 	SupportedPlatformList  providers.SupportedPlatformListHandler
 	EventsHandler          providers.EventHandler
 	VaultHandler           providers.VaultHandler
@@ -130,11 +129,8 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	// api keys related actions
 	auth.POST("/user/apikey/generate/:name", s.Dependencies.APIKeyHandler.Create())
 	auth.DELETE("/user/apikey/delete/:keyid", s.Dependencies.APIKeyHandler.Delete())
-	auth.GET("/user/apikey", s.Dependencies.APIKeyHandler.List())
+	auth.GET("/user/apikeys", s.Dependencies.APIKeyHandler.List())
 	auth.GET("/user/apikey/:keyid", s.Dependencies.APIKeyHandler.Get())
-
-	// user personal token (api token)
-	auth.POST("/user/token/generate", s.Dependencies.UserTokenHandler.Generate())
 
 	// vcs token handler
 	auth.POST("/vcs-token", s.Dependencies.VCSTokenHandler.Create())

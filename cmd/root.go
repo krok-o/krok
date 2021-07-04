@@ -7,10 +7,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/krok-o/krok/pkg/krok/providers/tar"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
+
+	"github.com/krok-o/krok/pkg/krok/providers/tar"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
@@ -237,6 +238,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	authMatcher := auth.NewAPIKeysProvider(auth.APIKeysDependencies{
 		Logger:       log,
 		APIKeysStore: apiKeyStore,
+		Clock:        clock,
 	})
 
 	tokenIssuer := auth.NewTokenIssuer(auth.TokenIssuerConfig{
@@ -324,23 +326,15 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		TokenProvider: platformTokenProvider,
 	})
 
-	userTokenGenerator := auth.NewUserTokenGenerator()
-
-	userTokenHandler := handlers.NewUserTokenHandler(handlers.UserTokenHandlerDeps{
-		Logger:       log,
-		UserStore:    userStore,
-		UATGenerator: userTokenGenerator,
-	})
-
 	eventHandler := handlers.NewEventHandler(handlers.EventHandlerDependencies{
 		Logger:       log,
 		EventsStorer: eventStorer,
 	})
 
 	userHandler := handlers.NewUserHandler(handlers.UserHandlerDependencies{
-		Logger:       log,
-		UserStore:    userStore,
-		UATGenerator: userTokenGenerator,
+		Logger:     log,
+		UserStore:  userStore,
+		APIKeyAuth: authMatcher,
 	})
 
 	supportedPlatformListHandler := handlers.NewSupportedPlatformListHandler()
@@ -374,7 +368,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		AuthHandler:            authHandler,
 		TokenHandler:           tp,
 		VCSTokenHandler:        vcsTokenHandler,
-		UserTokenHandler:       userTokenHandler,
 		SupportedPlatformList:  supportedPlatformListHandler,
 		EventsHandler:          eventHandler,
 		VaultHandler:           vaultHandler,

@@ -11,6 +11,7 @@ import (
 
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
+	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 )
 
@@ -29,6 +30,8 @@ func (mak *mockAPIKeysStore) GetByAPIKeyID(ctx context.Context, id string) (*mod
 }
 
 func TestMatch(t *testing.T) {
+	mt := &mocks.Clock{}
+	mt.On("Now").Return(time.Now())
 	mak := &mockAPIKeysStore{
 		key: &models.APIKey{
 			ID:           0,
@@ -36,12 +39,14 @@ func TestMatch(t *testing.T) {
 			UserID:       1,
 			APIKeyID:     "api-key-id",
 			APIKeySecret: "secret",
-			TTL:          time.Now(),
+			TTL:          "10m",
+			CreateAt:     time.Now(),
 		},
 	}
 
 	p := NewAPIKeysProvider(APIKeysDependencies{
 		APIKeysStore: mak,
+		Clock:        mt,
 		Logger:       zerolog.New(os.Stderr),
 	})
 	secret := "secret"
@@ -54,6 +59,8 @@ func TestMatch(t *testing.T) {
 		UserID:       1,
 		APIKeyID:     "api-key-id",
 		APIKeySecret: secret,
+		TTL:          "10m",
+		CreateAt:     time.Now(),
 	})
 	assert.NoError(t, err)
 	err = p.Match(context.Background(), &models.APIKey{
@@ -62,6 +69,8 @@ func TestMatch(t *testing.T) {
 		UserID:       1,
 		APIKeyID:     "api-key-id",
 		APIKeySecret: "secret2",
+		TTL:          "10m",
+		CreateAt:     time.Now(),
 	})
 	assert.Error(t, err)
 	mak.err = kerr.ErrNotFound
@@ -71,6 +80,34 @@ func TestMatch(t *testing.T) {
 		UserID:       1,
 		APIKeyID:     "nope",
 		APIKeySecret: secret,
+		TTL:          "10m",
+		CreateAt:     time.Now(),
+	})
+	assert.Error(t, err)
+	mak = &mockAPIKeysStore{
+		key: &models.APIKey{
+			ID:           0,
+			Name:         "test-key",
+			UserID:       1,
+			APIKeyID:     "api-key-id",
+			APIKeySecret: "secret",
+			TTL:          "10m",
+			CreateAt:     time.Now().Add(-15 * time.Minute),
+		},
+	}
+	p = NewAPIKeysProvider(APIKeysDependencies{
+		APIKeysStore: mak,
+		Clock:        mt,
+		Logger:       zerolog.New(os.Stderr),
+	})
+	err = p.Match(context.Background(), &models.APIKey{
+		ID:           0,
+		Name:         "test-key",
+		UserID:       1,
+		APIKeyID:     "api-key-id",
+		APIKeySecret: secret,
+		TTL:          "10m",
+		CreateAt:     time.Now().Add(-15 * time.Minute),
 	})
 	assert.Error(t, err)
 }

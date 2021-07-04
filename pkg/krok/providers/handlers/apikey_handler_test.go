@@ -47,6 +47,7 @@ func (m *mockAPIKeysStore) List(ctx context.Context, userID int) ([]*models.APIK
 
 type mockAPIKeyAuth struct {
 	providers.APIKeysAuthenticator
+	res *models.APIKey
 }
 
 func (maka *mockAPIKeyAuth) Match(ctx context.Context, key *models.APIKey) error {
@@ -57,8 +58,21 @@ func (maka *mockAPIKeyAuth) Encrypt(ctx context.Context, secret []byte) ([]byte,
 	return nil, nil
 }
 
+func (maka *mockAPIKeyAuth) Generate(ctx context.Context, name string, userID int) (*models.APIKey, error) {
+	return maka.res, nil
+}
+
 func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 	maka := &mockAPIKeyAuth{}
+	maka.res = &models.APIKey{
+		ID:           0,
+		Name:         "test-key",
+		UserID:       0,
+		APIKeyID:     "random",
+		APIKeySecret: "random",
+		TTL:          "15m",
+		CreateAt:     time.Now(),
+	}
 	mus := &mockUserStorer{}
 	aks := &mockAPIKeysStore{}
 	logger := zerolog.New(os.Stderr)
@@ -94,7 +108,6 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.NotEmpty(tt, key.APIKeySecret)
 		assert.NotEmpty(tt, key.APIKeyID)
-		assert.True(tt, key.TTL.After(time.Now()))
 		assert.Equal(tt, "test-key", key.Name)
 	})
 	t.Run("create happy path without name", func(tt *testing.T) {
@@ -112,8 +125,7 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.NotEmpty(tt, key.APIKeySecret)
 		assert.NotEmpty(tt, key.APIKeyID)
-		assert.True(tt, key.TTL.After(time.Now()))
-		assert.Equal(tt, "My API Key", key.Name)
+		assert.Equal(tt, "test-key", key.Name)
 	})
 	t.Run("create no user context", func(tt *testing.T) {
 		e := echo.New()
@@ -208,7 +220,8 @@ func TestAPIKeysHandler_GetAPIKeyPair(t *testing.T) {
 			UserID:       0,
 			APIKeyID:     "api-key-id",
 			APIKeySecret: "secret",
-			TTL:          time.Now().Add(10 * time.Minute),
+			TTL:          "10m",
+			CreateAt:     time.Now(),
 		},
 	}
 	logger := zerolog.New(os.Stderr)
@@ -313,7 +326,8 @@ func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
 				UserID:       0,
 				APIKeyID:     "test-key-id-1",
 				APIKeySecret: "secret1",
-				TTL:          time.Now().Add(10 * time.Minute),
+				TTL:          "10m",
+				CreateAt:     time.Now(),
 			},
 			{
 				ID:           1,
@@ -321,7 +335,8 @@ func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
 				UserID:       1,
 				APIKeyID:     "test-key-id-2",
 				APIKeySecret: "secret2",
-				TTL:          time.Now().Add(10 * time.Minute),
+				TTL:          "10m",
+				CreateAt:     time.Now(),
 			},
 		},
 	}
@@ -342,11 +357,11 @@ func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
 
 	t.Run("list apikey happy path", func(tt *testing.T) {
 		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/", nil)
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
 		rec := httptest.NewRecorder()
 		c := e.NewContext(req, rec)
 		c.Set("user", &middleware.UserContext{UserID: 1})
-		c.SetPath("/user/apikey")
+		c.SetPath("/user/apikeys")
 		err = akh.List()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusOK, rec.Code)

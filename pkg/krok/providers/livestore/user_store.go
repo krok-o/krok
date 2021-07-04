@@ -2,7 +2,6 @@ package livestore
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -121,12 +120,11 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		storedDisplayName string
 		storedID          int
 		storedLastLogin   time.Time
-		storedToken       sql.NullString
 	)
 	f := func(tx pgx.Tx) error {
-		withWhere := fmt.Sprintf("select id, email, display_name, last_login, token from users where %s = $1", field)
+		withWhere := fmt.Sprintf("select id, email, display_name, last_login from users where %s = $1", field)
 		err := tx.QueryRow(ctx, withWhere, value).
-			Scan(&storedID, &storedEmail, &storedDisplayName, &storedLastLogin, &storedToken)
+			Scan(&storedID, &storedEmail, &storedDisplayName, &storedLastLogin)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
@@ -157,7 +155,6 @@ func (s *UserStore) getByX(ctx context.Context, log zerolog.Logger, field string
 		ID:          storedID,
 		APIKeys:     apiKeys,
 		LastLogin:   storedLastLogin,
-		Token:       &storedToken.String,
 	}, nil
 }
 
@@ -166,13 +163,8 @@ func (s *UserStore) Update(ctx context.Context, user *models.User) (*models.User
 	log := s.Logger.With().Int("id", user.ID).Str("email", user.Email).Logger()
 
 	f := func(tx pgx.Tx) error {
-		// Update shouldn't update the token if it isn't provided.
 		args := []interface{}{user.DisplayName}
 		sets := []string{"display_name=$1"}
-		if user.Token != nil {
-			sets = append(sets, "token=$2")
-			args = append(args, *user.Token)
-		}
 		args = append(args, user.ID)
 		set := strings.Join(sets, ", ")
 		query := fmt.Sprintf("update users set %s where id=$%d", set, len(args))
@@ -258,9 +250,4 @@ func (s *UserStore) List(ctx context.Context) ([]*models.User, error) {
 		return nil, fmt.Errorf("failed to execute List all users: %w", err)
 	}
 	return result, nil
-}
-
-// GetByToken retrieves a user by personal access token.
-func (s *UserStore) GetByToken(ctx context.Context, token string) (*models.User, error) {
-	return s.getByX(ctx, s.Logger, "token", token)
 }

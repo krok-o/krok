@@ -27,6 +27,9 @@ type APIKeysAuthenticator interface {
 	Match(ctx context.Context, key *models.APIKey) error
 	// Encrypt takes an api key secret and encrypts it for storage.
 	Encrypt(ctx context.Context, secret []byte) ([]byte, error)
+	// Generate a secret and a key ID pair. Returns the secret unencrypted for showing,
+	// but does save it encrypted.
+	Generate(ctx context.Context, name string, userID int) (*models.APIKey, error)
 }
 
 // OAuthAuthenticator handles user authentication via OAuth2.
@@ -41,9 +44,4 @@ type OAuthAuthenticator interface {
 type TokenIssuer interface {
 	Create(token *models.User) (*oauth2.Token, error)
 	Refresh(ctx context.Context, refreshToken string) (*oauth2.Token, error)
-}
-
-// UserTokenGenerator handlers the generation of a user personal access token.
-type UserTokenGenerator interface {
-	Generate(length int) (string, error)
 }

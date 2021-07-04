@@ -19,9 +19,9 @@ type UserHandler struct {
 
 // UserHandlerDependencies .
 type UserHandlerDependencies struct {
-	Logger       zerolog.Logger
-	UserStore    providers.UserStorer
-	UATGenerator providers.UserTokenGenerator
+	Logger     zerolog.Logger
+	UserStore  providers.UserStorer
+	APIKeyAuth providers.APIKeysAuthenticator
 }
 
 // NewUserHandler .
@@ -102,8 +102,6 @@ func (u *UserHandler) UpdateUser() echo.HandlerFunc {
 		if err := c.Bind(&update); err != nil {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind user", http.StatusBadRequest, err))
 		}
-		// we have this on `-` but let's make sure it's not set.
-		update.Token = nil
 		result, err := u.UserStore.Update(c.Request().Context(), update)
 		if err != nil {
 			if errors.Is(err, kerr.ErrNotFound) {
@@ -125,20 +123,20 @@ func (u *UserHandler) CreateUser() echo.HandlerFunc {
 		if err := c.Bind(&create); err != nil {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind user", http.StatusBadRequest, err))
 		}
-
-		token, err := u.UATGenerator.Generate(60)
-		if err != nil {
-			apiError := kerr.APIError("failed to generate uat", http.StatusInternalServerError, err)
-			return c.JSON(http.StatusInternalServerError, apiError)
-		}
-		create.Token = &token
-
+		// Create the user
 		result, err := u.UserStore.Create(c.Request().Context(), create)
 		if err != nil {
 			apiError := kerr.APIError("failed to create user", http.StatusInternalServerError, err)
 			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
-		return c.JSON(http.StatusCreated, models.NewUser(*result))
+		// Create initial API key
+		key, err := u.APIKeyAuth.Generate(c.Request().Context(), "New API Key", result.ID)
+		if err != nil {
+			apiError := kerr.APIError("failed to create new api keys for user", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
+		}
+		result.APIKeys = append(result.APIKeys, key)
+		return c.JSON(http.StatusCreated, result)
 	}
 }

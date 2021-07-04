@@ -10,49 +10,45 @@ import (
 	"testing"
 	"time"
 
-	kerr "github.com/krok-o/krok/errors"
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+
+	kerr "github.com/krok-o/krok/errors"
 
 	"github.com/krok-o/krok/pkg/krok/providers/mocks"
 	"github.com/krok-o/krok/pkg/models"
 )
 
 func TestUserHandler_CreateUser(t *testing.T) {
-	uat := "abcdef"
-
 	t.Run("normal flow", func(tt *testing.T) {
 		// setup handler
 		mus := &mocks.UserStorer{}
-		mutg := &mocks.UserTokenGenerator{}
+		maka := &mocks.APIKeysAuthenticator{}
+		maka.On("Generate", mock.Anything, "New API Key", 0).Return(&models.APIKey{}, nil)
 		log := zerolog.New(os.Stderr)
 		uh := NewUserHandler(UserHandlerDependencies{
-			Logger:       log,
-			UserStore:    mus,
-			UATGenerator: mutg,
+			Logger:     log,
+			UserStore:  mus,
+			APIKeyAuth: maka,
 		})
-
 		// setup expected mock calls
-		mutg.On("Generate", 60).Return(uat, nil)
 		mus.On("Create", mock.Anything, &models.User{
 			DisplayName: "Gergely",
 			Email:       "bla@bla.com",
-			Token:       &uat,
 		}).Return(&models.User{
 			DisplayName: "Gergely",
 			Email:       "bla@bla.com",
 			ID:          0,
 			LastLogin:   time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC),
 			APIKeys:     nil,
-			Token:       &uat,
 		}, nil)
 
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(t, err)
 		userPost := `{"display_name":"Gergely","email":"bla@bla.com"}`
-		userExpected := `{"display_name":"Gergely","email":"bla@bla.com","id":0,"last_login":"1981-01-01T01:01:01.000000001Z","token":"abcdef"}
+		userExpected := `{"display_name":"Gergely","email":"bla@bla.com","id":0,"last_login":"1981-01-01T01:01:01.000000001Z","api_keys":[{"id":0,"user_id":0,"api_key_id":"","api_key_secret":"","ttl":"","create_at":"0001-01-01T00:00:00Z"}]}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/user", strings.NewReader(userPost))
@@ -70,20 +66,19 @@ func TestUserHandler_CreateUser(t *testing.T) {
 	t.Run("when there is an error creating a user", func(tt *testing.T) {
 		// setup handler
 		mus := &mocks.UserStorer{}
-		mutg := &mocks.UserTokenGenerator{}
+		maka := &mocks.APIKeysAuthenticator{}
+		maka.On("Generate", mock.Anything, "New API Key", 0).Return(&models.APIKey{}, nil)
 		log := zerolog.New(os.Stderr)
 		uh := NewUserHandler(UserHandlerDependencies{
-			Logger:       log,
-			UserStore:    mus,
-			UATGenerator: mutg,
+			Logger:     log,
+			UserStore:  mus,
+			APIKeyAuth: maka,
 		})
 
 		// setup expected mock calls
-		mutg.On("Generate", 60).Return(uat, nil)
 		mus.On("Create", mock.Anything, &models.User{
 			DisplayName: "Gergely",
 			Email:       "bla@bla.com",
-			Token:       &uat,
 		}).Return(nil, errors.New("nope"))
 
 		token, err := generateTestToken("test@email.com")
@@ -102,10 +97,12 @@ func TestUserHandler_CreateUser(t *testing.T) {
 	t.Run("when there is an invalid body which can't be parsed", func(tt *testing.T) {
 		// setup handler
 		mus := &mocks.UserStorer{}
+		maka := &mocks.APIKeysAuthenticator{}
 		log := zerolog.New(os.Stderr)
 		uh := NewUserHandler(UserHandlerDependencies{
-			Logger:    log,
-			UserStore: mus,
+			Logger:     log,
+			UserStore:  mus,
+			APIKeyAuth: maka,
 		})
 
 		token, err := generateTestToken("test@email.com")
@@ -122,19 +119,27 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		assert.Equal(t, http.StatusBadRequest, rec.Code)
 		mus.AssertNumberOfCalls(tt, "Create", 0)
 	})
-	t.Run("when there is an error generating the user token errors", func(tt *testing.T) {
+	t.Run("when there is an error generating new api keys", func(tt *testing.T) {
 		// setup handler
 		mus := &mocks.UserStorer{}
-		mutg := &mocks.UserTokenGenerator{}
+		mus.On("Create", mock.Anything, &models.User{
+			DisplayName: "Gergely",
+			Email:       "bla@bla.com",
+		}).Return(&models.User{
+			DisplayName: "Gergely",
+			Email:       "bla@bla.com",
+			ID:          0,
+			LastLogin:   time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC),
+			APIKeys:     nil,
+		}, nil)
+		maka := &mocks.APIKeysAuthenticator{}
+		maka.On("Generate", mock.Anything, "New API Key", 0).Return(nil, errors.New("nope"))
 		log := zerolog.New(os.Stderr)
 		uh := NewUserHandler(UserHandlerDependencies{
-			Logger:       log,
-			UserStore:    mus,
-			UATGenerator: mutg,
+			Logger:     log,
+			UserStore:  mus,
+			APIKeyAuth: maka,
 		})
-
-		// setup expected mock calls
-		mutg.On("Generate", 60).Return(uat, errors.New("generate err"))
 
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(t, err)
@@ -154,6 +159,16 @@ func TestUserHandler_CreateUser(t *testing.T) {
 func TestUserHandler_GetUser(t *testing.T) {
 	t.Run("normal flow", func(tt *testing.T) {
 		// setup handler
+		maka := &mocks.APIKeysAuthenticator{}
+		maka.On("Generate", mock.Anything, "New API Key", 0).Return(&models.APIKey{
+			ID:           0,
+			Name:         "test-key",
+			UserID:       0,
+			APIKeyID:     "random",
+			APIKeySecret: "random",
+			TTL:          "10m",
+			CreateAt:     time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC),
+		}, nil)
 		mus := &mocks.UserStorer{}
 		log := zerolog.New(os.Stderr)
 		uh := NewUserHandler(UserHandlerDependencies{

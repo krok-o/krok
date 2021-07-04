@@ -1,22 +1,13 @@
 package handlers
 
 import (
-	"crypto/md5"
-	"fmt"
 	"net/http"
-	"time"
 
-	"github.com/google/uuid"
 	"github.com/labstack/echo/v4"
 
 	kerr "github.com/krok-o/krok/errors"
 	"github.com/krok-o/krok/pkg/krok/providers"
-	"github.com/krok-o/krok/pkg/models"
 	krokmiddleware "github.com/krok-o/krok/pkg/server/middleware"
-)
-
-const (
-	keyTTL = 7 * 24 * time.Hour
 )
 
 // APIKeysHandlerDependencies defines the dependencies for the api keys handler provider.
@@ -69,51 +60,16 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 			a.Logger.Debug().Err(err).Msg("error getting user context")
 			return c.String(http.StatusInternalServerError, "failed to get user context")
 		}
-
 		name := c.Param("name")
 		if name == "" {
 			name = "My API Key"
 		}
-
-		// generate the key secret
-		// this will be displayed once, then never shown again, ever.
-		secret, err := a.generateUniqueKey()
-		if err != nil {
-			apiError := kerr.APIError("failed to generate unique api key", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
-		// generate the key id
-		// this will be displayed once, then never shown again, ever.
-		keyID, err := a.generateKeyID()
-		if err != nil {
-			apiError := kerr.APIError("failed to generate unique api id", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
-		}
-
 		ctx := c.Request().Context()
-		encrypted, err := a.APIKeyAuth.Encrypt(ctx, []byte(secret))
+		key, err := a.APIKeyAuth.Generate(ctx, name, uc.UserID)
 		if err != nil {
-			apiError := kerr.APIError("failed to encrypt key", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			a.Logger.Debug().Err(err).Msg("failed to generate new unique key")
+			return c.String(http.StatusInternalServerError, "failed to generate new unique key")
 		}
-
-		key := &models.APIKey{
-			Name:         name,
-			UserID:       uc.UserID,
-			APIKeyID:     keyID,
-			APIKeySecret: string(encrypted),
-			TTL:          a.Clock.Now().Add(keyTTL),
-		}
-
-		generatedKey, err := a.APIKeysStore.Create(ctx, key)
-		if err != nil {
-			a.Logger.Debug().Err(err).Msg("Failed to generate a key.")
-			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to generate key", http.StatusInternalServerError, err))
-		}
-		// We will display the ID and the secret unencrypted so the user can save it.
-		key.ID = generatedKey.ID
-		key.APIKeySecret = secret
 		return c.JSON(http.StatusOK, key)
 	}
 }
@@ -231,23 +187,4 @@ func (a *APIKeysHandler) Get() echo.HandlerFunc {
 
 		return c.JSON(http.StatusOK, key)
 	}
-}
-
-// Generate a unique api key for a user.
-func (a *APIKeysHandler) generateUniqueKey() (string, error) {
-	u, err := uuid.NewUUID()
-	if err != nil {
-		return "", nil
-	}
-
-	return u.String(), nil
-}
-
-// Generate a unique api key for a user.
-func (a *APIKeysHandler) generateKeyID() (string, error) {
-	u, err := a.generateUniqueKey()
-	if err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", md5.Sum([]byte(u))), nil
 }
