@@ -48,7 +48,7 @@ func TestUserHandler_CreateUser(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(t, err)
 		userPost := `{"display_name":"Gergely","email":"bla@bla.com"}`
-		userExpected := `{"display_name":"Gergely","email":"bla@bla.com","id":0,"last_login":"1981-01-01T01:01:01.000000001Z","api_keys":[{"id":0,"user_id":0,"api_key_id":"","api_key_secret":"","ttl":"0001-01-01T00:00:00Z"}]}
+		userExpected := `{"display_name":"Gergely","email":"bla@bla.com","id":0,"last_login":"1981-01-01T01:01:01.000000001Z","api_keys":[{"id":0,"user_id":0,"api_key_id":"","api_key_secret":"","ttl":"","create_at":"0001-01-01T00:00:00Z"}]}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/user", strings.NewReader(userPost))
@@ -166,7 +166,8 @@ func TestUserHandler_GetUser(t *testing.T) {
 			UserID:       0,
 			APIKeyID:     "random",
 			APIKeySecret: "random",
-			TTL:          time.Date(1981, 1, 1, 1, 16, 1, 1, time.UTC),
+			TTL:          "10m",
+			CreateAt:     time.Date(2021, 1, 1, 1, 1, 1, 1, time.UTC),
 		}, nil)
 		mus := &mocks.UserStorer{}
 		log := zerolog.New(os.Stderr)

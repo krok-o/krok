@@ -37,7 +37,8 @@ func (mus *mockUserStorer) GetByEmail(ctx context.Context, email string) (*model
 				UserID:       0,
 				APIKeyID:     "apikeyid",
 				APIKeySecret: "secret",
-				TTL:          time.Now().Add(10 * time.Minute),
+				TTL:          "10m",
+				CreateAt:     time.Now(),
 			},
 		},
 	}, nil

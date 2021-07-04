@@ -70,7 +70,8 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		UserID:       0,
 		APIKeyID:     "random",
 		APIKeySecret: "random",
-		TTL:          time.Now().Add(15 * time.Minute),
+		TTL:          "15m",
+		CreateAt:     time.Now(),
 	}
 	mus := &mockUserStorer{}
 	aks := &mockAPIKeysStore{}
@@ -107,7 +108,6 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.NotEmpty(tt, key.APIKeySecret)
 		assert.NotEmpty(tt, key.APIKeyID)
-		assert.True(tt, key.TTL.After(time.Now()))
 		assert.Equal(tt, "test-key", key.Name)
 	})
 	t.Run("create happy path without name", func(tt *testing.T) {
@@ -125,7 +125,6 @@ func TestAPIKeysHandler_CreateAPIKeyPair(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.NotEmpty(tt, key.APIKeySecret)
 		assert.NotEmpty(tt, key.APIKeyID)
-		assert.True(tt, key.TTL.After(time.Now()))
 		assert.Equal(tt, "test-key", key.Name)
 	})
 	t.Run("create no user context", func(tt *testing.T) {
@@ -221,7 +220,8 @@ func TestAPIKeysHandler_GetAPIKeyPair(t *testing.T) {
 			UserID:       0,
 			APIKeyID:     "api-key-id",
 			APIKeySecret: "secret",
-			TTL:          time.Now().Add(10 * time.Minute),
+			TTL:          "10m",
+			CreateAt:     time.Now(),
 		},
 	}
 	logger := zerolog.New(os.Stderr)
@@ -326,7 +326,8 @@ func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
 				UserID:       0,
 				APIKeyID:     "test-key-id-1",
 				APIKeySecret: "secret1",
-				TTL:          time.Now().Add(10 * time.Minute),
+				TTL:          "10m",
+				CreateAt:     time.Now(),
 			},
 			{
 				ID:           1,
@@ -334,7 +335,8 @@ func TestAPIKeysHandler_ListAPIKeyPairs(t *testing.T) {
 				UserID:       1,
 				APIKeyID:     "test-key-id-2",
 				APIKeySecret: "secret2",
-				TTL:          time.Now().Add(10 * time.Minute),
+				TTL:          "10m",
+				CreateAt:     time.Now(),
 			},
 		},
 	}

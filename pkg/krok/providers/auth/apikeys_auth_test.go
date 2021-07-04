@@ -84,7 +84,22 @@ func TestMatch(t *testing.T) {
 		CreateAt:     time.Now(),
 	})
 	assert.Error(t, err)
-	mak.err = nil
+	mak = &mockAPIKeysStore{
+		key: &models.APIKey{
+			ID:           0,
+			Name:         "test-key",
+			UserID:       1,
+			APIKeyID:     "api-key-id",
+			APIKeySecret: "secret",
+			TTL:          "10m",
+			CreateAt:     time.Now().Add(-15 * time.Minute),
+		},
+	}
+	p = NewAPIKeysProvider(APIKeysDependencies{
+		APIKeysStore: mak,
+		Clock:        mt,
+		Logger:       zerolog.New(os.Stderr),
+	})
 	err = p.Match(context.Background(), &models.APIKey{
 		ID:           0,
 		Name:         "test-key",
