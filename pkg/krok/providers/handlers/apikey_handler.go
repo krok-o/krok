@@ -83,7 +83,8 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 //   in: path
 //   description: 'The ID of the key to delete'
 //   required: true
-//   type: string
+//   type: integer
+//   format: int
 // responses:
 //   '200':
 //     description: 'OK in case the deletion was successful'
@@ -157,7 +158,8 @@ func (a *APIKeysHandler) List() echo.HandlerFunc {
 //   in: path
 //   description: "The ID of the key to return"
 //   required: true
-//   type: string
+//   type: integer
+//   format: int
 // responses:
 //   '200':
 //     schema:

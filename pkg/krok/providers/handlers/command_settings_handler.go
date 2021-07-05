@@ -33,6 +33,23 @@ func NewCommandSettingsHandler(deps CommandSettingsHandlerDependencies) *Command
 }
 
 // Delete deletes a setting.
+// swagger:operation DELETE /command/settings/{id} deleteCommandSetting
+// Deletes a given command setting.
+// ---
+// parameters:
+// - name: id
+//   in: path
+//   description: 'The ID of the command setting to delete'
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     description: 'OK in case the deletion was successful'
+//   '400':
+//     description: 'invalid id'
+//   '500':
+//     description: 'when the deletion operation failed'
 func (ch *CommandSettingsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -47,14 +64,34 @@ func (ch *CommandSettingsHandler) Delete() echo.HandlerFunc {
 				return c.JSON(http.StatusNotFound, kerr.APIError("command setting not found", http.StatusNotFound, err))
 			}
 			ch.Logger.Debug().Err(err).Msg("Command Setting Delete failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete command setting", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to delete command setting", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusOK)
 	}
 }
 
-// List lists commands.
+// List lists command settings.
+// swagger:operation POST /command/{id}/settings listCommandSettings
+// List settings for a command.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: id
+//   in: path
+//   description: 'The ID of the command to list settings for'
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     schema:
+//       type: array
+//       items:
+//         "$ref": "#/definitions/CommandSetting"
+//   '500':
+//     description: 'failed to list settings'
 func (ch *CommandSettingsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -67,7 +104,7 @@ func (ch *CommandSettingsHandler) List() echo.HandlerFunc {
 		list, err := ch.CommandStorer.ListSettings(ctx, n)
 		if err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command List failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list commands", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to list commands", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusOK, list)

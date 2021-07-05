@@ -32,17 +32,25 @@ Documentation the Krok API.
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
+| POST | /rest/api/1/command/add-command-rel-for-platform/{cmdid}/{repoid} | [add command rel for platform command](#add-command-rel-for-platform-command) | Adds a connection to a platform for a command. Defines what platform a command supports. These commands will only be able to run for those platforms. |
+| POST | /rest/api/1/command/add-command-rel-for-repository/{cmdid}/{repoid} | [add command rel for repository command](#add-command-rel-for-repository-command) | Add a connection to a repository. This will make this command to be executed for events for that repository. |
 | POST | /rest/api/1/user/apikey/generate/{name} | [create Api key](#create-api-key) | Creates an api key pair for a given user. |
 | DELETE | /rest/api/1/user/apikey/delete/{keyid} | [delete Api key](#delete-api-key) | Deletes a set of api keys for a given user with a given id. |
 | DELETE | /rest/api/1/command/{id} | [delete command](#delete-command) | Deletes given command. |
+| DELETE | /rest/api/1/command/settings/{id} | [delete command setting](#delete-command-setting) | Deletes a given command setting. |
 | GET | /rest/api/1/user/apikey/{keyid} | [get Api keys](#get-api-keys) | Returns a given api key. |
 | GET | /rest/api/1/command/{id} | [get command](#get-command) | Returns a specific command. |
+| GET | /rest/api/1/command/run/{id} | [get command run](#get-command-run) | Returns details about a command run. |
 | POST | /rest/api/1/get-token | [get token](#get-token) | Creates a JWT token for a given api key pair. |
 | POST | /rest/api/1/hooks/{rid}/{vid}/callback | [hook handler](#hook-handler) | Handle the hooks created by the platform. |
 | POST | /rest/api/1/user/apikey | [list Api keys](#list-api-keys) | Lists all api keys for a given user. |
+| POST | /rest/api/1/command/{id}/settings | [list command settings](#list-command-settings) | List settings for a command. |
 | POST | /rest/api/1/commands | [list commands](#list-commands) |  |
 | GET | /rest/api/1/supported-platforms | [list supported platforms](#list-supported-platforms) | Lists all supported platforms. |
 | POST | /rest/api/1/auth/refresh | [refresh token](#refresh-token) | Refresh the authentication token. |
+| POST | /rest/api/1/command/remove-command-rel-for-platform/{cmdid}/{repoid} | [remove command rel for platform command](#remove-command-rel-for-platform-command) | Remove a relationship to a platform. This command will no longer be running for that platform events. |
+| POST | /rest/api/1/command/remove-command-rel-for-repository/{cmdid}/{repoid} | [remove command rel for repository command](#remove-command-rel-for-repository-command) | Remove a relationship to a repository. This command will no longer be running for that repository events. |
+| POST | /rest/api/1/command/update | [update command](#update-command) | Updates a given command. |
 | POST | /rest/api/1/command | [upload command](#upload-command) | Upload a command. To set up anything for the command, like schedules etc, |
 | GET | /rest/api/1/auth/callback | [user callback](#user-callback) | This is the url to which Google calls back after a successful login. |
 | GET | /rest/api/1/auth/login | [user login](#user-login) | User login. |
@@ -50,6 +58,82 @@ Documentation the Krok API.
 
 
 ## Paths
+
+### <span id="add-command-rel-for-platform-command"></span> Adds a connection to a platform for a command. Defines what platform a command supports. These commands will only be able to run for those platforms. (*addCommandRelForPlatformCommand*)
+
+```
+POST /rest/api/1/command/add-command-rel-for-platform/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#add-command-rel-for-platform-command-200) | OK | successfully added relationship |  | [schema](#add-command-rel-for-platform-command-200-schema) |
+| [400](#add-command-rel-for-platform-command-400) | Bad Request | invalid ids or platform not found |  | [schema](#add-command-rel-for-platform-command-400-schema) |
+| [500](#add-command-rel-for-platform-command-500) | Internal Server Error | failed to add command relationship to platform |  | [schema](#add-command-rel-for-platform-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="add-command-rel-for-platform-command-200"></span> 200 - successfully added relationship
+Status: OK
+
+###### <span id="add-command-rel-for-platform-command-200-schema"></span> Schema
+
+##### <span id="add-command-rel-for-platform-command-400"></span> 400 - invalid ids or platform not found
+Status: Bad Request
+
+###### <span id="add-command-rel-for-platform-command-400-schema"></span> Schema
+
+##### <span id="add-command-rel-for-platform-command-500"></span> 500 - failed to add command relationship to platform
+Status: Internal Server Error
+
+###### <span id="add-command-rel-for-platform-command-500-schema"></span> Schema
+
+### <span id="add-command-rel-for-repository-command"></span> Add a connection to a repository. This will make this command to be executed for events for that repository. (*addCommandRelForRepositoryCommand*)
+
+```
+POST /rest/api/1/command/add-command-rel-for-repository/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#add-command-rel-for-repository-command-200) | OK | successfully added relationship |  | [schema](#add-command-rel-for-repository-command-200-schema) |
+| [400](#add-command-rel-for-repository-command-400) | Bad Request | invalid ids or repositroy not found |  | [schema](#add-command-rel-for-repository-command-400-schema) |
+| [500](#add-command-rel-for-repository-command-500) | Internal Server Error | failed to add relationship |  | [schema](#add-command-rel-for-repository-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="add-command-rel-for-repository-command-200"></span> 200 - successfully added relationship
+Status: OK
+
+###### <span id="add-command-rel-for-repository-command-200-schema"></span> Schema
+
+##### <span id="add-command-rel-for-repository-command-400"></span> 400 - invalid ids or repositroy not found
+Status: Bad Request
+
+###### <span id="add-command-rel-for-repository-command-400-schema"></span> Schema
+
+##### <span id="add-command-rel-for-repository-command-500"></span> 500 - failed to add relationship
+Status: Internal Server Error
+
+###### <span id="add-command-rel-for-repository-command-500-schema"></span> Schema
 
 ### <span id="create-api-key"></span> Creates an api key pair for a given user. (*createApiKey*)
 
@@ -105,7 +189,7 @@ DELETE /rest/api/1/user/apikey/delete/{keyid}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| keyid | `path` | string | `string` |  | ✓ |  | The ID of the key to delete |
+| keyid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the key to delete |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -142,7 +226,7 @@ DELETE /rest/api/1/command/{id}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| id | `path` | string | `string` |  | ✓ |  | The ID of the command to delete |
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command to delete |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -169,6 +253,43 @@ Status: Internal Server Error
 
 ###### <span id="delete-command-500-schema"></span> Schema
 
+### <span id="delete-command-setting"></span> Deletes a given command setting. (*deleteCommandSetting*)
+
+```
+DELETE /rest/api/1/command/settings/{id}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command setting to delete |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#delete-command-setting-200) | OK | OK in case the deletion was successful |  | [schema](#delete-command-setting-200-schema) |
+| [400](#delete-command-setting-400) | Bad Request | invalid id |  | [schema](#delete-command-setting-400-schema) |
+| [500](#delete-command-setting-500) | Internal Server Error | when the deletion operation failed |  | [schema](#delete-command-setting-500-schema) |
+
+#### Responses
+
+
+##### <span id="delete-command-setting-200"></span> 200 - OK in case the deletion was successful
+Status: OK
+
+###### <span id="delete-command-setting-200-schema"></span> Schema
+
+##### <span id="delete-command-setting-400"></span> 400 - invalid id
+Status: Bad Request
+
+###### <span id="delete-command-setting-400-schema"></span> Schema
+
+##### <span id="delete-command-setting-500"></span> 500 - when the deletion operation failed
+Status: Internal Server Error
+
+###### <span id="delete-command-setting-500-schema"></span> Schema
+
 ### <span id="get-api-keys"></span> Returns a given api key. (*getApiKeys*)
 
 ```
@@ -182,7 +303,7 @@ GET /rest/api/1/user/apikey/{keyid}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| keyid | `path` | string | `string` |  | ✓ |  | The ID of the key to return |
+| keyid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the key to return |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -220,7 +341,7 @@ GET /rest/api/1/command/{id}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| id | `path` | string | `string` |  | ✓ |  |  |
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -250,6 +371,56 @@ Status: Bad Request
 Status: Internal Server Error
 
 ###### <span id="get-command-500-schema"></span> Schema
+
+### <span id="get-command-run"></span> Returns details about a command run. (*getCommandRun*)
+
+```
+GET /rest/api/1/command/run/{id}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-command-run-200) | OK |  |  | [schema](#get-command-run-200-schema) |
+| [400](#get-command-run-400) | Bad Request | invalid command id |  | [schema](#get-command-run-400-schema) |
+| [404](#get-command-run-404) | Not Found | command run not found |  | [schema](#get-command-run-404-schema) |
+| [500](#get-command-run-500) | Internal Server Error | failed to get command run |  | [schema](#get-command-run-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-command-run-200"></span> 200
+Status: OK
+
+###### <span id="get-command-run-200-schema"></span> Schema
+   
+  
+
+[CommandRun](#command-run)
+
+##### <span id="get-command-run-400"></span> 400 - invalid command id
+Status: Bad Request
+
+###### <span id="get-command-run-400-schema"></span> Schema
+
+##### <span id="get-command-run-404"></span> 404 - command run not found
+Status: Not Found
+
+###### <span id="get-command-run-404-schema"></span> Schema
+
+##### <span id="get-command-run-500"></span> 500 - failed to get command run
+Status: Internal Server Error
+
+###### <span id="get-command-run-500-schema"></span> Schema
 
 ### <span id="get-token"></span> Creates a JWT token for a given api key pair. (*getToken*)
 
@@ -296,8 +467,8 @@ POST /rest/api/1/hooks/{rid}/{vid}/callback
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| rid | `path` | string | `string` |  | ✓ |  | The ID of the repository. |
-| vid | `path` | string | `string` |  | ✓ |  | The ID of the provider. |
+| rid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the repository. |
+| vid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the provider. |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -355,6 +526,44 @@ Status: OK
 Status: Internal Server Error
 
 ###### <span id="list-api-keys-500-schema"></span> Schema
+
+### <span id="list-command-settings"></span> List settings for a command. (*listCommandSettings*)
+
+```
+POST /rest/api/1/command/{id}/settings
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command to list settings for |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#list-command-settings-200) | OK |  |  | [schema](#list-command-settings-200-schema) |
+| [500](#list-command-settings-500) | Internal Server Error | failed to list settings |  | [schema](#list-command-settings-500-schema) |
+
+#### Responses
+
+
+##### <span id="list-command-settings-200"></span> 200
+Status: OK
+
+###### <span id="list-command-settings-200-schema"></span> Schema
+   
+  
+
+[][CommandSetting](#command-setting)
+
+##### <span id="list-command-settings-500"></span> 500 - failed to list settings
+Status: Internal Server Error
+
+###### <span id="list-command-settings-500-schema"></span> Schema
 
 ### <span id="list-commands"></span> list commands (*listCommands*)
 
@@ -446,6 +655,126 @@ Status: OK
 Status: Unauthorized
 
 ###### <span id="refresh-token-401-schema"></span> Schema
+
+### <span id="remove-command-rel-for-platform-command"></span> Remove a relationship to a platform. This command will no longer be running for that platform events. (*removeCommandRelForPlatformCommand*)
+
+```
+POST /rest/api/1/command/remove-command-rel-for-platform/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#remove-command-rel-for-platform-command-200) | OK | successfully removed relationship |  | [schema](#remove-command-rel-for-platform-command-200-schema) |
+| [400](#remove-command-rel-for-platform-command-400) | Bad Request | invalid ids or platform not found |  | [schema](#remove-command-rel-for-platform-command-400-schema) |
+| [500](#remove-command-rel-for-platform-command-500) | Internal Server Error | failed to add relationship |  | [schema](#remove-command-rel-for-platform-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="remove-command-rel-for-platform-command-200"></span> 200 - successfully removed relationship
+Status: OK
+
+###### <span id="remove-command-rel-for-platform-command-200-schema"></span> Schema
+
+##### <span id="remove-command-rel-for-platform-command-400"></span> 400 - invalid ids or platform not found
+Status: Bad Request
+
+###### <span id="remove-command-rel-for-platform-command-400-schema"></span> Schema
+
+##### <span id="remove-command-rel-for-platform-command-500"></span> 500 - failed to add relationship
+Status: Internal Server Error
+
+###### <span id="remove-command-rel-for-platform-command-500-schema"></span> Schema
+
+### <span id="remove-command-rel-for-repository-command"></span> Remove a relationship to a repository. This command will no longer be running for that repository events. (*removeCommandRelForRepositoryCommand*)
+
+```
+POST /rest/api/1/command/remove-command-rel-for-repository/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#remove-command-rel-for-repository-command-200) | OK | successfully removed relationship |  | [schema](#remove-command-rel-for-repository-command-200-schema) |
+| [400](#remove-command-rel-for-repository-command-400) | Bad Request | invalid ids or repositroy not found |  | [schema](#remove-command-rel-for-repository-command-400-schema) |
+| [500](#remove-command-rel-for-repository-command-500) | Internal Server Error | failed to add relationship |  | [schema](#remove-command-rel-for-repository-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="remove-command-rel-for-repository-command-200"></span> 200 - successfully removed relationship
+Status: OK
+
+###### <span id="remove-command-rel-for-repository-command-200-schema"></span> Schema
+
+##### <span id="remove-command-rel-for-repository-command-400"></span> 400 - invalid ids or repositroy not found
+Status: Bad Request
+
+###### <span id="remove-command-rel-for-repository-command-400-schema"></span> Schema
+
+##### <span id="remove-command-rel-for-repository-command-500"></span> 500 - failed to add relationship
+Status: Internal Server Error
+
+###### <span id="remove-command-rel-for-repository-command-500-schema"></span> Schema
+
+### <span id="update-command"></span> Updates a given command. (*updateCommand*)
+
+```
+POST /rest/api/1/command/update
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| command | `body` | [Command](#command) | `models.Command` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#update-command-200) | OK | successfully updated command |  | [schema](#update-command-200-schema) |
+| [400](#update-command-400) | Bad Request | binding error |  | [schema](#update-command-400-schema) |
+| [500](#update-command-500) | Internal Server Error | failed to update the command |  | [schema](#update-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="update-command-200"></span> 200 - successfully updated command
+Status: OK
+
+###### <span id="update-command-200-schema"></span> Schema
+   
+  
+
+[Command](#command)
+
+##### <span id="update-command-400"></span> 400 - binding error
+Status: Bad Request
+
+###### <span id="update-command-400-schema"></span> Schema
+
+##### <span id="update-command-500"></span> 500 - failed to update the command
+Status: Internal Server Error
+
+###### <span id="update-command-500-schema"></span> Schema
 
 ### <span id="upload-command"></span> Upload a command. To set up anything for the command, like schedules etc, (*uploadCommand*)
 
@@ -581,9 +910,10 @@ Status: Not Found
 |------|------|---------|:--------:| ------- |-------------|---------|
 | APIKeyID | string| `string` | ✓ | | APIKeyID is a generated id of the key. |  |
 | APIKeySecret | string| `string` | ✓ | | APIKeySecret is a generated secret, aka, the key. |  |
+| CreateAt | date-time (formatted string)| `strfmt.DateTime` | ✓ | | CreateAt defines when this key was created. | `time.Now()` |
 | ID | int64 (formatted integer)| `int64` | ✓ | | ID of the key. This is auto-generated. |  |
 | Name | string| `string` | ✓ | | Name of the key |  |
-| TTL | date-time (formatted string)| `strfmt.DateTime` | ✓ | | TTL defines how long this key can live. | `time.Now().Add(10 * time.Minute)` |
+| TTL | string| `string` | ✓ | | TTL defines how long this key can live in duration. | `1h10m10s` |
 | UserID | int64 (formatted integer)| `int64` | ✓ | | UserID is the ID of the user to which this key belongs. |  |
 
 
@@ -731,30 +1061,6 @@ an ID is generated. |  |
 required false | `10` |
 | StartingDate | date-time (formatted string)| `strfmt.DateTime` |  | | StartingDate defines a date of start to look for events. Inclusive. | `2021-02-02` |
 | VCS | int64 (formatted integer)| `int64` |  | | Only list all entries for a given platform ID. |  |
-
-
-
-### <span id="new-user"></span> NewUser
-
-
-> NewUser is a new user in the Krok system. Specifically this exposes the token and should only be used when creating
-a user for the first time.
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| APIKeys | [][APIKey](#api-key)| `[]*APIKey` |  | | APIKeys contains generated api access keys for this user. |  |
-| DisplayName | string| `string` |  | | DisplayName is the name of the user. |  |
-| Email | string| `string` | ✓ | | Email of the user. |  |
-| ID | int64 (formatted integer)| `int64` | ✓ | | ID of the user. This is auto-generated. |  |
-| LastLogin | date-time (formatted string)| `strfmt.DateTime` | ✓ | | LastLogin contains the timestamp of the last successful login of this user. |  |
-| Token | string| `string` | ✓ | | Token is displayed once for new users. Then never again. |  |
 
 
 

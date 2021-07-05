@@ -31,6 +31,27 @@ func NewCommandRunHandler(deps CommandRunHandlerDependencies) *CommandRunHandler
 }
 
 // GetCommandRun returns details about a command run.
+// swagger:operation GET /command/run/{id} getCommandRun
+// Returns details about a command run.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: id
+//   in: path
+//   type: integer
+//   format: int
+//   required: true
+// responses:
+//   '200':
+//     schema:
+//       "$ref": "#/definitions/CommandRun"
+//   '400':
+//     description: 'invalid command id'
+//   '404':
+//     description: 'command run not found'
+//   '500':
+//     description: 'failed to get command run'
 func (cm *CommandRunHandler) GetCommandRun() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
