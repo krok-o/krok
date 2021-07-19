@@ -41,6 +41,7 @@ Documentation the Krok API.
 | GET | /rest/api/1/user/apikey/{keyid} | [get Api keys](#get-api-keys) | Returns a given api key. |
 | GET | /rest/api/1/command/{id} | [get command](#get-command) | Returns a specific command. |
 | GET | /rest/api/1/command/run/{id} | [get command run](#get-command-run) | Returns details about a command run. |
+| GET | /rest/api/1/command/settings/{id} | [get command setting](#get-command-setting) | Get a specific setting. |
 | POST | /rest/api/1/get-token | [get token](#get-token) | Creates a JWT token for a given api key pair. |
 | POST | /rest/api/1/hooks/{rid}/{vid}/callback | [hook handler](#hook-handler) | Handle the hooks created by the platform. |
 | POST | /rest/api/1/user/apikey | [list Api keys](#list-api-keys) | Lists all api keys for a given user. |
@@ -51,6 +52,7 @@ Documentation the Krok API.
 | POST | /rest/api/1/command/remove-command-rel-for-platform/{cmdid}/{repoid} | [remove command rel for platform command](#remove-command-rel-for-platform-command) | Remove a relationship to a platform. This command will no longer be running for that platform events. |
 | POST | /rest/api/1/command/remove-command-rel-for-repository/{cmdid}/{repoid} | [remove command rel for repository command](#remove-command-rel-for-repository-command) | Remove a relationship to a repository. This command will no longer be running for that repository events. |
 | POST | /rest/api/1/command/update | [update command](#update-command) | Updates a given command. |
+| POST | /rest/api/1/command/settings/update | [update command setting](#update-command-setting) | Create a new command setting. |
 | POST | /rest/api/1/command | [upload command](#upload-command) | Upload a command. To set up anything for the command, like schedules etc, |
 | GET | /rest/api/1/auth/callback | [user callback](#user-callback) | This is the url to which Google calls back after a successful login. |
 | GET | /rest/api/1/auth/login | [user login](#user-login) | User login. |
@@ -91,11 +93,19 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="add-command-rel-for-platform-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="add-command-rel-for-platform-command-500"></span> 500 - failed to add command relationship to platform
 Status: Internal Server Error
 
 ###### <span id="add-command-rel-for-platform-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="add-command-rel-for-repository-command"></span> Add a connection to a repository. This will make this command to be executed for events for that repository. (*addCommandRelForRepositoryCommand*)
 
@@ -129,11 +139,19 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="add-command-rel-for-repository-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="add-command-rel-for-repository-command-500"></span> 500 - failed to add relationship
 Status: Internal Server Error
 
 ###### <span id="add-command-rel-for-repository-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="create-api-key"></span> Creates an api key pair for a given user. (*createApiKey*)
 
@@ -178,6 +196,10 @@ Status: Bad Request
 Status: Internal Server Error
 
 ###### <span id="create-api-key-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="delete-api-key"></span> Deletes a set of api keys for a given user with a given id. (*deleteApiKey*)
 
@@ -215,6 +237,10 @@ Status: Bad Request
 Status: Internal Server Error
 
 ###### <span id="delete-api-key-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="delete-command"></span> Deletes given command. (*deleteCommand*)
 
@@ -247,11 +273,19 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="delete-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="delete-command-500"></span> 500 - when the deletion operation failed
 Status: Internal Server Error
 
 ###### <span id="delete-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="delete-command-setting"></span> Deletes a given command setting. (*deleteCommandSetting*)
 
@@ -289,6 +323,10 @@ Status: Bad Request
 Status: Internal Server Error
 
 ###### <span id="delete-command-setting-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="get-api-keys"></span> Returns a given api key. (*getApiKeys*)
 
@@ -327,6 +365,10 @@ Status: OK
 Status: Internal Server Error
 
 ###### <span id="get-api-keys-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="get-command"></span> Returns a specific command. (*getCommand*)
 
@@ -366,11 +408,19 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="get-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="get-command-500"></span> 500 - failed to get user context
 Status: Internal Server Error
 
 ###### <span id="get-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="get-command-run"></span> Returns details about a command run. (*getCommandRun*)
 
@@ -411,6 +461,10 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="get-command-run-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="get-command-run-404"></span> 404 - command run not found
 Status: Not Found
@@ -421,6 +475,62 @@ Status: Not Found
 Status: Internal Server Error
 
 ###### <span id="get-command-run-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="get-command-setting"></span> Get a specific setting. (*getCommandSetting*)
+
+```
+GET /rest/api/1/command/settings/{id}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command setting to retrieve |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-command-setting-200) | OK |  |  | [schema](#get-command-setting-200-schema) |
+| [400](#get-command-setting-400) | Bad Request | invalid command id |  | [schema](#get-command-setting-400-schema) |
+| [500](#get-command-setting-500) | Internal Server Error | failed to get command setting |  | [schema](#get-command-setting-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-command-setting-200"></span> 200
+Status: OK
+
+###### <span id="get-command-setting-200-schema"></span> Schema
+   
+  
+
+[CommandSetting](#command-setting)
+
+##### <span id="get-command-setting-400"></span> 400 - invalid command id
+Status: Bad Request
+
+###### <span id="get-command-setting-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-command-setting-500"></span> 500 - failed to get command setting
+Status: Internal Server Error
+
+###### <span id="get-command-setting-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="get-token"></span> Creates a JWT token for a given api key pair. (*getToken*)
 
@@ -526,6 +636,10 @@ Status: OK
 Status: Internal Server Error
 
 ###### <span id="list-api-keys-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="list-command-settings"></span> List settings for a command. (*listCommandSettings*)
 
@@ -604,6 +718,10 @@ Status: OK
 Status: Internal Server Error
 
 ###### <span id="list-commands-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="list-supported-platforms"></span> Lists all supported platforms. (*listSupportedPlatforms*)
 
@@ -688,11 +806,19 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="remove-command-rel-for-platform-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="remove-command-rel-for-platform-command-500"></span> 500 - failed to add relationship
 Status: Internal Server Error
 
 ###### <span id="remove-command-rel-for-platform-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="remove-command-rel-for-repository-command"></span> Remove a relationship to a repository. This command will no longer be running for that repository events. (*removeCommandRelForRepositoryCommand*)
 
@@ -726,11 +852,19 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="remove-command-rel-for-repository-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="remove-command-rel-for-repository-command-500"></span> 500 - failed to add relationship
 Status: Internal Server Error
 
 ###### <span id="remove-command-rel-for-repository-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="update-command"></span> Updates a given command. (*updateCommand*)
 
@@ -770,11 +904,67 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="update-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="update-command-500"></span> 500 - failed to update the command
 Status: Internal Server Error
 
 ###### <span id="update-command-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="update-command-setting"></span> Create a new command setting. (*updateCommandSetting*)
+
+```
+POST /rest/api/1/command/settings/update
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| setting | `body` | [CommandSetting](#command-setting) | `models.CommandSetting` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#update-command-setting-200) | OK | successfully created command setting |  | [schema](#update-command-setting-200-schema) |
+| [400](#update-command-setting-400) | Bad Request | binding error |  | [schema](#update-command-setting-400-schema) |
+| [500](#update-command-setting-500) | Internal Server Error | failed to create the command setting |  | [schema](#update-command-setting-500-schema) |
+
+#### Responses
+
+
+##### <span id="update-command-setting-200"></span> 200 - successfully created command setting
+Status: OK
+
+###### <span id="update-command-setting-200-schema"></span> Schema
+
+##### <span id="update-command-setting-400"></span> 400 - binding error
+Status: Bad Request
+
+###### <span id="update-command-setting-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-command-setting-500"></span> 500 - failed to create the command setting
+Status: Internal Server Error
+
+###### <span id="update-command-setting-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="upload-command"></span> Upload a command. To set up anything for the command, like schedules etc, (*uploadCommand*)
 
@@ -812,11 +1002,19 @@ Status: Created
 Status: Bad Request
 
 ###### <span id="upload-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="upload-command-500"></span> 500 - failed to upload file, create plugin, create command or copy operations
 Status: Internal Server Error
 
 ###### <span id="upload-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="user-callback"></span> This is the url to which Google calls back after a successful login. (*userCallback*)
 

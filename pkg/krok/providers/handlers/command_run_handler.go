@@ -48,10 +48,14 @@ func NewCommandRunHandler(deps CommandRunHandlerDependencies) *CommandRunHandler
 //       "$ref": "#/definitions/CommandRun"
 //   '400':
 //     description: 'invalid command id'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '404':
 //     description: 'command run not found'
 //   '500':
 //     description: 'failed to get command run'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (cm *CommandRunHandler) GetCommandRun() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)

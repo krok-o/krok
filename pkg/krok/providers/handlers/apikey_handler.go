@@ -53,6 +53,8 @@ func NewAPIKeysHandler(deps APIKeysHandlerDependencies) *APIKeysHandler {
 //     description: 'failed to generate unique key or value'
 //   '500':
 //     description: 'when failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (a *APIKeysHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
@@ -67,8 +69,8 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		key, err := a.APIKeyAuth.Generate(ctx, name, uc.UserID)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("failed to generate new unique key")
-			return c.String(http.StatusInternalServerError, "failed to generate new unique key")
+			a.Logger.Debug().Err(err).Msg("APIKey Create failed.")
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to generate new unique key", http.StatusInternalServerError, err))
 		}
 		return c.JSON(http.StatusOK, key)
 	}
@@ -92,6 +94,8 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 //     description: 'in case of missing user context or invalid ID'
 //   '500':
 //     description: 'when the deletion operation failed'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (a *APIKeysHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
@@ -128,6 +132,8 @@ func (a *APIKeysHandler) Delete() echo.HandlerFunc {
 //         "$ref": "#/definitions/APIKey"
 //   '500':
 //     description: 'failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (a *APIKeysHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
@@ -166,6 +172,8 @@ func (a *APIKeysHandler) List() echo.HandlerFunc {
 //       "$ref": "#/definitions/APIKey"
 //   '500':
 //     description: 'failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (a *APIKeysHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)

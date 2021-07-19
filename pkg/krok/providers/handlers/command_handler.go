@@ -55,8 +55,12 @@ func NewCommandsHandler(deps CommandsHandlerDependencies) *CommandsHandler {
 //     description: 'OK in case the deletion was successful'
 //   '400':
 //     description: 'in case of missing user context or invalid ID'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'when the deletion operation failed'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -111,6 +115,8 @@ func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 //         "$ref": "#/definitions/Command"
 //   '500':
 //     description: 'failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
@@ -149,8 +155,12 @@ func (ch *CommandsHandler) List() echo.HandlerFunc {
 //       "$ref": "#/definitions/Command"
 //   '400':
 //     description: 'invalid command id'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -193,8 +203,12 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 //       "$ref": "#/definitions/Command"
 //   '400':
 //     description: 'invalid file format or command already exists'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to upload file, create plugin, create command or copy operations'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		file, err := c.FormFile("file")
@@ -289,8 +303,12 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 //       "$ref": "#/definitions/Command"
 //   '400':
 //     description: 'binding error'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to update the command'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		command := &models.Command{}
@@ -334,8 +352,12 @@ func (ch *CommandsHandler) Update() echo.HandlerFunc {
 //     description: 'successfully added relationship'
 //   '400':
 //     description: 'invalid ids or repositroy not found'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to add relationship'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)
@@ -378,8 +400,12 @@ func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 //     description: 'successfully removed relationship'
 //   '400':
 //     description: 'invalid ids or repositroy not found'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to add relationship'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)
@@ -424,8 +450,12 @@ func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 //     description: 'successfully added relationship'
 //   '400':
 //     description: 'invalid ids or platform not found'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to add command relationship to platform'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) AddCommandRelForPlatform() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)
@@ -479,8 +509,12 @@ func (ch *CommandsHandler) AddCommandRelForPlatform() echo.HandlerFunc {
 //     description: 'successfully removed relationship'
 //   '400':
 //     description: 'invalid ids or platform not found'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to add relationship'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) RemoveCommandRelForPlatform() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)

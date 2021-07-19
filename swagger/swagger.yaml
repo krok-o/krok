@@ -534,9 +534,13 @@ paths:
             $ref: '#/definitions/Command'
         "400":
           description: invalid file format or command already exists
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to upload file, create plugin, create command or copy
             operations
+          schema:
+            $ref: '#/responses/Message'
       summary: Upload a command. To set up anything for the command, like schedules
         etc,
   /command/{id}:
@@ -554,8 +558,12 @@ paths:
           description: OK in case the deletion was successful
         "400":
           description: in case of missing user context or invalid ID
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: when the deletion operation failed
+          schema:
+            $ref: '#/responses/Message'
       summary: Deletes given command.
     get:
       operationId: getCommand
@@ -574,8 +582,12 @@ paths:
             $ref: '#/definitions/Command'
         "400":
           description: invalid command id
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to get user context
+          schema:
+            $ref: '#/responses/Message'
       summary: Returns a specific command.
   /command/{id}/settings:
     post:
@@ -618,8 +630,12 @@ paths:
           description: successfully added relationship
         "400":
           description: invalid ids or platform not found
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to add command relationship to platform
+          schema:
+            $ref: '#/responses/Message'
       summary: Adds a connection to a platform for a command. Defines what platform
         a command supports. These commands will only be able to run for those platforms.
   /command/add-command-rel-for-repository/{cmdid}/{repoid}:
@@ -641,8 +657,12 @@ paths:
           description: successfully added relationship
         "400":
           description: invalid ids or repositroy not found
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to add relationship
+          schema:
+            $ref: '#/responses/Message'
       summary: Add a connection to a repository. This will make this command to be
         executed for events for that repository.
   /command/remove-command-rel-for-platform/{cmdid}/{repoid}:
@@ -664,8 +684,12 @@ paths:
           description: successfully removed relationship
         "400":
           description: invalid ids or platform not found
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to add relationship
+          schema:
+            $ref: '#/responses/Message'
       summary: Remove a relationship to a platform. This command will no longer be
         running for that platform events.
   /command/remove-command-rel-for-repository/{cmdid}/{repoid}:
@@ -687,8 +711,12 @@ paths:
           description: successfully removed relationship
         "400":
           description: invalid ids or repositroy not found
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to add relationship
+          schema:
+            $ref: '#/responses/Message'
       summary: Remove a relationship to a repository. This command will no longer
         be running for that repository events.
   /command/run/{id}:
@@ -709,10 +737,14 @@ paths:
             $ref: '#/definitions/CommandRun'
         "400":
           description: invalid command id
+          schema:
+            $ref: '#/responses/Message'
         "404":
           description: command run not found
         "500":
           description: failed to get command run
+          schema:
+            $ref: '#/responses/Message'
       summary: Returns details about a command run.
   /command/settings/{id}:
     delete:
@@ -731,7 +763,57 @@ paths:
           description: invalid id
         "500":
           description: when the deletion operation failed
+          schema:
+            $ref: '#/responses/Message'
       summary: Deletes a given command setting.
+    get:
+      operationId: getCommandSetting
+      parameters:
+      - description: The ID of the command setting to retrieve
+        format: int
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/CommandSetting'
+        "400":
+          description: invalid command id
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to get command setting
+          schema:
+            $ref: '#/responses/Message'
+      summary: Get a specific setting.
+  /command/settings/update:
+    post:
+      operationId: updateCommandSetting
+      parameters:
+      - in: body
+        name: setting
+        required: true
+        schema:
+          $ref: '#/definitions/CommandSetting'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: successfully created command setting
+        "400":
+          description: binding error
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to create the command setting
+          schema:
+            $ref: '#/responses/Message'
+      summary: Create a new command setting.
   /command/update:
     post:
       operationId: updateCommand
@@ -750,8 +832,12 @@ paths:
             $ref: '#/definitions/Command'
         "400":
           description: binding error
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to update the command
+          schema:
+            $ref: '#/responses/Message'
       summary: Updates a given command.
   /commands:
     post:
@@ -773,6 +859,8 @@ paths:
             type: array
         "500":
           description: failed to get user context
+          schema:
+            $ref: '#/responses/Message'
   /get-token:
     post:
       deprecated: true
@@ -841,6 +929,8 @@ paths:
             type: array
         "500":
           description: failed to get user context
+          schema:
+            $ref: '#/responses/Message'
       summary: Lists all api keys for a given user.
   /user/apikey/{keyid}:
     get:
@@ -861,6 +951,8 @@ paths:
             $ref: '#/definitions/APIKey'
         "500":
           description: failed to get user context
+          schema:
+            $ref: '#/responses/Message'
       summary: Returns a given api key.
   /user/apikey/delete/{keyid}:
     delete:
@@ -879,6 +971,8 @@ paths:
           description: in case of missing user context or invalid ID
         "500":
           description: when the deletion operation failed
+          schema:
+            $ref: '#/responses/Message'
       summary: Deletes a set of api keys for a given user with a given id.
   /user/apikey/generate/{name}:
     post:
@@ -900,10 +994,14 @@ paths:
           description: failed to generate unique key or value
         "500":
           description: when failed to get user context
+          schema:
+            $ref: '#/responses/Message'
       summary: Creates an api key pair for a given user.
 produces:
 - application/json
 responses:
+  Message:
+    description: Message represents an error message.
   TokenResponse:
     description: TokenResponse contains the generated JWT token.
 schemes:

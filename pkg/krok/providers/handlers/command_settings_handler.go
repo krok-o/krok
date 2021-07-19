@@ -50,6 +50,8 @@ func NewCommandSettingsHandler(deps CommandSettingsHandlerDependencies) *Command
 //     description: 'invalid id'
 //   '500':
 //     description: 'when the deletion operation failed'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandSettingsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -112,6 +114,30 @@ func (ch *CommandSettingsHandler) List() echo.HandlerFunc {
 }
 
 // Get returns a specific setting.
+// swagger:operation GET /command/settings/{id} getCommandSetting
+// Get a specific setting.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: id
+//   in: path
+//   description: 'The ID of the command setting to retrieve'
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     schema:
+//       "$ref": "#/definitions/CommandSetting"
+//   '400':
+//     description: 'invalid command id'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to get command setting'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandSettingsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -126,8 +152,8 @@ func (ch *CommandSettingsHandler) Get() echo.HandlerFunc {
 			if errors.Is(err, kerr.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, kerr.APIError("command setting not found", http.StatusNotFound, err))
 			}
-			apiError := kerr.APIError("failed to get command setting", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			apiError := kerr.APIError("failed to get command setting", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
 		return c.JSON(http.StatusOK, repo)
@@ -135,6 +161,28 @@ func (ch *CommandSettingsHandler) Get() echo.HandlerFunc {
 }
 
 // Update updates a setting.
+// swagger:operation POST /command/settings/update updateCommandSetting
+// Updates a given command setting.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: setting
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/CommandSetting"
+// responses:
+//   '200':
+//     description: 'successfully updated command setting'
+//   '400':
+//     description: 'binding error'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to update the command setting'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandSettingsHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		setting := &models.CommandSetting{}
@@ -146,7 +194,7 @@ func (ch *CommandSettingsHandler) Update() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		if err := ch.CommandStorer.UpdateSetting(ctx, setting); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command setting update failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update command setting", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to update command setting", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -154,6 +202,28 @@ func (ch *CommandSettingsHandler) Update() echo.HandlerFunc {
 }
 
 // Create creates a command setting.
+// swagger:operation POST /command/settings/update updateCommandSetting
+// Create a new command setting.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: setting
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/CommandSetting"
+// responses:
+//   '200':
+//     description: 'successfully created command setting'
+//   '400':
+//     description: 'binding error'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to create the command setting'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandSettingsHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		setting := &models.CommandSetting{}
@@ -165,7 +235,7 @@ func (ch *CommandSettingsHandler) Create() echo.HandlerFunc {
 		ctx := c.Request().Context()
 		if err := ch.CommandStorer.CreateSetting(ctx, setting); err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command setting create failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create command setting", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command setting", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusCreated)
