@@ -60,7 +60,7 @@ generate_mocks:
 
 .PHONY: swagger
 swagger:
-	swagger generate spec -o ./swagger/swagger.yaml -c server -c handlers -c main -c docs -c models --scan-models
+	swagger generate spec -o ./swagger/swagger.yaml -c server -c handlers -c main -c docs -c models -c errors --scan-models
 
 .PHONY: swagger-server
 swagger-serve:

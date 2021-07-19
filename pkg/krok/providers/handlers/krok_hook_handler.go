@@ -49,12 +49,14 @@ func NewHookHandler(deps HookDependencies) *KrokHookHandler {
 //   in: path
 //   description: The ID of the repository.
 //   required: true
-//   type: string
+//   type: integer
+//   format: int
 // - name: vid
 //   in: path
 //   description: The ID of the provider.
 //   required: true
-//   type: string
+//   type: integer
+//   format: int
 // responses:
 //   '200':
 //     description: 'success in case the hook event was processed without problems'

@@ -21,10 +21,17 @@ func (e *QueryError) Error() string { return e.Query + ": " + e.Err.Error() }
 func (e *QueryError) Unwrap() error { return e.Err }
 
 // Message represents an error message.
+// swagger:response
 type Message struct {
-	Code    int    `json:"code"`
+	// The error code
+	// in: body
+	Code int `json:"code"`
+	// The error message
+	// in: body
 	Message string `json:"message"`
-	Error   string `json:"error"`
+	// The error itself coming from the backend
+	// in: body
+	Error string `json:"error"`
 }
 
 // APIError wraps a message and a code into a struct for JSON parsing.
