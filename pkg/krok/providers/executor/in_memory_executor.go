@@ -74,11 +74,13 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			continue
 		}
 
+		log := log.With().Int("vcs", event.ID).Logger()
+
 		if ok, err := ime.CommandStorer.IsPlatformSupported(ctx, c.ID, event.VCS); err != nil {
 			log.Debug().Err(err).Msg("Failed to get is platform is supported by command.")
 			return err
 		} else if !ok {
-			log.Debug().Str("name", c.Name).Int("vcs", event.VCS).Msg("Command does not support platform.")
+			log.Debug().Str("name", c.Name).Msg("Command does not support platform.")
 			continue
 		}
 
@@ -89,8 +91,10 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		}
 
 		// We aren't going to save these because it could be things like tokens which are
-		// confidential.
-		var args []string
+		// confidential. The platform ID must always be the first arg.
+		args := []string{
+			fmt.Sprintf("platform-id:%d", event.VCS),
+		}
 		for _, s := range settings {
 			args = append(args, fmt.Sprintf("%s:%s", s.Key, s.Value))
 		}
