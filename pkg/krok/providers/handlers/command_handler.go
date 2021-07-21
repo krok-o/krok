@@ -348,28 +348,25 @@ func (ch *CommandsHandler) AddCommandRelForPlatform() echo.HandlerFunc {
 			apiError := kerr.APIError("invalid command id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		pid, err := GetParamAsInt("pid", c)
 		if err != nil {
 			apiError := kerr.APIError("invalid platform id", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
-		found := false
-		for _, p := range models.SupportedPlatforms {
-			if p.ID == pid {
-				found = true
-				break
-			}
-		}
-		if !found {
-			apiError := kerr.APIError("patform id not found in supported platforms", http.StatusBadRequest, nil)
+
+		if _, found := models.SupportedPlatforms[pid]; !found {
+			apiError := kerr.APIError("platform id not found in supported platforms", http.StatusBadRequest, nil)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+
 		ctx := c.Request().Context()
 
 		if err := ch.CommandStorer.AddCommandRelForPlatform(ctx, cn, pid); err != nil {
 			ch.Logger.Debug().Err(err).Msg("AddCommandRelForPlatform failed.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to add command relationship to platform", http.StatusBadRequest, err))
 		}
+
 		return c.NoContent(http.StatusOK)
 	}
 }

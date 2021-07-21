@@ -62,8 +62,16 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		With().
 		Int("event_id", event.ID).
 		Int("repository_id", event.RepositoryID).
+		Int("platform_id", event.VCS).
 		Int("commands", len(commands)).
 		Logger()
+
+	platform, found := models.SupportedPlatforms[event.VCS]
+	if !found {
+		return fmt.Errorf("failed to find %d in supported platforms", event.VCS)
+	}
+
+	log = log.With().Str("platform", platform.Name).Logger()
 
 	log.Info().Msg("Starting run")
 	cmds := make([]*exec.Cmd, 0)
@@ -73,8 +81,6 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			log.Debug().Str("name", c.Name).Msg("Skipping as command is disabled.")
 			continue
 		}
-
-		log := log.With().Int("vcs", event.ID).Logger()
 
 		if ok, err := ime.CommandStorer.IsPlatformSupported(ctx, c.ID, event.VCS); err != nil {
 			log.Debug().Err(err).Msg("Failed to get is platform is supported by command.")
@@ -93,7 +99,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		// We aren't going to save these because it could be things like tokens which are
 		// confidential. The platform ID must always be the first arg.
 		args := []string{
-			fmt.Sprintf("platform-id:%d", event.VCS),
+			fmt.Sprintf("platform:%d", event.VCS),
 		}
 		for _, s := range settings {
 			args = append(args, fmt.Sprintf("%s:%s", s.Key, s.Value))
