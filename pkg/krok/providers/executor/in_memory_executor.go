@@ -97,9 +97,9 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		}
 
 		// We aren't going to save these because it could be things like tokens which are
-		// confidential. The platform ID must always be the first arg.
+		// confidential. The platform must always be the first arg.
 		args := []string{
-			fmt.Sprintf("platform:%d", event.VCS),
+			fmt.Sprintf("platform:%s", platform.Name),
 		}
 		for _, s := range settings {
 			args = append(args, fmt.Sprintf("%s:%s", s.Key, s.Value))
