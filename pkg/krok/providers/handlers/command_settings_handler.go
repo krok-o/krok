@@ -48,6 +48,12 @@ func NewCommandSettingsHandler(deps CommandSettingsHandlerDependencies) *Command
 //     description: 'OK in case the deletion was successful'
 //   '400':
 //     description: 'invalid id'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'command setting not found'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'when the deletion operation failed'
 //     schema:
@@ -92,8 +98,14 @@ func (ch *CommandSettingsHandler) Delete() echo.HandlerFunc {
 //       type: array
 //       items:
 //         "$ref": "#/definitions/CommandSetting"
+//   '400':
+//     description: 'invalid id'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to list settings'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandSettingsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -132,6 +144,10 @@ func (ch *CommandSettingsHandler) List() echo.HandlerFunc {
 //       "$ref": "#/definitions/CommandSetting"
 //   '400':
 //     description: 'invalid command id'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'command setting not found'
 //     schema:
 //       "$ref": "#/responses/Message"
 //   '500':

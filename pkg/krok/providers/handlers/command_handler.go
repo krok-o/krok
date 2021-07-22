@@ -290,6 +290,8 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 // ---
 // produces:
 // - application/json
+// consumes:
+// - application/json
 // parameters:
 // - name: command
 //   in: body

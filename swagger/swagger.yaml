@@ -608,8 +608,14 @@ paths:
             items:
               $ref: '#/definitions/CommandSetting'
             type: array
+        "400":
+          description: invalid id
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: failed to list settings
+          schema:
+            $ref: '#/responses/Message'
       summary: List settings for a command.
   /command/add-command-rel-for-platform/{cmdid}/{repoid}:
     post:
@@ -761,6 +767,12 @@ paths:
           description: OK in case the deletion was successful
         "400":
           description: invalid id
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: command setting not found
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: when the deletion operation failed
           schema:
@@ -784,6 +796,10 @@ paths:
             $ref: '#/definitions/CommandSetting'
         "400":
           description: invalid command id
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: command setting not found
           schema:
             $ref: '#/responses/Message'
         "500":
@@ -816,6 +832,8 @@ paths:
       summary: Create a new command setting.
   /command/update:
     post:
+      consumes:
+      - application/json
       operationId: updateCommand
       parameters:
       - in: body
@@ -861,6 +879,64 @@ paths:
           description: failed to get user context
           schema:
             $ref: '#/responses/Message'
+  /event/{id}:
+    get:
+      operationId: getEvent
+      parameters:
+      - description: The ID of the event to retrieve
+        format: int
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/Event'
+        "400":
+          description: invalid event id
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: event not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to get event
+          schema:
+            $ref: '#/responses/Message'
+      summary: Get a specific event.
+  /events/{repoid}:
+    post:
+      operationId: listEvents
+      parameters:
+      - description: The ID of the repository to list events for.
+        format: int
+        in: path
+        name: repoid
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            items:
+              $ref: '#/definitions/Event'
+            type: array
+        "400":
+          description: invalid repository id
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to list events
+          schema:
+            $ref: '#/responses/Message'
+      summary: List events for a repository.
   /get-token:
     post:
       deprecated: true
@@ -902,6 +978,142 @@ paths:
         "404":
           description: if the repository or the provider does not exist
       summary: Handle the hooks created by the platform.
+  /repositories:
+    post:
+      consumes:
+      - application/json
+      description: List repositories
+      operationId: listRepositories
+      parameters:
+      - in: body
+        name: listOptions
+        schema:
+          $ref: '#/definitions/ListOptions'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            items:
+              $ref: '#/definitions/Repository'
+            type: array
+        "500":
+          description: failed to list repositories
+          schema:
+            $ref: '#/responses/Message'
+  /repository:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new repository
+      operationId: createRepository
+      parameters:
+      - in: body
+        name: repository
+        required: true
+        schema:
+          $ref: '#/definitions/Repository'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: the created repository
+          schema:
+            $ref: '#/definitions/Repository'
+        "400":
+          description: failed to generate unique key or value
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: when failed to get user context
+          schema:
+            $ref: '#/responses/Message'
+  /repository/{id}:
+    delete:
+      operationId: deleteRepository
+      parameters:
+      - description: The ID of the repository to delete
+        format: int
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK in case the deletion was successful
+        "400":
+          description: in case of missing user context or invalid ID
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: in case of repository not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: when the deletion operation failed
+          schema:
+            $ref: '#/responses/Message'
+      summary: Deletes the given repository.
+    get:
+      operationId: getRepository
+      parameters:
+      - format: int
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/Repository'
+        "400":
+          description: invalid repository id
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: repository not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to get repository
+          schema:
+            $ref: '#/responses/Message'
+      summary: Gets the repository with the corresponding ID.
+  /repository/update:
+    post:
+      consumes:
+      - application/json
+      operationId: updateRepository
+      parameters:
+      - in: body
+        name: repository
+        required: true
+        schema:
+          $ref: '#/definitions/Repository'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: the updated repository
+          schema:
+            $ref: '#/definitions/Repository'
+        "400":
+          description: failed to bind repository
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: repository not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to update repository
+          schema:
+            $ref: '#/responses/Message'
+      summary: Updates an existing repository.
   /supported-platforms:
     get:
       operationId: listSupportedPlatforms
@@ -915,6 +1127,87 @@ paths:
               $ref: '#/definitions/Platform'
             type: array
       summary: Lists all supported platforms.
+  /user:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user
+      operationId: createUser
+      parameters:
+      - in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: the created user
+          schema:
+            $ref: '#/definitions/User'
+        "400":
+          description: invalid json payload
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to create user or generating a new api key
+          schema:
+            $ref: '#/responses/Message'
+  /user/{id}:
+    delete:
+      operationId: deleteUser
+      parameters:
+      - description: The ID of the user to delete
+        format: int
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "200":
+          description: OK in case the deletion was successful
+        "400":
+          description: in case of missing user context or invalid ID
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: in case of user not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: when the deletion operation failed
+          schema:
+            $ref: '#/responses/Message'
+      summary: Deletes the given user.
+    get:
+      operationId: getUser
+      parameters:
+      - format: int
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/User'
+        "400":
+          description: invalid user id
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to get user
+          schema:
+            $ref: '#/responses/Message'
+      summary: Gets the user with the corresponding ID.
   /user/apikey:
     post:
       operationId: listApiKeys
@@ -969,6 +1262,8 @@ paths:
           description: OK in case the deletion was successful
         "400":
           description: in case of missing user context or invalid ID
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: when the deletion operation failed
           schema:
@@ -992,11 +1287,203 @@ paths:
             $ref: '#/definitions/APIKey'
         "400":
           description: failed to generate unique key or value
+          schema:
+            $ref: '#/responses/Message'
         "500":
           description: when failed to get user context
           schema:
             $ref: '#/responses/Message'
       summary: Creates an api key pair for a given user.
+  /user/update:
+    post:
+      consumes:
+      - application/json
+      operationId: updateUser
+      parameters:
+      - in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/User'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: user successfully updated
+          schema:
+            $ref: '#/definitions/User'
+        "400":
+          description: invalid json payload
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: user not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to update user
+          schema:
+            $ref: '#/responses/Message'
+      summary: Updates an existing user.
+  /users:
+    post:
+      description: List users
+      operationId: listUsers
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            items:
+              $ref: '#/definitions/User'
+            type: array
+        "500":
+          description: failed to list user
+          schema:
+            $ref: '#/responses/Message'
+  /vault/secret:
+    post:
+      consumes:
+      - application/json
+      operationId: createSecret
+      parameters:
+      - in: body
+        name: secret
+        required: true
+        schema:
+          $ref: '#/definitions/VaultSetting'
+      responses:
+        "200":
+          description: OK setting successfully create
+        "400":
+          description: invalid json payload
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to create secret
+          schema:
+            $ref: '#/responses/Message'
+      summary: Create a new secure secret.
+  /vault/secret/{name}:
+    delete:
+      operationId: deleteSecret
+      parameters:
+      - description: The key of the secret
+        in: path
+        name: name
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK in case the deletion was successful
+        "400":
+          description: in case of missing name
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: in case the secret was not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: when the deletion operation failed
+          schema:
+            $ref: '#/responses/Message'
+      summary: Deletes the given secret.
+    get:
+      operationId: getSecret
+      parameters:
+      - in: path
+        name: name
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            $ref: '#/definitions/VaultSetting'
+        "400":
+          description: invalid name
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: secret not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to load secrets
+          schema:
+            $ref: '#/responses/Message'
+      summary: Get a specific secret.
+  /vault/secret/update:
+    post:
+      consumes:
+      - application/json
+      operationId: updateSecret
+      parameters:
+      - in: body
+        name: secret
+        required: true
+        schema:
+          $ref: '#/definitions/VaultSetting'
+      responses:
+        "200":
+          description: OK setting successfully updated
+        "400":
+          description: invalid json payload
+          schema:
+            $ref: '#/responses/Message'
+        "404":
+          description: setting not found
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to update secret
+          schema:
+            $ref: '#/responses/Message'
+      summary: Updates an existing secret.
+  /vault/secrets:
+    post:
+      operationId: listSecrets
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: ""
+          schema:
+            items:
+              $ref: '#/definitions/VaultSetting'
+            type: array
+        "500":
+          description: failed to load secrets
+          schema:
+            $ref: '#/responses/Message'
+      summary: List all settings without the values.
+  /vcs-token:
+    post:
+      consumes:
+      - application/json
+      operationId: createVcsToken
+      parameters:
+      - in: body
+        name: secret
+        required: true
+        schema:
+          $ref: '#/definitions/VCSToken'
+      responses:
+        "200":
+          description: OK setting successfully create
+        "400":
+          description: invalid json payload
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to create secret
+          schema:
+            $ref: '#/responses/Message'
+      summary: Create a new token for a platform like Github, Gitlab, Gitea...
 produces:
 - application/json
 responses:

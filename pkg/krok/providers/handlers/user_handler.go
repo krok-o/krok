@@ -34,6 +34,33 @@ func NewUserHandler(deps UserHandlerDependencies) *UserHandler {
 var _ providers.UserHandler = &UserHandler{}
 
 // GetUser returns a user.
+// swagger:operation GET /user/{id} getUser
+// Gets the user with the corresponding ID.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: id
+//   in: path
+//   type: integer
+//   format: int
+//   required: true
+// responses:
+//   '200':
+//     schema:
+//       "$ref": "#/definitions/User"
+//   '400':
+//     description: 'invalid user id'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'user not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to get user'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (u *UserHandler) GetUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -57,22 +84,62 @@ func (u *UserHandler) GetUser() echo.HandlerFunc {
 	}
 }
 
-// ListUsers .
+// ListUsers lists all users.
+// swagger:operation POST /users listUsers
+// List users
+// ---
+// produces:
+// - application/json
+// responses:
+//   '200':
+//     schema:
+//       type: array
+//       items:
+//         "$ref": "#/definitions/User"
+//   '500':
+//     description: 'failed to list user'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (u *UserHandler) ListUsers() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		ctx := c.Request().Context()
 		// Get the users from store.
 		users, err := u.UserStore.List(ctx)
 		if err != nil {
-			apiError := kerr.APIError("failed to list users", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			apiError := kerr.APIError("failed to list users", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
 		return c.JSON(http.StatusOK, users)
 	}
 }
 
-// DeleteUser .
+// DeleteUser deletes a user.
+// swagger:operation DELETE /user/{id} deleteUser
+// Deletes the given user.
+// ---
+// parameters:
+// - name: id
+//   in: path
+//   description: 'The ID of the user to delete'
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     description: 'OK in case the deletion was successful'
+//   '400':
+//     description: 'in case of missing user context or invalid ID'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'in case of user not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'when the deletion operation failed'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (u *UserHandler) DeleteUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -95,7 +162,37 @@ func (u *UserHandler) DeleteUser() echo.HandlerFunc {
 	}
 }
 
-// UpdateUser .
+// UpdateUser update a specific user.
+// swagger:operation POST /user/update updateUser
+// Updates an existing user.
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+// - name: user
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/User"
+// responses:
+//   '200':
+//     description: 'user successfully updated'
+//     schema:
+//       "$ref": "#/definitions/User"
+//   '400':
+//     description: 'invalid json payload'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'user not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to update user'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (u *UserHandler) UpdateUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var update *models.User
@@ -116,7 +213,33 @@ func (u *UserHandler) UpdateUser() echo.HandlerFunc {
 	}
 }
 
-// CreateUser .
+// CreateUser creates a new user.
+// swagger:operation POST /user createUser
+// Creates a new user
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+// - name: user
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/User"
+// responses:
+//   '200':
+//     description: 'the created user'
+//     schema:
+//       "$ref": "#/definitions/User"
+//   '400':
+//     description: 'invalid json payload'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to create user or generating a new api key'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (u *UserHandler) CreateUser() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		var create *models.User

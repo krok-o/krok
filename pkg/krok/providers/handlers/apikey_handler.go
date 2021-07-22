@@ -51,6 +51,8 @@ func NewAPIKeysHandler(deps APIKeysHandlerDependencies) *APIKeysHandler {
 //       "$ref": "#/definitions/APIKey"
 //   '400':
 //     description: 'failed to generate unique key or value'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'when failed to get user context'
 //     schema:
@@ -59,8 +61,8 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("error getting user context")
-			return c.String(http.StatusInternalServerError, "failed to get user context")
+			apiError := kerr.APIError("failed to get user context", http.StatusInternalServerError, nil)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 		name := c.Param("name")
 		if name == "" {
@@ -92,6 +94,8 @@ func (a *APIKeysHandler) Create() echo.HandlerFunc {
 //     description: 'OK in case the deletion was successful'
 //   '400':
 //     description: 'in case of missing user context or invalid ID'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'when the deletion operation failed'
 //     schema:
@@ -100,8 +104,8 @@ func (a *APIKeysHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		uc, err := krokmiddleware.GetUserContext(c)
 		if err != nil {
-			a.Logger.Debug().Err(err).Msg("error getting user context")
-			return c.String(http.StatusInternalServerError, "failed to get user context")
+			apiError := kerr.APIError("failed to get user context", http.StatusInternalServerError, nil)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 		kn, err := GetParamAsInt("keyid", c)
 		if err != nil {

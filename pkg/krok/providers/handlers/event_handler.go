@@ -33,6 +33,32 @@ func NewEventHandler(deps EventHandlerDependencies) *EventHandler {
 }
 
 // List handles the list rest event.
+// swagger:operation POST /events/{repoid} listEvents
+// List events for a repository.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: repoid
+//   in: path
+//   description: 'The ID of the repository to list events for.'
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     schema:
+//       type: array
+//       items:
+//         "$ref": "#/definitions/Event"
+//   '400':
+//     description: 'invalid repository id'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to list events'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *EventHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
@@ -51,14 +77,42 @@ func (r *EventHandler) List() echo.HandlerFunc {
 		list, err := r.EventsStorer.ListEventsForRepository(ctx, n, opts)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Event List failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list events", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to list events", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusOK, list)
 	}
 }
 
-// Get retrieves a repository and displays the unique URL for which this repo is responsible for.
+// Get a specific event.
+// swagger:operation GET /event/{id} getEvent
+// Get a specific event.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: id
+//   in: path
+//   description: 'The ID of the event to retrieve'
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     schema:
+//       "$ref": "#/definitions/Event"
+//   '400':
+//     description: 'invalid event id'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'event not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to get event'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *EventHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -74,8 +128,8 @@ func (r *EventHandler) Get() echo.HandlerFunc {
 			if errors.Is(err, kerr.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, kerr.APIError("event not found", http.StatusNotFound, err))
 			}
-			apiError := kerr.APIError("failed to get event", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			apiError := kerr.APIError("failed to get event", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
 		return c.JSON(http.StatusOK, event)
