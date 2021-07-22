@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/labstack/echo/v4"
@@ -30,6 +31,14 @@ func NewSupportedPlatformListHandler() *SupportedPlatformList {
 //         "$ref": "#/definitions/Platform"
 func (s *SupportedPlatformList) ListSupportedPlatforms() echo.HandlerFunc {
 	return func(c echo.Context) error {
-		return c.JSON(http.StatusOK, models.SupportedPlatforms)
+		// Create a slice and sort it so the response is predictable.
+		platforms := []models.Platform{}
+		for _, v := range models.SupportedPlatforms {
+			platforms = append(platforms, v)
+		}
+		sort.Slice(platforms, func(i, j int) bool {
+			return platforms[i].ID < platforms[j].ID
+		})
+		return c.JSON(http.StatusOK, platforms)
 	}
 }

@@ -617,6 +617,7 @@ func TestCommandsHandler_AddCommandRelForPlatform(t *testing.T) {
 		err = ch.AddCommandRelForPlatform()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusBadRequest, rec.Code)
+		assert.Equal(tt, "{\"code\":400,\"message\":\"platform id not found in supported platforms\",\"error\":\"unexpected error\"}\n", rec.Body.String())
 	})
 }
 

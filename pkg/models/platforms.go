@@ -25,17 +25,17 @@ type Platform struct {
 	Name string `json:"name"`
 }
 
-// SupportedPlatforms a list of supported platforms by Krok.
-var SupportedPlatforms = []Platform{
-	{
+// SupportedPlatforms a map of supported platforms by Krok.
+var SupportedPlatforms = map[int]Platform{
+	GITHUB: {
 		ID:   GITHUB,
 		Name: "github",
 	},
-	{
+	GITLAB: {
 		ID:   GITLAB,
 		Name: "gitlab",
 	},
-	{
+	GITEA: {
 		ID:   GITEA,
 		Name: "gitea",
 	},
