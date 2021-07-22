@@ -32,6 +32,28 @@ func NewVCSTokenHandler(deps VCSTokenHandlerDependencies) *VCSTokenHandler {
 }
 
 // Create handles the Create rest event.
+// swagger:operation POST /vcs-token createVcsToken
+// Create a new token for a platform like Github, Gitlab, Gitea...
+// ---
+// consumes:
+// - application/json
+// parameters:
+// - name: secret
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/VCSToken"
+// responses:
+//   '200':
+//     description: 'OK setting successfully create'
+//   '400':
+//     description: 'invalid json payload'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to create secret'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *VCSTokenHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		vcsToken := &models.VCSToken{}
@@ -42,7 +64,7 @@ func (r *VCSTokenHandler) Create() echo.HandlerFunc {
 
 		if err := r.TokenProvider.SaveTokenForPlatform(vcsToken.Token, vcsToken.VCS); err != nil {
 			r.Logger.Debug().Err(err).Msg("VCS token creation failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("VCS token creation failed", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("VCS token creation failed", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusCreated)

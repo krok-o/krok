@@ -347,7 +347,7 @@ func TestUserHandler_ListUsers(t *testing.T) {
 		c := e.NewContext(req, rec)
 		err = uh.ListUsers()(c)
 		assert.NoError(t, err)
-		assert.Equal(t, http.StatusBadRequest, rec.Code)
+		assert.Equal(t, http.StatusInternalServerError, rec.Code)
 	})
 }
 

@@ -52,7 +52,7 @@ func NewTokenHandler(deps Dependencies) (*TokenHandler, error) {
 //   '200':
 //     description: 'the generated JWT token'
 //     schema:
-//       "$ref": "#/responses/tokenResponse"
+//       "$ref": "#/responses/TokenResponse"
 //   '500':
 //     description: 'when there was a problem with matching the email, or the api key or generating the token'
 func (p *TokenHandler) TokenHandler() echo.HandlerFunc {

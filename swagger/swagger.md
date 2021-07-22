@@ -2,7 +2,7 @@
 
 
 # Krok.
-Documentation the Krok API.
+Documentation of the Krok API.
   
 
 ## Informations
@@ -32,17 +32,45 @@ Documentation the Krok API.
 
 | Method  | URI     | Name   | Summary |
 |---------|---------|--------|---------|
+| POST | /rest/api/1/command/add-command-rel-for-platform/{cmdid}/{repoid} | [add command rel for platform command](#add-command-rel-for-platform-command) | Adds a connection to a platform for a command. Defines what platform a command supports. These commands will only be able to run for those platforms. |
+| POST | /rest/api/1/command/add-command-rel-for-repository/{cmdid}/{repoid} | [add command rel for repository command](#add-command-rel-for-repository-command) | Add a connection to a repository. This will make this command to be executed for events for that repository. |
 | POST | /rest/api/1/user/apikey/generate/{name} | [create Api key](#create-api-key) | Creates an api key pair for a given user. |
+| POST | /rest/api/1/repository | [create repository](#create-repository) |  |
+| POST | /rest/api/1/vault/secret | [create secret](#create-secret) | Create a new secure secret. |
+| POST | /rest/api/1/user | [create user](#create-user) |  |
+| POST | /rest/api/1/vcs-token | [create vcs token](#create-vcs-token) | Create a new token for a platform like Github, Gitlab, Gitea... |
 | DELETE | /rest/api/1/user/apikey/delete/{keyid} | [delete Api key](#delete-api-key) | Deletes a set of api keys for a given user with a given id. |
 | DELETE | /rest/api/1/command/{id} | [delete command](#delete-command) | Deletes given command. |
+| DELETE | /rest/api/1/command/settings/{id} | [delete command setting](#delete-command-setting) | Deletes a given command setting. |
+| DELETE | /rest/api/1/repository/{id} | [delete repository](#delete-repository) | Deletes the given repository. |
+| DELETE | /rest/api/1/vault/secret/{name} | [delete secret](#delete-secret) | Deletes the given secret. |
+| DELETE | /rest/api/1/user/{id} | [delete user](#delete-user) | Deletes the given user. |
 | GET | /rest/api/1/user/apikey/{keyid} | [get Api keys](#get-api-keys) | Returns a given api key. |
 | GET | /rest/api/1/command/{id} | [get command](#get-command) | Returns a specific command. |
+| GET | /rest/api/1/command/run/{id} | [get command run](#get-command-run) | Returns details about a command run. |
+| GET | /rest/api/1/command/settings/{id} | [get command setting](#get-command-setting) | Get a specific setting. |
+| GET | /rest/api/1/event/{id} | [get event](#get-event) | Get a specific event. |
+| GET | /rest/api/1/repository/{id} | [get repository](#get-repository) | Gets the repository with the corresponding ID. |
+| GET | /rest/api/1/vault/secret/{name} | [get secret](#get-secret) | Get a specific secret. |
 | POST | /rest/api/1/get-token | [get token](#get-token) | Creates a JWT token for a given api key pair. |
+| GET | /rest/api/1/user/{id} | [get user](#get-user) | Gets the user with the corresponding ID. |
 | POST | /rest/api/1/hooks/{rid}/{vid}/callback | [hook handler](#hook-handler) | Handle the hooks created by the platform. |
 | POST | /rest/api/1/user/apikey | [list Api keys](#list-api-keys) | Lists all api keys for a given user. |
+| POST | /rest/api/1/command/{id}/settings | [list command settings](#list-command-settings) | List settings for a command. |
 | POST | /rest/api/1/commands | [list commands](#list-commands) |  |
+| POST | /rest/api/1/events/{repoid} | [list events](#list-events) | List events for a repository. |
+| POST | /rest/api/1/repositories | [list repositories](#list-repositories) |  |
+| POST | /rest/api/1/vault/secrets | [list secrets](#list-secrets) | List all settings without the values. |
 | GET | /rest/api/1/supported-platforms | [list supported platforms](#list-supported-platforms) | Lists all supported platforms. |
+| POST | /rest/api/1/users | [list users](#list-users) |  |
 | POST | /rest/api/1/auth/refresh | [refresh token](#refresh-token) | Refresh the authentication token. |
+| POST | /rest/api/1/command/remove-command-rel-for-platform/{cmdid}/{repoid} | [remove command rel for platform command](#remove-command-rel-for-platform-command) | Remove a relationship to a platform. This command will no longer be running for that platform events. |
+| POST | /rest/api/1/command/remove-command-rel-for-repository/{cmdid}/{repoid} | [remove command rel for repository command](#remove-command-rel-for-repository-command) | Remove a relationship to a repository. This command will no longer be running for that repository events. |
+| POST | /rest/api/1/command/update | [update command](#update-command) | Updates a given command. |
+| POST | /rest/api/1/command/settings/update | [update command setting](#update-command-setting) | Create a new command setting. |
+| POST | /rest/api/1/repository/update | [update repository](#update-repository) | Updates an existing repository. |
+| POST | /rest/api/1/vault/secret/update | [update secret](#update-secret) | Updates an existing secret. |
+| POST | /rest/api/1/user/update | [update user](#update-user) | Updates an existing user. |
 | POST | /rest/api/1/command | [upload command](#upload-command) | Upload a command. To set up anything for the command, like schedules etc, |
 | GET | /rest/api/1/auth/callback | [user callback](#user-callback) | This is the url to which Google calls back after a successful login. |
 | GET | /rest/api/1/auth/login | [user login](#user-login) | User login. |
@@ -50,6 +78,98 @@ Documentation the Krok API.
 
 
 ## Paths
+
+### <span id="add-command-rel-for-platform-command"></span> Adds a connection to a platform for a command. Defines what platform a command supports. These commands will only be able to run for those platforms. (*addCommandRelForPlatformCommand*)
+
+```
+POST /rest/api/1/command/add-command-rel-for-platform/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#add-command-rel-for-platform-command-200) | OK | successfully added relationship |  | [schema](#add-command-rel-for-platform-command-200-schema) |
+| [400](#add-command-rel-for-platform-command-400) | Bad Request | invalid ids or platform not found |  | [schema](#add-command-rel-for-platform-command-400-schema) |
+| [500](#add-command-rel-for-platform-command-500) | Internal Server Error | failed to add command relationship to platform |  | [schema](#add-command-rel-for-platform-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="add-command-rel-for-platform-command-200"></span> 200 - successfully added relationship
+Status: OK
+
+###### <span id="add-command-rel-for-platform-command-200-schema"></span> Schema
+
+##### <span id="add-command-rel-for-platform-command-400"></span> 400 - invalid ids or platform not found
+Status: Bad Request
+
+###### <span id="add-command-rel-for-platform-command-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="add-command-rel-for-platform-command-500"></span> 500 - failed to add command relationship to platform
+Status: Internal Server Error
+
+###### <span id="add-command-rel-for-platform-command-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="add-command-rel-for-repository-command"></span> Add a connection to a repository. This will make this command to be executed for events for that repository. (*addCommandRelForRepositoryCommand*)
+
+```
+POST /rest/api/1/command/add-command-rel-for-repository/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#add-command-rel-for-repository-command-200) | OK | successfully added relationship |  | [schema](#add-command-rel-for-repository-command-200-schema) |
+| [400](#add-command-rel-for-repository-command-400) | Bad Request | invalid ids or repositroy not found |  | [schema](#add-command-rel-for-repository-command-400-schema) |
+| [500](#add-command-rel-for-repository-command-500) | Internal Server Error | failed to add relationship |  | [schema](#add-command-rel-for-repository-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="add-command-rel-for-repository-command-200"></span> 200 - successfully added relationship
+Status: OK
+
+###### <span id="add-command-rel-for-repository-command-200-schema"></span> Schema
+
+##### <span id="add-command-rel-for-repository-command-400"></span> 400 - invalid ids or repositroy not found
+Status: Bad Request
+
+###### <span id="add-command-rel-for-repository-command-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="add-command-rel-for-repository-command-500"></span> 500 - failed to add relationship
+Status: Internal Server Error
+
+###### <span id="add-command-rel-for-repository-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="create-api-key"></span> Creates an api key pair for a given user. (*createApiKey*)
 
@@ -89,11 +209,229 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="create-api-key-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="create-api-key-500"></span> 500 - when failed to get user context
 Status: Internal Server Error
 
 ###### <span id="create-api-key-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="create-repository"></span> create repository (*createRepository*)
+
+```
+POST /rest/api/1/repository
+```
+
+Creates a new repository
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| repository | `body` | [Repository](#repository) | `models.Repository` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#create-repository-200) | OK | the created repository |  | [schema](#create-repository-200-schema) |
+| [400](#create-repository-400) | Bad Request | failed to generate unique key or value |  | [schema](#create-repository-400-schema) |
+| [500](#create-repository-500) | Internal Server Error | when failed to get user context |  | [schema](#create-repository-500-schema) |
+
+#### Responses
+
+
+##### <span id="create-repository-200"></span> 200 - the created repository
+Status: OK
+
+###### <span id="create-repository-200-schema"></span> Schema
+   
+  
+
+[Repository](#repository)
+
+##### <span id="create-repository-400"></span> 400 - failed to generate unique key or value
+Status: Bad Request
+
+###### <span id="create-repository-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="create-repository-500"></span> 500 - when failed to get user context
+Status: Internal Server Error
+
+###### <span id="create-repository-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="create-secret"></span> Create a new secure secret. (*createSecret*)
+
+```
+POST /rest/api/1/vault/secret
+```
+
+#### Consumes
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| secret | `body` | [VaultSetting](#vault-setting) | `models.VaultSetting` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#create-secret-200) | OK | OK setting successfully create |  | [schema](#create-secret-200-schema) |
+| [400](#create-secret-400) | Bad Request | invalid json payload |  | [schema](#create-secret-400-schema) |
+| [500](#create-secret-500) | Internal Server Error | failed to create secret |  | [schema](#create-secret-500-schema) |
+
+#### Responses
+
+
+##### <span id="create-secret-200"></span> 200 - OK setting successfully create
+Status: OK
+
+###### <span id="create-secret-200-schema"></span> Schema
+
+##### <span id="create-secret-400"></span> 400 - invalid json payload
+Status: Bad Request
+
+###### <span id="create-secret-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="create-secret-500"></span> 500 - failed to create secret
+Status: Internal Server Error
+
+###### <span id="create-secret-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="create-user"></span> create user (*createUser*)
+
+```
+POST /rest/api/1/user
+```
+
+Creates a new user
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| user | `body` | [User](#user) | `models.User` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#create-user-200) | OK | the created user |  | [schema](#create-user-200-schema) |
+| [400](#create-user-400) | Bad Request | invalid json payload |  | [schema](#create-user-400-schema) |
+| [500](#create-user-500) | Internal Server Error | failed to create user or generating a new api key |  | [schema](#create-user-500-schema) |
+
+#### Responses
+
+
+##### <span id="create-user-200"></span> 200 - the created user
+Status: OK
+
+###### <span id="create-user-200-schema"></span> Schema
+   
+  
+
+[User](#user)
+
+##### <span id="create-user-400"></span> 400 - invalid json payload
+Status: Bad Request
+
+###### <span id="create-user-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="create-user-500"></span> 500 - failed to create user or generating a new api key
+Status: Internal Server Error
+
+###### <span id="create-user-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="create-vcs-token"></span> Create a new token for a platform like Github, Gitlab, Gitea... (*createVcsToken*)
+
+```
+POST /rest/api/1/vcs-token
+```
+
+#### Consumes
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| secret | `body` | [VCSToken](#v-c-s-token) | `models.VCSToken` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#create-vcs-token-200) | OK | OK setting successfully create |  | [schema](#create-vcs-token-200-schema) |
+| [400](#create-vcs-token-400) | Bad Request | invalid json payload |  | [schema](#create-vcs-token-400-schema) |
+| [500](#create-vcs-token-500) | Internal Server Error | failed to create secret |  | [schema](#create-vcs-token-500-schema) |
+
+#### Responses
+
+
+##### <span id="create-vcs-token-200"></span> 200 - OK setting successfully create
+Status: OK
+
+###### <span id="create-vcs-token-200-schema"></span> Schema
+
+##### <span id="create-vcs-token-400"></span> 400 - invalid json payload
+Status: Bad Request
+
+###### <span id="create-vcs-token-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="create-vcs-token-500"></span> 500 - failed to create secret
+Status: Internal Server Error
+
+###### <span id="create-vcs-token-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="delete-api-key"></span> Deletes a set of api keys for a given user with a given id. (*deleteApiKey*)
 
@@ -105,7 +443,7 @@ DELETE /rest/api/1/user/apikey/delete/{keyid}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| keyid | `path` | string | `string` |  | ✓ |  | The ID of the key to delete |
+| keyid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the key to delete |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -126,11 +464,19 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="delete-api-key-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="delete-api-key-500"></span> 500 - when the deletion operation failed
 Status: Internal Server Error
 
 ###### <span id="delete-api-key-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="delete-command"></span> Deletes given command. (*deleteCommand*)
 
@@ -142,7 +488,7 @@ DELETE /rest/api/1/command/{id}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| id | `path` | string | `string` |  | ✓ |  | The ID of the command to delete |
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command to delete |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -163,11 +509,239 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="delete-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="delete-command-500"></span> 500 - when the deletion operation failed
 Status: Internal Server Error
 
 ###### <span id="delete-command-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="delete-command-setting"></span> Deletes a given command setting. (*deleteCommandSetting*)
+
+```
+DELETE /rest/api/1/command/settings/{id}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command setting to delete |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#delete-command-setting-200) | OK | OK in case the deletion was successful |  | [schema](#delete-command-setting-200-schema) |
+| [400](#delete-command-setting-400) | Bad Request | invalid id |  | [schema](#delete-command-setting-400-schema) |
+| [404](#delete-command-setting-404) | Not Found | command setting not found |  | [schema](#delete-command-setting-404-schema) |
+| [500](#delete-command-setting-500) | Internal Server Error | when the deletion operation failed |  | [schema](#delete-command-setting-500-schema) |
+
+#### Responses
+
+
+##### <span id="delete-command-setting-200"></span> 200 - OK in case the deletion was successful
+Status: OK
+
+###### <span id="delete-command-setting-200-schema"></span> Schema
+
+##### <span id="delete-command-setting-400"></span> 400 - invalid id
+Status: Bad Request
+
+###### <span id="delete-command-setting-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-command-setting-404"></span> 404 - command setting not found
+Status: Not Found
+
+###### <span id="delete-command-setting-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-command-setting-500"></span> 500 - when the deletion operation failed
+Status: Internal Server Error
+
+###### <span id="delete-command-setting-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="delete-repository"></span> Deletes the given repository. (*deleteRepository*)
+
+```
+DELETE /rest/api/1/repository/{id}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the repository to delete |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#delete-repository-200) | OK | OK in case the deletion was successful |  | [schema](#delete-repository-200-schema) |
+| [400](#delete-repository-400) | Bad Request | in case of missing user context or invalid ID |  | [schema](#delete-repository-400-schema) |
+| [404](#delete-repository-404) | Not Found | in case of repository not found |  | [schema](#delete-repository-404-schema) |
+| [500](#delete-repository-500) | Internal Server Error | when the deletion operation failed |  | [schema](#delete-repository-500-schema) |
+
+#### Responses
+
+
+##### <span id="delete-repository-200"></span> 200 - OK in case the deletion was successful
+Status: OK
+
+###### <span id="delete-repository-200-schema"></span> Schema
+
+##### <span id="delete-repository-400"></span> 400 - in case of missing user context or invalid ID
+Status: Bad Request
+
+###### <span id="delete-repository-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-repository-404"></span> 404 - in case of repository not found
+Status: Not Found
+
+###### <span id="delete-repository-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-repository-500"></span> 500 - when the deletion operation failed
+Status: Internal Server Error
+
+###### <span id="delete-repository-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="delete-secret"></span> Deletes the given secret. (*deleteSecret*)
+
+```
+DELETE /rest/api/1/vault/secret/{name}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| name | `path` | string | `string` |  | ✓ |  | The key of the secret |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#delete-secret-200) | OK | OK in case the deletion was successful |  | [schema](#delete-secret-200-schema) |
+| [400](#delete-secret-400) | Bad Request | in case of missing name |  | [schema](#delete-secret-400-schema) |
+| [404](#delete-secret-404) | Not Found | in case the secret was not found |  | [schema](#delete-secret-404-schema) |
+| [500](#delete-secret-500) | Internal Server Error | when the deletion operation failed |  | [schema](#delete-secret-500-schema) |
+
+#### Responses
+
+
+##### <span id="delete-secret-200"></span> 200 - OK in case the deletion was successful
+Status: OK
+
+###### <span id="delete-secret-200-schema"></span> Schema
+
+##### <span id="delete-secret-400"></span> 400 - in case of missing name
+Status: Bad Request
+
+###### <span id="delete-secret-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-secret-404"></span> 404 - in case the secret was not found
+Status: Not Found
+
+###### <span id="delete-secret-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-secret-500"></span> 500 - when the deletion operation failed
+Status: Internal Server Error
+
+###### <span id="delete-secret-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="delete-user"></span> Deletes the given user. (*deleteUser*)
+
+```
+DELETE /rest/api/1/user/{id}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the user to delete |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#delete-user-200) | OK | OK in case the deletion was successful |  | [schema](#delete-user-200-schema) |
+| [400](#delete-user-400) | Bad Request | in case of missing user context or invalid ID |  | [schema](#delete-user-400-schema) |
+| [404](#delete-user-404) | Not Found | in case of user not found |  | [schema](#delete-user-404-schema) |
+| [500](#delete-user-500) | Internal Server Error | when the deletion operation failed |  | [schema](#delete-user-500-schema) |
+
+#### Responses
+
+
+##### <span id="delete-user-200"></span> 200 - OK in case the deletion was successful
+Status: OK
+
+###### <span id="delete-user-200-schema"></span> Schema
+
+##### <span id="delete-user-400"></span> 400 - in case of missing user context or invalid ID
+Status: Bad Request
+
+###### <span id="delete-user-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-user-404"></span> 404 - in case of user not found
+Status: Not Found
+
+###### <span id="delete-user-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="delete-user-500"></span> 500 - when the deletion operation failed
+Status: Internal Server Error
+
+###### <span id="delete-user-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="get-api-keys"></span> Returns a given api key. (*getApiKeys*)
 
@@ -182,7 +756,7 @@ GET /rest/api/1/user/apikey/{keyid}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| keyid | `path` | string | `string` |  | ✓ |  | The ID of the key to return |
+| keyid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the key to return |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -206,6 +780,10 @@ Status: OK
 Status: Internal Server Error
 
 ###### <span id="get-api-keys-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="get-command"></span> Returns a specific command. (*getCommand*)
 
@@ -220,7 +798,7 @@ GET /rest/api/1/command/{id}
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| id | `path` | string | `string` |  | ✓ |  |  |
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -245,11 +823,325 @@ Status: OK
 Status: Bad Request
 
 ###### <span id="get-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="get-command-500"></span> 500 - failed to get user context
 Status: Internal Server Error
 
 ###### <span id="get-command-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="get-command-run"></span> Returns details about a command run. (*getCommandRun*)
+
+```
+GET /rest/api/1/command/run/{id}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-command-run-200) | OK |  |  | [schema](#get-command-run-200-schema) |
+| [400](#get-command-run-400) | Bad Request | invalid command id |  | [schema](#get-command-run-400-schema) |
+| [404](#get-command-run-404) | Not Found | command run not found |  | [schema](#get-command-run-404-schema) |
+| [500](#get-command-run-500) | Internal Server Error | failed to get command run |  | [schema](#get-command-run-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-command-run-200"></span> 200
+Status: OK
+
+###### <span id="get-command-run-200-schema"></span> Schema
+   
+  
+
+[CommandRun](#command-run)
+
+##### <span id="get-command-run-400"></span> 400 - invalid command id
+Status: Bad Request
+
+###### <span id="get-command-run-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-command-run-404"></span> 404 - command run not found
+Status: Not Found
+
+###### <span id="get-command-run-404-schema"></span> Schema
+
+##### <span id="get-command-run-500"></span> 500 - failed to get command run
+Status: Internal Server Error
+
+###### <span id="get-command-run-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="get-command-setting"></span> Get a specific setting. (*getCommandSetting*)
+
+```
+GET /rest/api/1/command/settings/{id}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command setting to retrieve |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-command-setting-200) | OK |  |  | [schema](#get-command-setting-200-schema) |
+| [400](#get-command-setting-400) | Bad Request | invalid command id |  | [schema](#get-command-setting-400-schema) |
+| [404](#get-command-setting-404) | Not Found | command setting not found |  | [schema](#get-command-setting-404-schema) |
+| [500](#get-command-setting-500) | Internal Server Error | failed to get command setting |  | [schema](#get-command-setting-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-command-setting-200"></span> 200
+Status: OK
+
+###### <span id="get-command-setting-200-schema"></span> Schema
+   
+  
+
+[CommandSetting](#command-setting)
+
+##### <span id="get-command-setting-400"></span> 400 - invalid command id
+Status: Bad Request
+
+###### <span id="get-command-setting-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-command-setting-404"></span> 404 - command setting not found
+Status: Not Found
+
+###### <span id="get-command-setting-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-command-setting-500"></span> 500 - failed to get command setting
+Status: Internal Server Error
+
+###### <span id="get-command-setting-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="get-event"></span> Get a specific event. (*getEvent*)
+
+```
+GET /rest/api/1/event/{id}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the event to retrieve |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-event-200) | OK |  |  | [schema](#get-event-200-schema) |
+| [400](#get-event-400) | Bad Request | invalid event id |  | [schema](#get-event-400-schema) |
+| [404](#get-event-404) | Not Found | event not found |  | [schema](#get-event-404-schema) |
+| [500](#get-event-500) | Internal Server Error | failed to get event |  | [schema](#get-event-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-event-200"></span> 200
+Status: OK
+
+###### <span id="get-event-200-schema"></span> Schema
+   
+  
+
+[Event](#event)
+
+##### <span id="get-event-400"></span> 400 - invalid event id
+Status: Bad Request
+
+###### <span id="get-event-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-event-404"></span> 404 - event not found
+Status: Not Found
+
+###### <span id="get-event-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-event-500"></span> 500 - failed to get event
+Status: Internal Server Error
+
+###### <span id="get-event-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="get-repository"></span> Gets the repository with the corresponding ID. (*getRepository*)
+
+```
+GET /rest/api/1/repository/{id}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-repository-200) | OK |  |  | [schema](#get-repository-200-schema) |
+| [400](#get-repository-400) | Bad Request | invalid repository id |  | [schema](#get-repository-400-schema) |
+| [404](#get-repository-404) | Not Found | repository not found |  | [schema](#get-repository-404-schema) |
+| [500](#get-repository-500) | Internal Server Error | failed to get repository |  | [schema](#get-repository-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-repository-200"></span> 200
+Status: OK
+
+###### <span id="get-repository-200-schema"></span> Schema
+   
+  
+
+[Repository](#repository)
+
+##### <span id="get-repository-400"></span> 400 - invalid repository id
+Status: Bad Request
+
+###### <span id="get-repository-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-repository-404"></span> 404 - repository not found
+Status: Not Found
+
+###### <span id="get-repository-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-repository-500"></span> 500 - failed to get repository
+Status: Internal Server Error
+
+###### <span id="get-repository-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="get-secret"></span> Get a specific secret. (*getSecret*)
+
+```
+GET /rest/api/1/vault/secret/{name}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| name | `path` | string | `string` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-secret-200) | OK |  |  | [schema](#get-secret-200-schema) |
+| [400](#get-secret-400) | Bad Request | invalid name |  | [schema](#get-secret-400-schema) |
+| [404](#get-secret-404) | Not Found | secret not found |  | [schema](#get-secret-404-schema) |
+| [500](#get-secret-500) | Internal Server Error | failed to load secrets |  | [schema](#get-secret-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-secret-200"></span> 200
+Status: OK
+
+###### <span id="get-secret-200-schema"></span> Schema
+   
+  
+
+[VaultSetting](#vault-setting)
+
+##### <span id="get-secret-400"></span> 400 - invalid name
+Status: Bad Request
+
+###### <span id="get-secret-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-secret-404"></span> 404 - secret not found
+Status: Not Found
+
+###### <span id="get-secret-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-secret-500"></span> 500 - failed to load secrets
+Status: Internal Server Error
+
+###### <span id="get-secret-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="get-token"></span> Creates a JWT token for a given api key pair. (*getToken*)
 
@@ -283,6 +1175,68 @@ Status: Internal Server Error
 
 ###### <span id="get-token-500-schema"></span> Schema
 
+### <span id="get-user"></span> Gets the user with the corresponding ID. (*getUser*)
+
+```
+GET /rest/api/1/user/{id}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#get-user-200) | OK |  |  | [schema](#get-user-200-schema) |
+| [400](#get-user-400) | Bad Request | invalid user id |  | [schema](#get-user-400-schema) |
+| [404](#get-user-404) | Not Found | user not found |  | [schema](#get-user-404-schema) |
+| [500](#get-user-500) | Internal Server Error | failed to get user |  | [schema](#get-user-500-schema) |
+
+#### Responses
+
+
+##### <span id="get-user-200"></span> 200
+Status: OK
+
+###### <span id="get-user-200-schema"></span> Schema
+   
+  
+
+[User](#user)
+
+##### <span id="get-user-400"></span> 400 - invalid user id
+Status: Bad Request
+
+###### <span id="get-user-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-user-404"></span> 404 - user not found
+Status: Not Found
+
+###### <span id="get-user-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="get-user-500"></span> 500 - failed to get user
+Status: Internal Server Error
+
+###### <span id="get-user-500-schema"></span> Schema
+   
+  
+
+any
+
 ### <span id="hook-handler"></span> Handle the hooks created by the platform. (*hookHandler*)
 
 ```
@@ -296,8 +1250,8 @@ POST /rest/api/1/hooks/{rid}/{vid}/callback
 
 | Name | Source | Type | Go type | Separator | Required | Default | Description |
 |------|--------|------|---------|-----------| :------: |---------|-------------|
-| rid | `path` | string | `string` |  | ✓ |  | The ID of the repository. |
-| vid | `path` | string | `string` |  | ✓ |  | The ID of the provider. |
+| rid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the repository. |
+| vid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the provider. |
 
 #### All responses
 | Code | Status | Description | Has headers | Schema |
@@ -355,6 +1309,62 @@ Status: OK
 Status: Internal Server Error
 
 ###### <span id="list-api-keys-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="list-command-settings"></span> List settings for a command. (*listCommandSettings*)
+
+```
+POST /rest/api/1/command/{id}/settings
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| id | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the command to list settings for |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#list-command-settings-200) | OK |  |  | [schema](#list-command-settings-200-schema) |
+| [400](#list-command-settings-400) | Bad Request | invalid id |  | [schema](#list-command-settings-400-schema) |
+| [500](#list-command-settings-500) | Internal Server Error | failed to list settings |  | [schema](#list-command-settings-500-schema) |
+
+#### Responses
+
+
+##### <span id="list-command-settings-200"></span> 200
+Status: OK
+
+###### <span id="list-command-settings-200-schema"></span> Schema
+   
+  
+
+[][CommandSetting](#command-setting)
+
+##### <span id="list-command-settings-400"></span> 400 - invalid id
+Status: Bad Request
+
+###### <span id="list-command-settings-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="list-command-settings-500"></span> 500 - failed to list settings
+Status: Internal Server Error
+
+###### <span id="list-command-settings-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="list-commands"></span> list commands (*listCommands*)
 
@@ -395,6 +1405,145 @@ Status: OK
 Status: Internal Server Error
 
 ###### <span id="list-commands-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="list-events"></span> List events for a repository. (*listEvents*)
+
+```
+POST /rest/api/1/events/{repoid}
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  | The ID of the repository to list events for. |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#list-events-200) | OK |  |  | [schema](#list-events-200-schema) |
+| [400](#list-events-400) | Bad Request | invalid repository id |  | [schema](#list-events-400-schema) |
+| [500](#list-events-500) | Internal Server Error | failed to list events |  | [schema](#list-events-500-schema) |
+
+#### Responses
+
+
+##### <span id="list-events-200"></span> 200
+Status: OK
+
+###### <span id="list-events-200-schema"></span> Schema
+   
+  
+
+[][Event](#event)
+
+##### <span id="list-events-400"></span> 400 - invalid repository id
+Status: Bad Request
+
+###### <span id="list-events-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="list-events-500"></span> 500 - failed to list events
+Status: Internal Server Error
+
+###### <span id="list-events-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="list-repositories"></span> list repositories (*listRepositories*)
+
+```
+POST /rest/api/1/repositories
+```
+
+List repositories
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| listOptions | `body` | [ListOptions](#list-options) | `models.ListOptions` | |  | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#list-repositories-200) | OK |  |  | [schema](#list-repositories-200-schema) |
+| [500](#list-repositories-500) | Internal Server Error | failed to list repositories |  | [schema](#list-repositories-500-schema) |
+
+#### Responses
+
+
+##### <span id="list-repositories-200"></span> 200
+Status: OK
+
+###### <span id="list-repositories-200-schema"></span> Schema
+   
+  
+
+[][Repository](#repository)
+
+##### <span id="list-repositories-500"></span> 500 - failed to list repositories
+Status: Internal Server Error
+
+###### <span id="list-repositories-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="list-secrets"></span> List all settings without the values. (*listSecrets*)
+
+```
+POST /rest/api/1/vault/secrets
+```
+
+#### Produces
+  * application/json
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#list-secrets-200) | OK |  |  | [schema](#list-secrets-200-schema) |
+| [500](#list-secrets-500) | Internal Server Error | failed to load secrets |  | [schema](#list-secrets-500-schema) |
+
+#### Responses
+
+
+##### <span id="list-secrets-200"></span> 200
+Status: OK
+
+###### <span id="list-secrets-200-schema"></span> Schema
+   
+  
+
+[][VaultSetting](#vault-setting)
+
+##### <span id="list-secrets-500"></span> 500 - failed to load secrets
+Status: Internal Server Error
+
+###### <span id="list-secrets-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="list-supported-platforms"></span> Lists all supported platforms. (*listSupportedPlatforms*)
 
@@ -422,6 +1571,44 @@ Status: OK
 
 [][Platform](#platform)
 
+### <span id="list-users"></span> list users (*listUsers*)
+
+```
+POST /rest/api/1/users
+```
+
+List users
+
+#### Produces
+  * application/json
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#list-users-200) | OK |  |  | [schema](#list-users-200-schema) |
+| [500](#list-users-500) | Internal Server Error | failed to list user |  | [schema](#list-users-500-schema) |
+
+#### Responses
+
+
+##### <span id="list-users-200"></span> 200
+Status: OK
+
+###### <span id="list-users-200-schema"></span> Schema
+   
+  
+
+[][User](#user)
+
+##### <span id="list-users-500"></span> 500 - failed to list user
+Status: Internal Server Error
+
+###### <span id="list-users-500-schema"></span> Schema
+   
+  
+
+any
+
 ### <span id="refresh-token"></span> Refresh the authentication token. (*refreshToken*)
 
 ```
@@ -446,6 +1633,389 @@ Status: OK
 Status: Unauthorized
 
 ###### <span id="refresh-token-401-schema"></span> Schema
+
+### <span id="remove-command-rel-for-platform-command"></span> Remove a relationship to a platform. This command will no longer be running for that platform events. (*removeCommandRelForPlatformCommand*)
+
+```
+POST /rest/api/1/command/remove-command-rel-for-platform/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#remove-command-rel-for-platform-command-200) | OK | successfully removed relationship |  | [schema](#remove-command-rel-for-platform-command-200-schema) |
+| [400](#remove-command-rel-for-platform-command-400) | Bad Request | invalid ids or platform not found |  | [schema](#remove-command-rel-for-platform-command-400-schema) |
+| [500](#remove-command-rel-for-platform-command-500) | Internal Server Error | failed to add relationship |  | [schema](#remove-command-rel-for-platform-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="remove-command-rel-for-platform-command-200"></span> 200 - successfully removed relationship
+Status: OK
+
+###### <span id="remove-command-rel-for-platform-command-200-schema"></span> Schema
+
+##### <span id="remove-command-rel-for-platform-command-400"></span> 400 - invalid ids or platform not found
+Status: Bad Request
+
+###### <span id="remove-command-rel-for-platform-command-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="remove-command-rel-for-platform-command-500"></span> 500 - failed to add relationship
+Status: Internal Server Error
+
+###### <span id="remove-command-rel-for-platform-command-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="remove-command-rel-for-repository-command"></span> Remove a relationship to a repository. This command will no longer be running for that repository events. (*removeCommandRelForRepositoryCommand*)
+
+```
+POST /rest/api/1/command/remove-command-rel-for-repository/{cmdid}/{repoid}
+```
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| cmdid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+| repoid | `path` | int (formatted integer) | `int64` |  | ✓ |  |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#remove-command-rel-for-repository-command-200) | OK | successfully removed relationship |  | [schema](#remove-command-rel-for-repository-command-200-schema) |
+| [400](#remove-command-rel-for-repository-command-400) | Bad Request | invalid ids or repositroy not found |  | [schema](#remove-command-rel-for-repository-command-400-schema) |
+| [500](#remove-command-rel-for-repository-command-500) | Internal Server Error | failed to add relationship |  | [schema](#remove-command-rel-for-repository-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="remove-command-rel-for-repository-command-200"></span> 200 - successfully removed relationship
+Status: OK
+
+###### <span id="remove-command-rel-for-repository-command-200-schema"></span> Schema
+
+##### <span id="remove-command-rel-for-repository-command-400"></span> 400 - invalid ids or repositroy not found
+Status: Bad Request
+
+###### <span id="remove-command-rel-for-repository-command-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="remove-command-rel-for-repository-command-500"></span> 500 - failed to add relationship
+Status: Internal Server Error
+
+###### <span id="remove-command-rel-for-repository-command-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="update-command"></span> Updates a given command. (*updateCommand*)
+
+```
+POST /rest/api/1/command/update
+```
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| command | `body` | [Command](#command) | `models.Command` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#update-command-200) | OK | successfully updated command |  | [schema](#update-command-200-schema) |
+| [400](#update-command-400) | Bad Request | binding error |  | [schema](#update-command-400-schema) |
+| [500](#update-command-500) | Internal Server Error | failed to update the command |  | [schema](#update-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="update-command-200"></span> 200 - successfully updated command
+Status: OK
+
+###### <span id="update-command-200-schema"></span> Schema
+   
+  
+
+[Command](#command)
+
+##### <span id="update-command-400"></span> 400 - binding error
+Status: Bad Request
+
+###### <span id="update-command-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-command-500"></span> 500 - failed to update the command
+Status: Internal Server Error
+
+###### <span id="update-command-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="update-command-setting"></span> Create a new command setting. (*updateCommandSetting*)
+
+```
+POST /rest/api/1/command/settings/update
+```
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| setting | `body` | [CommandSetting](#command-setting) | `models.CommandSetting` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#update-command-setting-200) | OK | successfully created command setting |  | [schema](#update-command-setting-200-schema) |
+| [400](#update-command-setting-400) | Bad Request | binding error |  | [schema](#update-command-setting-400-schema) |
+| [500](#update-command-setting-500) | Internal Server Error | failed to create the command setting |  | [schema](#update-command-setting-500-schema) |
+
+#### Responses
+
+
+##### <span id="update-command-setting-200"></span> 200 - successfully created command setting
+Status: OK
+
+###### <span id="update-command-setting-200-schema"></span> Schema
+
+##### <span id="update-command-setting-400"></span> 400 - binding error
+Status: Bad Request
+
+###### <span id="update-command-setting-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-command-setting-500"></span> 500 - failed to create the command setting
+Status: Internal Server Error
+
+###### <span id="update-command-setting-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="update-repository"></span> Updates an existing repository. (*updateRepository*)
+
+```
+POST /rest/api/1/repository/update
+```
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| repository | `body` | [Repository](#repository) | `models.Repository` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#update-repository-200) | OK | the updated repository |  | [schema](#update-repository-200-schema) |
+| [400](#update-repository-400) | Bad Request | failed to bind repository |  | [schema](#update-repository-400-schema) |
+| [404](#update-repository-404) | Not Found | repository not found |  | [schema](#update-repository-404-schema) |
+| [500](#update-repository-500) | Internal Server Error | failed to update repository |  | [schema](#update-repository-500-schema) |
+
+#### Responses
+
+
+##### <span id="update-repository-200"></span> 200 - the updated repository
+Status: OK
+
+###### <span id="update-repository-200-schema"></span> Schema
+   
+  
+
+[Repository](#repository)
+
+##### <span id="update-repository-400"></span> 400 - failed to bind repository
+Status: Bad Request
+
+###### <span id="update-repository-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-repository-404"></span> 404 - repository not found
+Status: Not Found
+
+###### <span id="update-repository-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-repository-500"></span> 500 - failed to update repository
+Status: Internal Server Error
+
+###### <span id="update-repository-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="update-secret"></span> Updates an existing secret. (*updateSecret*)
+
+```
+POST /rest/api/1/vault/secret/update
+```
+
+#### Consumes
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| secret | `body` | [VaultSetting](#vault-setting) | `models.VaultSetting` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#update-secret-200) | OK | OK setting successfully updated |  | [schema](#update-secret-200-schema) |
+| [400](#update-secret-400) | Bad Request | invalid json payload |  | [schema](#update-secret-400-schema) |
+| [404](#update-secret-404) | Not Found | setting not found |  | [schema](#update-secret-404-schema) |
+| [500](#update-secret-500) | Internal Server Error | failed to update secret |  | [schema](#update-secret-500-schema) |
+
+#### Responses
+
+
+##### <span id="update-secret-200"></span> 200 - OK setting successfully updated
+Status: OK
+
+###### <span id="update-secret-200-schema"></span> Schema
+
+##### <span id="update-secret-400"></span> 400 - invalid json payload
+Status: Bad Request
+
+###### <span id="update-secret-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-secret-404"></span> 404 - setting not found
+Status: Not Found
+
+###### <span id="update-secret-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-secret-500"></span> 500 - failed to update secret
+Status: Internal Server Error
+
+###### <span id="update-secret-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="update-user"></span> Updates an existing user. (*updateUser*)
+
+```
+POST /rest/api/1/user/update
+```
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| user | `body` | [User](#user) | `models.User` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [200](#update-user-200) | OK | user successfully updated |  | [schema](#update-user-200-schema) |
+| [400](#update-user-400) | Bad Request | invalid json payload |  | [schema](#update-user-400-schema) |
+| [404](#update-user-404) | Not Found | user not found |  | [schema](#update-user-404-schema) |
+| [500](#update-user-500) | Internal Server Error | failed to update user |  | [schema](#update-user-500-schema) |
+
+#### Responses
+
+
+##### <span id="update-user-200"></span> 200 - user successfully updated
+Status: OK
+
+###### <span id="update-user-200-schema"></span> Schema
+   
+  
+
+[User](#user)
+
+##### <span id="update-user-400"></span> 400 - invalid json payload
+Status: Bad Request
+
+###### <span id="update-user-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-user-404"></span> 404 - user not found
+Status: Not Found
+
+###### <span id="update-user-404-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="update-user-500"></span> 500 - failed to update user
+Status: Internal Server Error
+
+###### <span id="update-user-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="upload-command"></span> Upload a command. To set up anything for the command, like schedules etc, (*uploadCommand*)
 
@@ -483,11 +2053,19 @@ Status: Created
 Status: Bad Request
 
 ###### <span id="upload-command-400-schema"></span> Schema
+   
+  
+
+any
 
 ##### <span id="upload-command-500"></span> 500 - failed to upload file, create plugin, create command or copy operations
 Status: Internal Server Error
 
 ###### <span id="upload-command-500-schema"></span> Schema
+   
+  
+
+any
 
 ### <span id="user-callback"></span> This is the url to which Google calls back after a successful login. (*userCallback*)
 
@@ -581,9 +2159,10 @@ Status: Not Found
 |------|------|---------|:--------:| ------- |-------------|---------|
 | APIKeyID | string| `string` | ✓ | | APIKeyID is a generated id of the key. |  |
 | APIKeySecret | string| `string` | ✓ | | APIKeySecret is a generated secret, aka, the key. |  |
+| CreateAt | date-time (formatted string)| `strfmt.DateTime` | ✓ | | CreateAt defines when this key was created. | `time.Now()` |
 | ID | int64 (formatted integer)| `int64` | ✓ | | ID of the key. This is auto-generated. |  |
 | Name | string| `string` | ✓ | | Name of the key |  |
-| TTL | date-time (formatted string)| `strfmt.DateTime` | ✓ | | TTL defines how long this key can live. | `time.Now().Add(10 * time.Minute)` |
+| TTL | string| `string` | ✓ | | TTL defines how long this key can live in duration. | `1h10m10s` |
 | UserID | int64 (formatted integer)| `int64` | ✓ | | UserID is the ID of the user to which this key belongs. |  |
 
 
@@ -731,30 +2310,6 @@ an ID is generated. |  |
 required false | `10` |
 | StartingDate | date-time (formatted string)| `strfmt.DateTime` |  | | StartingDate defines a date of start to look for events. Inclusive. | `2021-02-02` |
 | VCS | int64 (formatted integer)| `int64` |  | | Only list all entries for a given platform ID. |  |
-
-
-
-### <span id="new-user"></span> NewUser
-
-
-> NewUser is a new user in the Krok system. Specifically this exposes the token and should only be used when creating
-a user for the first time.
-  
-
-
-
-
-
-**Properties**
-
-| Name | Type | Go type | Required | Default | Description | Example |
-|------|------|---------|:--------:| ------- |-------------|---------|
-| APIKeys | [][APIKey](#api-key)| `[]*APIKey` |  | | APIKeys contains generated api access keys for this user. |  |
-| DisplayName | string| `string` |  | | DisplayName is the name of the user. |  |
-| Email | string| `string` | ✓ | | Email of the user. |  |
-| ID | int64 (formatted integer)| `int64` | ✓ | | ID of the user. This is auto-generated. |  |
-| LastLogin | date-time (formatted string)| `strfmt.DateTime` | ✓ | | LastLogin contains the timestamp of the last successful login of this user. |  |
-| Token | string| `string` | ✓ | | Token is displayed once for new users. Then never again. |  |
 
 
 

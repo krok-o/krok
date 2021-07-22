@@ -51,6 +51,32 @@ func NewRepositoryHandler(cfg RepoConfig, deps RepoHandlerDependencies) (*RepoHa
 }
 
 // Create handles the Create rest event.
+// swagger:operation POST /repository createRepository
+// Creates a new repository
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+// - name: repository
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/Repository"
+// responses:
+//   '200':
+//     description: 'the created repository'
+//     schema:
+//       "$ref": "#/definitions/Repository"
+//   '400':
+//     description: 'failed to generate unique key or value'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'when failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *RepoHandler) Create() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		repo := &models.Repository{}
@@ -68,20 +94,20 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 		created, err := r.RepositoryStorer.Create(ctx, repo)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository CreateRepository failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create repository", http.StatusInternalServerError, err))
 		}
 
 		// Once the creation succeeded, create the auth values
 		if err := r.Auth.CreateRepositoryAuth(ctx, created.ID, repo.Auth); err != nil {
 			r.Logger.Debug().Err(err).Msg("Failed to store auth information.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create repository auth information", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create repository auth information", http.StatusInternalServerError, err))
 		}
 		created.Auth = repo.Auth
 
 		uurl, err := r.generateUniqueCallBackURL(created)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Failed to generate unique url.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to generate unique call back url", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to generate unique call back url", http.StatusInternalServerError, err))
 		}
 
 		created.UniqueURL = uurl
@@ -97,7 +123,7 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 		}
 		if err := provider.CreateHook(ctx, created); err != nil {
 			if errors.Is(err, kerr.ErrNotFound) {
-				return c.JSON(http.StatusNotFound, kerr.APIError("token does not exist for platform, please create first.", http.StatusNotFound, err))
+				return c.JSON(http.StatusInternalServerError, kerr.APIError("token does not exist for platform, please create first.", http.StatusInternalServerError, err))
 			}
 			r.Logger.Debug().Err(err).Msg("Failed to create Hook")
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create hook", http.StatusInternalServerError, err))
@@ -108,6 +134,31 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 
 // Delete handles the Delete rest event.
 // TODO: Delete the hook here as well?
+// swagger:operation DELETE /repository/{id} deleteRepository
+// Deletes the given repository.
+// ---
+// parameters:
+// - name: id
+//   in: path
+//   description: 'The ID of the repository to delete'
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     description: 'OK in case the deletion was successful'
+//   '400':
+//     description: 'in case of missing user context or invalid ID'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'in case of repository not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'when the deletion operation failed'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *RepoHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -122,7 +173,7 @@ func (r *RepoHandler) Delete() echo.HandlerFunc {
 				return c.JSON(http.StatusNotFound, kerr.APIError("repository not found", http.StatusNotFound, err))
 			}
 			r.Logger.Debug().Err(err).Msg("Repository Delete failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete repository", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to delete repository", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -130,6 +181,33 @@ func (r *RepoHandler) Delete() echo.HandlerFunc {
 }
 
 // Get retrieves a repository and displays the unique URL for which this repo is responsible for.
+// swagger:operation GET /repository/{id} getRepository
+// Gets the repository with the corresponding ID.
+// ---
+// produces:
+// - application/json
+// parameters:
+// - name: id
+//   in: path
+//   type: integer
+//   format: int
+//   required: true
+// responses:
+//   '200':
+//     schema:
+//       "$ref": "#/definitions/Repository"
+//   '400':
+//     description: 'invalid repository id'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'repository not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to get repository'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *RepoHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -145,22 +223,22 @@ func (r *RepoHandler) Get() echo.HandlerFunc {
 			if errors.Is(err, kerr.ErrNotFound) {
 				return c.JSON(http.StatusNotFound, kerr.APIError("repository not found", http.StatusNotFound, err))
 			}
-			apiError := kerr.APIError("failed to get repository", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			apiError := kerr.APIError("failed to get repository", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
 		// Get the auth information for the repository
 		auth, err := r.Auth.GetRepositoryAuth(ctx, repo.ID)
 		if err != nil {
-			apiError := kerr.APIError("failed to get repository auth information", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			apiError := kerr.APIError("failed to get repository auth information", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 		repo.Auth = auth
 
 		uurl, err := r.generateUniqueCallBackURL(repo)
 		if err != nil {
-			apiError := kerr.APIError("failed to generate unique callback url for repository", http.StatusBadRequest, err)
-			return c.JSON(http.StatusBadRequest, apiError)
+			apiError := kerr.APIError("failed to generate unique callback url for repository", http.StatusInternalServerError, err)
+			return c.JSON(http.StatusInternalServerError, apiError)
 		}
 
 		repo.UniqueURL = uurl
@@ -169,6 +247,29 @@ func (r *RepoHandler) Get() echo.HandlerFunc {
 }
 
 // List handles the List rest event.
+// swagger:operation POST /repositories listRepositories
+// List repositories
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+// - name: listOptions
+//   in: body
+//   required: false
+//   schema:
+//     "$ref": "#/definitions/ListOptions"
+// responses:
+//   '200':
+//     schema:
+//       type: array
+//       items:
+//         "$ref": "#/definitions/Repository"
+//   '500':
+//     description: 'failed to list repositories'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *RepoHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
@@ -182,7 +283,7 @@ func (r *RepoHandler) List() echo.HandlerFunc {
 		list, err := r.RepositoryStorer.List(ctx, opts)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository List failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to list repository", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to list repository", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusOK, list)
@@ -190,6 +291,36 @@ func (r *RepoHandler) List() echo.HandlerFunc {
 }
 
 // Update handles the update rest event.
+// swagger:operation POST /repository/update updateRepository
+// Updates an existing repository.
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+// - name: repository
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/Repository"
+// responses:
+//   '200':
+//     description: 'the updated repository'
+//     schema:
+//       "$ref": "#/definitions/Repository"
+//   '400':
+//     description: 'failed to bind repository'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '404':
+//     description: 'repository not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to update repository'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (r *RepoHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		repo := &models.Repository{}
@@ -206,13 +337,13 @@ func (r *RepoHandler) Update() echo.HandlerFunc {
 				return c.JSON(http.StatusNotFound, kerr.APIError("repository not found", http.StatusNotFound, err))
 			}
 			r.Logger.Debug().Err(err).Msg("Repository UpdateRepository failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update repository", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to update repository", http.StatusInternalServerError, err))
 		}
 
 		uurl, err := r.generateUniqueCallBackURL(updated)
 		if err != nil {
 			r.Logger.Debug().Err(err).Msg("Repository generateUniqueCallBackURL failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update repository", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to update repository", http.StatusInternalServerError, err))
 		}
 		updated.UniqueURL = uurl
 		return c.JSON(http.StatusOK, updated)

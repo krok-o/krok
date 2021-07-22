@@ -48,14 +48,19 @@ func NewCommandsHandler(deps CommandsHandlerDependencies) *CommandsHandler {
 //   in: path
 //   description: 'The ID of the command to delete'
 //   required: true
-//   type: string
+//   type: integer
+//   format: int
 // responses:
 //   '200':
 //     description: 'OK in case the deletion was successful'
 //   '400':
 //     description: 'in case of missing user context or invalid ID'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'when the deletion operation failed'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -110,6 +115,8 @@ func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 //         "$ref": "#/definitions/Command"
 //   '500':
 //     description: 'failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) List() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		opts := &models.ListOptions{}
@@ -139,7 +146,8 @@ func (ch *CommandsHandler) List() echo.HandlerFunc {
 // parameters:
 // - name: id
 //   in: path
-//   type: string
+//   type: integer
+//   format: int
 //   required: true
 // responses:
 //   '200':
@@ -147,8 +155,12 @@ func (ch *CommandsHandler) List() echo.HandlerFunc {
 //       "$ref": "#/definitions/Command"
 //   '400':
 //     description: 'invalid command id'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to get user context'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Get() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		n, err := GetParamAsInt("id", c)
@@ -191,8 +203,12 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 //       "$ref": "#/definitions/Command"
 //   '400':
 //     description: 'invalid file format or command already exists'
+//     schema:
+//       "$ref": "#/responses/Message"
 //   '500':
 //     description: 'failed to upload file, create plugin, create command or copy operations'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		file, err := c.FormFile("file")
@@ -269,6 +285,32 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 }
 
 // Update updates a command.
+// swagger:operation POST /command/update updateCommand
+// Updates a given command.
+// ---
+// produces:
+// - application/json
+// consumes:
+// - application/json
+// parameters:
+// - name: command
+//   in: body
+//   required: true
+//   schema:
+//     "$ref": "#/definitions/Command"
+// responses:
+//   '200':
+//     description: 'successfully updated command'
+//     schema:
+//       "$ref": "#/definitions/Command"
+//   '400':
+//     description: 'binding error'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to update the command'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Update() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		command := &models.Command{}
@@ -285,7 +327,7 @@ func (ch *CommandsHandler) Update() echo.HandlerFunc {
 				return c.JSON(http.StatusNotFound, kerr.APIError("command not found", http.StatusNotFound, err))
 			}
 			ch.Logger.Debug().Err(err).Msg("Command Update failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to update command", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to update command", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusOK, updated)
@@ -293,6 +335,31 @@ func (ch *CommandsHandler) Update() echo.HandlerFunc {
 }
 
 // AddCommandRelForRepository adds a command relationship to a repository.
+// swagger:operation POST /command/add-command-rel-for-repository/{cmdid}/{repoid} addCommandRelForRepositoryCommand
+// Add a connection to a repository. This will make this command to be executed for events for that repository.
+// ---
+// parameters:
+// - name: cmdid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// - name: repoid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     description: 'successfully added relationship'
+//   '400':
+//     description: 'invalid ids or repositroy not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to add relationship'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)
@@ -309,13 +376,38 @@ func (ch *CommandsHandler) AddCommandRelForRepository() echo.HandlerFunc {
 
 		if err := ch.CommandStorer.AddCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("AddCommandRelForRepository failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to add command relationship to repository", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to add command relationship to repository", http.StatusInternalServerError, err))
 		}
 		return c.NoContent(http.StatusOK)
 	}
 }
 
 // RemoveCommandRelForRepository removes a relationship of a command from a repository.
+// swagger:operation POST /command/remove-command-rel-for-repository/{cmdid}/{repoid} removeCommandRelForRepositoryCommand
+// Remove a relationship to a repository. This command will no longer be running for that repository events.
+// ---
+// parameters:
+// - name: cmdid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// - name: repoid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     description: 'successfully removed relationship'
+//   '400':
+//     description: 'invalid ids or repositroy not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to add relationship'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)
@@ -333,7 +425,7 @@ func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 
 		if err := ch.CommandStorer.RemoveCommandRelForRepository(ctx, cn, rn); err != nil {
 			ch.Logger.Debug().Err(err).Msg("RemoveCommandRelForRepository failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to remove command relationship to repository", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to remove command relationship to repository", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -341,6 +433,31 @@ func (ch *CommandsHandler) RemoveCommandRelForRepository() echo.HandlerFunc {
 }
 
 // AddCommandRelForPlatform adds a command relationship to a platform.
+// swagger:operation POST /command/add-command-rel-for-platform/{cmdid}/{repoid} addCommandRelForPlatformCommand
+// Adds a connection to a platform for a command. Defines what platform a command supports. These commands will only be able to run for those platforms.
+// ---
+// parameters:
+// - name: cmdid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// - name: repoid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     description: 'successfully added relationship'
+//   '400':
+//     description: 'invalid ids or platform not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to add command relationship to platform'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) AddCommandRelForPlatform() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)
@@ -364,7 +481,7 @@ func (ch *CommandsHandler) AddCommandRelForPlatform() echo.HandlerFunc {
 
 		if err := ch.CommandStorer.AddCommandRelForPlatform(ctx, cn, pid); err != nil {
 			ch.Logger.Debug().Err(err).Msg("AddCommandRelForPlatform failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to add command relationship to platform", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to add command relationship to platform", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusOK)
@@ -372,6 +489,31 @@ func (ch *CommandsHandler) AddCommandRelForPlatform() echo.HandlerFunc {
 }
 
 // RemoveCommandRelForPlatform removes a relationship of a command from a platform.
+// swagger:operation POST /command/remove-command-rel-for-platform/{cmdid}/{repoid} removeCommandRelForPlatformCommand
+// Remove a relationship to a platform. This command will no longer be running for that platform events.
+// ---
+// parameters:
+// - name: cmdid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// - name: repoid
+//   in: path
+//   required: true
+//   type: integer
+//   format: int
+// responses:
+//   '200':
+//     description: 'successfully removed relationship'
+//   '400':
+//     description: 'invalid ids or platform not found'
+//     schema:
+//       "$ref": "#/responses/Message"
+//   '500':
+//     description: 'failed to add relationship'
+//     schema:
+//       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) RemoveCommandRelForPlatform() echo.HandlerFunc {
 	return func(c echo.Context) error {
 		cn, err := GetParamAsInt("cmdid", c)
@@ -389,7 +531,7 @@ func (ch *CommandsHandler) RemoveCommandRelForPlatform() echo.HandlerFunc {
 
 		if err := ch.CommandStorer.RemoveCommandRelForPlatform(ctx, cn, pid); err != nil {
 			ch.Logger.Debug().Err(err).Msg("RemoveCommandRelForPlatform failed.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to remove command relationship to platform", http.StatusBadRequest, err))
+			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to remove command relationship to platform", http.StatusInternalServerError, err))
 		}
 
 		return c.NoContent(http.StatusOK)
