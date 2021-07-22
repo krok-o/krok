@@ -1,7 +1,7 @@
 
 
 
-# Krok.
+# Krok
 Documentation of the Krok API.
   
 

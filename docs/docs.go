@@ -1,4 +1,4 @@
-// Package classification Krok.
+// Package classification Krok
 //
 // Documentation of the Krok API.
 //
