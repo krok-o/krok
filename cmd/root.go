@@ -57,7 +57,7 @@ func init() {
 	flag.StringVar(&krokArgs.server.ServerKeyPath, "server-key-path", "", "--server-key-path /home/user/.server/server.key")
 	flag.StringVar(&krokArgs.server.ServerCrtPath, "server-crt-path", "", "--server-crt-path /home/user/.server/server.crt")
 	flag.StringVar(&krokArgs.server.Proto, "proto", "http", "--proto http")
-	flag.StringVar(&krokArgs.server.Hostname, "hostname", "localhost:9998", "--hostname localhost:9998")
+	flag.StringVar(&krokArgs.server.Hostname, "hostname", "0.0.0.0:9998", "--hostname 0.0.0.0:9998")
 	flag.StringVar(&krokArgs.server.HookBase, "hookbase", "localhost", "--hookbase localhost")
 	flag.StringVar(&krokArgs.server.GlobalTokenKey, "token", "", "--token <somerandomdata>")
 	// OAuth
