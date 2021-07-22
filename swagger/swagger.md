@@ -2,7 +2,7 @@
 
 
 # Krok.
-Documentation the Krok API.
+Documentation of the Krok API.
   
 
 ## Informations

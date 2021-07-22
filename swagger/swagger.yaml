@@ -460,9 +460,9 @@ definitions:
     - value
     type: object
     x-go-package: github.com/krok-o/krok/pkg/models
-host: krok-o.io
+host: krok.app
 info:
-  description: Documentation the Krok API.
+  description: Documentation of the Krok API.
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
