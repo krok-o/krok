@@ -15,7 +15,7 @@ type ListOptions struct {
 	// Only list all entries for a given platform ID.
 	//
 	// required: false
-	// example:
+	// example: 1
 	VCS int `json:"vcs,omitempty"`
 	// Current Page
 	//

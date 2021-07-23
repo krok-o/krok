@@ -299,6 +299,7 @@ definitions:
         x-go-name: StartingDate
       vcs:
         description: Only list all entries for a given platform ID.
+        example: 1
         format: int64
         type: integer
         x-go-name: VCS
