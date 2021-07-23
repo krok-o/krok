@@ -38,6 +38,7 @@ jobs:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64
+          tags: |
             docker.io/${{ env.ORG }}/${{ env.IMAGE }}:${{ steps.prep.outputs.VERSION }}
             docker.io/${{ env.ORG }}/${{ env.IMAGE }}:latest
           labels: |
