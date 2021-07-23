@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: cronohub
+  name: gitea-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea-db
+  template:
+    metadata:
+      name: gitea-db
+      labels:
+        app: gitea-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:11
+          env:
+            - name: POSTGRES_USER
+              value: gitea
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gitea-db-password
+                  key: password
+            - name: POSTGRES_DB
+              value: gitea
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data
+              subPath: data # important so it gets mounted correctly instead of adding a lost-and-found folder.
+              name: git-db-data
+      volumes:
+        - name: git-db-data
+          persistentVolumeClaim:
+            claimName: do-storage-gitea-db
