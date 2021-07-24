@@ -2,10 +2,10 @@ kind: Service
 apiVersion: v1
 metadata:
   namespace: {{ .Values.namespace }}
-  name: {{ .Values.service.name }}
+  name: {{ .Values.krok_server.service.name }}
 spec:
   selector:
-    app: {{ .Values.label }}
+    app: {{ .Values.krok_server.name }}
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: {{ .Values.service.targetPort }}
+    - port: {{ .Values.krok_server.service.port }}
+      targetPort: {{ .Values.krok_server.service.targetPort }}

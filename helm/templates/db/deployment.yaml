@@ -1,37 +1,47 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  namespace: cronohub
-  name: gitea-db
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.krok_db.image.name }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: gitea-db
+      app: {{ .Values.krok_db.name }}
   template:
     metadata:
-      name: gitea-db
+      name: {{ .Values.krok_db.name }}
       labels:
-        app: gitea-db
+        app: {{ .Values.krok_db.name }}
     spec:
       containers:
-        - name: postgres
-          image: postgres:11
+        - name: {{ .Values.krok_db.image.name }}
+          image: {{ .Values.krok_db.image.image }}
           env:
             - name: POSTGRES_USER
-              value: gitea
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secret.name }}
+                  key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: gitea-db-password
+                  name: {{ .Values.secret.name }}
                   key: password
-            - name: POSTGRES_DB
-              value: gitea
           volumeMounts:
+            - name: init-mount
+              mountPath: /docker-entrypoint-initdb.d
+            {{- if .Values.krok_db.persistence.enabled }}
             - mountPath: /var/lib/postgresql/data
               subPath: data # important so it gets mounted correctly instead of adding a lost-and-found folder.
-              name: git-db-data
+              name: db-data
+            {{- end }}
       volumes:
-        - name: git-db-data
+        - name: init-mount
+          configMap:
+            name: {{ .Values.krok_db.name }}-init
+        {{- if .Values.krok_db.persistence.enabled }}
+        - name: db-data
           persistentVolumeClaim:
-            claimName: do-storage-gitea-db
+            claimName: {{ .Values.krok_db.name }}-pvc
+        {{- end }}

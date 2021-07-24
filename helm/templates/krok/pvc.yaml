@@ -1,12 +1,14 @@
+{{- if .Values.krok_server.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  namespace: {{.Values.namespace}}
-  name: {{.Values.name}}-pvc
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.krok_server.name }}-pvc
 spec:
   accessModes:
-    - ReadWriteOnce
+    - {{ .Values.krok_server.persistence.accessMode }}
   resources:
     requests:
-      storage: 10Gi
-  storageClassName: do-block-storage
+      storage: {{ .Values.krok_server.persistence.storage }}
+  storageClassName: {{ .Values.krok_server.persistence.storageClassName }}
+{{- end }}

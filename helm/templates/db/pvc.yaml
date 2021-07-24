@@ -1,12 +1,14 @@
+{{- if .Values.krok_db.persistence.enabled }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  namespace: cronohub
-  name: do-storage-gitea-db
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.krok_db.name }}-pvc
 spec:
   accessModes:
-    - ReadWriteOnce
+    - {{ .Values.krok_db.persistence.accessMode }}
   resources:
     requests:
-      storage: 10Gi
-  storageClassName: do-block-storage
+      storage: {{ .Values.krok_db.persistence.storage }}
+  storageClassName: {{ .Values.krok_db.persistence.storageClassName }}
+{{- end }}

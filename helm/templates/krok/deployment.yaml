@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.name }}
+  name: {{ .Values.krok_server.name }}
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Values.label }}
+    app: {{ .Values.krok_server.name }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      app: {{ .Values.label }}
+      app: {{ .Values.krok_server.name }}
   template:
     metadata:
       labels:
-        app: {{ .Values.label }}
+        app: {{ .Values.krok_server.name }}
     spec:
       containers:
         - name: {{ .Values.krok_server.image.name }}
@@ -21,10 +21,8 @@ spec:
           ports:
             - containerPort: {{ .Values.krok_server.image.containerPort }}
           resources:
-            {{  range .Values.resources }}
-            {{ . }}
-            {{ end }}
+            {{- toYaml .Values.resources | nindent 12 }}
           args:
-            {{  range .Values.krok_server.image.args }}
+            {{-  range .Values.krok_server.image.args }}
             - {{ . }}
-            {{ end }}
+            {{- end }}

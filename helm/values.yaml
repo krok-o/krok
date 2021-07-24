@@ -2,33 +2,45 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 replicaCount: 1
-name: krok
 namespace: krok
-label: krok-app
 
 secret:
   name: krok-secret
 
 krok_server:
+  name: krok-app
   image:
     pullPolicy: IfNotPresent
-    image: krokhook/krok:v0.0.2
+    image: krokhook/krok:v0.0.3
     name: krok-server
     containerPort: 9998
     args:
-    - --file-vault-location=/tmp/vault
-    - --plugin-location=/tmp/plugins
+    - --file-vault-location=/tmp/krok/vault
+    - --plugin-location=/tmp/krok/plugins
+  persistence:
+    enabled: false
+    storageClassName: "do-block-storage"
+    storage: 10Gi
+    accessMode: ReadWriteOnce
+  service:
+    port: 80
+    targetPort: 9998
+    name: krok-service
 
 krok_db:
+  name: krok-db
   image:
     pullPolicy: IfNotPresent
-    image: krokhook/krok:v0.0.2
-    name: krok-server
-
-service:
-  port: 80
-  targetPort: 9998
-  name: krok-service
+    image: postgres:11
+    name: krok-db
+  persistence:
+    enabled: false
+    storageClassName: "do-block-storage"
+    storage: 10Gi
+    accessMode: ReadWriteOnce
+  service:
+    port: 5432
+    name: krok-db-service
 
 ingress:
   name: krok-ingress

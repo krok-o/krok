@@ -1,3 +1,4 @@
+-- WARNING: If this is modified, also change the configmap in under the helm charts.
 create table commands (
     id serial primary key ,
     name varchar unique not null,

@@ -1,11 +1,11 @@
 kind: Service
 apiVersion: v1
 metadata:
-  namespace: cronohub
-  name: gitea-db-service
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.krok_db.service.name }}
 spec:
   ports:
-    - port: 5432
+    - port: {{ .Values.krok_db.service.port }}
   selector:
-    app: gitea-db
+    app: {{ .Values.krok_db.name }}
   clusterIP: None

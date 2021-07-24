@@ -277,16 +277,16 @@ definitions:
         type: string
         x-go-name: Name
       page:
-        description: Current Page
+        description: Page defines the current page.
         example: 0
         format: int64
         type: integer
         x-go-name: Page
       page_size:
         description: |-
-          Items per Page
+          PageSize defines the number of items per page.
 
-          required false
+          required true
         example: 10
         format: int64
         type: integer
@@ -299,6 +299,7 @@ definitions:
         x-go-name: StartingDate
       vcs:
         description: Only list all entries for a given platform ID.
+        example: 1
         format: int64
         type: integer
         x-go-name: VCS
