@@ -22,7 +22,7 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.krok_server.service.name }}
+                name: {{ .Values.service.name }}
                 port:
-                  number: {{ .Values.krok_server.service.port }}
+                  number: {{ .Values.service.port }}
 {{- end }}

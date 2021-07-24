@@ -1,46 +1,35 @@
 # Default values for Krok server.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-replicaCount: 1
 namespace: krok
 
-secret:
-  name: krok-secret
+global:
+  server:
+    name: krok-app
+  db:
+    name: krok-db
+  secret:
+    name: krok-secret
 
-krok_server:
-  name: krok-app
-  image:
-    pullPolicy: IfNotPresent
-    image: krokhook/krok:v0.0.3
-    name: krok-server
-    containerPort: 9998
-    args:
+replicaCount: 1
+image:
+  pullPolicy: IfNotPresent
+  image: krokhook/krok:v0.0.3
+  name: krok-server
+  containerPort: 9998
+  args:
     - --file-vault-location=/tmp/krok/vault
     - --plugin-location=/tmp/krok/plugins
-  persistence:
-    enabled: false
-    storageClassName: "do-block-storage"
-    storage: 10Gi
-    accessMode: ReadWriteOnce
-  service:
-    port: 80
-    targetPort: 9998
-    name: krok-service
-
-krok_db:
-  name: krok-db
-  image:
-    pullPolicy: IfNotPresent
-    image: postgres:11
-    name: krok-db
-  persistence:
-    enabled: false
-    storageClassName: "do-block-storage"
-    storage: 10Gi
-    accessMode: ReadWriteOnce
-  service:
-    port: 5432
-    name: krok-db-service
+    - --db-hostname=krok-db-service.krok.svc.cluster.local:5432
+persistence:
+  enabled: false
+  storageClassName: "do-block-storage"
+  storage: 10Gi
+  accessMode: ReadWriteOnce
+service:
+  port: 80
+  targetPort: 9998
+  name: krok-service
 
 ingress:
   name: krok-ingress

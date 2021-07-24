@@ -122,5 +122,5 @@ data:
     insert into apikeys (name, api_key_id, api_key_secret, user_id, ttl, created_at) values ('test', 'api-key-id', '$2y$12$qu2jd67X2dWJJZHccKPY1O/SB1pQQ/HNpYQiSUGBKjzYWIomZeVmG', 1, '3120h', now());
 kind: ConfigMap
 metadata:
-  name: {{ .Values.krok_db.name }}-init
+  name: {{ .Values.global.krok_db_name }}-init
   namespace: {{ .Values.namespace }}

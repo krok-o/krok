@@ -2,36 +2,36 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   namespace: {{ .Values.namespace }}
-  name: {{ .Values.krok_db.image.name }}
+  name: {{ .Values.global.db.name }}
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: {{ .Values.krok_db.name }}
+      app: {{ .Values.global.db.name }}
   template:
     metadata:
-      name: {{ .Values.krok_db.name }}
+      name: {{ .Values.global.db.name }}
       labels:
-        app: {{ .Values.krok_db.name }}
+        app: {{ .Values.global.db.name }}
     spec:
       containers:
-        - name: {{ .Values.krok_db.image.name }}
-          image: {{ .Values.krok_db.image.image }}
+        - name: {{ .Values.image.name }}
+          image: {{ .Values.image.image }}
           env:
             - name: POSTGRES_USER
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secret.name }}
+                  name: {{ .Values.global.secret.name }}
                   key: username
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
-                  name: {{ .Values.secret.name }}
+                  name: {{ .Values.global.secret.name }}
                   key: password
           volumeMounts:
             - name: init-mount
               mountPath: /docker-entrypoint-initdb.d
-            {{- if .Values.krok_db.persistence.enabled }}
+            {{- if .Values.persistence.enabled }}
             - mountPath: /var/lib/postgresql/data
               subPath: data # important so it gets mounted correctly instead of adding a lost-and-found folder.
               name: db-data
@@ -39,9 +39,9 @@ spec:
       volumes:
         - name: init-mount
           configMap:
-            name: {{ .Values.krok_db.name }}-init
-        {{- if .Values.krok_db.persistence.enabled }}
+            name: {{ .Values.global.db.name }}-init
+        {{- if .Values.persistence.enabled }}
         - name: db-data
           persistentVolumeClaim:
-            claimName: {{ .Values.krok_db.name }}-pvc
+            claimName: {{ .Values.global.db.name }}-pvc
         {{- end }}

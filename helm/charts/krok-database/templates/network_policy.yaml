@@ -1,12 +1,12 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: {{ .Values.krok_db.name }}-network-policy
+  name: {{ .Values.global.db.name }}-network-policy
   namespace: {{ .Values.namespace }}
 spec:
   podSelector:
     matchLabels:
-      app: {{ .Values.krok_db.name }}
+      app: {{ .Values.global.db.name }}
   policyTypes:
     - Ingress
     - Egress
@@ -14,7 +14,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app: {{ .Values.krok_server.name }}
+              app: {{ .Values.global.server.name }}
       ports:
         - protocol: TCP
           port: 5432
@@ -22,7 +22,7 @@ spec:
     - to:
         - podSelector:
             matchLabels:
-              app: {{ .Values.krok_server.name }}
+              app: {{ .Values.global.server.name }}
       ports:
         - protocol: TCP
           port: 5432
