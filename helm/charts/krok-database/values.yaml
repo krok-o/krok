@@ -1,0 +1,16 @@
+# Default values for Krok server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+namespace: krok
+image:
+  pullPolicy: IfNotPresent
+  image: postgres:11
+  name: krok-db
+persistence:
+  enabled: false
+  storageClassName: "do-block-storage"
+  storage: 10Gi
+  accessMode: ReadWriteOnce
+service:
+  port: 5432
+  name: krok-db-service

@@ -1,0 +1,11 @@
+kind: Service
+apiVersion: v1
+metadata:
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.service.name }}
+spec:
+  ports:
+    - port: {{ .Values.service.port }}
+  selector:
+    app: {{ .Values.global.db.name }}
+  clusterIP: None

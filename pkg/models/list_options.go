@@ -17,12 +17,12 @@ type ListOptions struct {
 	// required: false
 	// example: 1
 	VCS int `json:"vcs,omitempty"`
-	// Current Page
+	// Page defines the current page.
 	//
 	// required: false
 	// example: 0
 	Page int `json:"page,omitempty"`
-	// Items per Page
+	// PageSize defines the number of items per page.
 	//
 	// required false
 	// example: 10

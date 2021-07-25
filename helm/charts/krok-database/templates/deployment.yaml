@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: {{ .Values.namespace }}
+  name: {{ .Values.global.db.name }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Values.global.db.name }}
+  template:
+    metadata:
+      name: {{ .Values.global.db.name }}
+      labels:
+        app: {{ .Values.global.db.name }}
+    spec:
+      containers:
+        - name: {{ .Values.image.name }}
+          image: {{ .Values.image.image }}
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secret.name }}
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.global.secret.name }}
+                  key: password
+          volumeMounts:
+            - name: init-mount
+              mountPath: /docker-entrypoint-initdb.d
+            {{- if .Values.persistence.enabled }}
+            - mountPath: /var/lib/postgresql/data
+              subPath: data # important so it gets mounted correctly instead of adding a lost-and-found folder.
+              name: db-data
+            {{- end }}
+      volumes:
+        - name: init-mount
+          configMap:
+            name: {{ .Values.global.db.name }}-init
+        {{- if .Values.persistence.enabled }}
+        - name: db-data
+          persistentVolumeClaim:
+            claimName: {{ .Values.global.db.name }}-pvc
+        {{- end }}
