@@ -14,7 +14,7 @@ global:
 replicaCount: 1
 image:
   pullPolicy: IfNotPresent
-  image: krokhook/krok:v0.0.3
+  image: krokhook/krok:v0.0.4
   name: krok-server
   containerPort: 9998
   args:

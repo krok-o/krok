@@ -11,6 +11,7 @@ import (
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
+	"github.com/krok-o/krok/pkg/krok/providers/ready"
 	"github.com/krok-o/krok/pkg/krok/providers/tar"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -135,6 +136,10 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	}
 	fv := filevault.NewFileStorer(krokArgs.fileVault, filevault.Dependencies{
 		Logger: log,
+	})
+	readyProvider := ready.NewReadyCheckProvider(ready.Dependencies{
+		Logger:    log,
+		Connector: connector,
 	})
 	if err := fv.Init(); err != nil {
 		log.Fatal().Str("location", krokArgs.fileVault.Location).Msg("Failed to initialize vault.")
@@ -352,6 +357,11 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Vault:  v,
 	})
 
+	readyHandler := handlers.NewReadyCheckHandler(handlers.ReadyCheckHandlerDependencies{
+		Logger:  log,
+		Checker: readyProvider,
+	})
+
 	// ************************
 	// Set up the server
 	// ************************
@@ -372,6 +382,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		EventsHandler:          eventHandler,
 		VaultHandler:           vaultHandler,
 		UserHandler:            userHandler,
+		ReadyHandler:           readyHandler,
 	})
 
 	// Run service & server
