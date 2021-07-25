@@ -17,18 +17,6 @@ spec:
       containers:
         - name: {{ .Values.image.name }}
           image: {{ .Values.image.image }}
-          readinessProbe:
-            httpGet:
-              path: /readyz
-              port: 9998
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 9998
-            initialDelaySeconds: 15
-            periodSeconds: 20
           env:
             - name: POSTGRES_USER
               valueFrom:

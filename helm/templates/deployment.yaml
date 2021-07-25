@@ -18,6 +18,18 @@ spec:
       containers:
         - name: {{ .Values.image.name }}
           image: {{ .Values.image.image }}
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: {{ .Values.image.containerPort }}
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: {{ .Values.image.containerPort }}
+            initialDelaySeconds: 15
+            periodSeconds: 20
           ports:
             - containerPort: {{ .Values.image.containerPort }}
           resources:
