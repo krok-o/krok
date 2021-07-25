@@ -114,3 +114,8 @@ type UserHandler interface {
 type CommandRunHandler interface {
 	GetCommandRun() echo.HandlerFunc
 }
+
+// ReadyHandler provides a ready handler for the ready provider.
+type ReadyHandler interface {
+	Ready() echo.HandlerFunc
+}

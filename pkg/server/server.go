@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -54,6 +55,7 @@ type Dependencies struct {
 	EventsHandler          providers.EventHandler
 	VaultHandler           providers.VaultHandler
 	UserHandler            providers.UserHandler
+	ReadyHandler           providers.ReadyHandler
 }
 
 // Server defines a server which runs and accepts requests.
@@ -81,6 +83,12 @@ func (s *KrokServer) Run(ctx context.Context) error {
 		AllowHeaders:     []string{echo.HeaderOrigin, echo.HeaderContentType, echo.HeaderAccept},
 		AllowCredentials: true,
 	}))
+
+	// Healthz
+	e.GET("/healthz", func(c echo.Context) error {
+		return c.String(http.StatusOK, "alive")
+	})
+	e.GET("/readyz", s.ReadyHandler.Ready())
 
 	// Public endpoints for authentication.
 	e.POST("/auth/refresh", s.AuthHandler.Refresh())
