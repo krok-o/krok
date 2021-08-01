@@ -54,7 +54,58 @@ Krok can save these securely and pass them along to the command so it can perfor
 
 # Scenarios / Use cases
 
+Consider the following scenario:
+
+- you have three repositories on two different platforms (github, gitlab)
+- you would like to get notification on pull-requests on all of them into a slack / discord channel
+
+You would have to do the following on all three of them:
+
+- create a secret environment variable which holds the necessary token for all three of them
+- create a webhook or a github action for the github repository
+- create a pipeline action for the gitlab repository
+
+Now, image you change the channel name... You'll have to update it for all three repositories. Imagine you have 20.
+
+Enter Krok. You have to register all repositories with Krok. Affiliate the Discord Sender command with all three repositories
+and set up the channel name in a shared setting including the token to discord and set that up as a command setting.
+
+Now, once you have to change the channel name, you only have to change it once which will then be used by all three.
+
 # Development
+
+Developing Krok is fairly easy as the database that it requires is bootstrapped and ready made for you.
+The integration tests create their own contained databases on each run, so they can be executed as many times as needed
+and they won't step on each other's toe.
+
+To create a test database run:
+
+```
+make test-db
+```
+
+To tear it down:
+
+```
+make rm-test-db
+```
+
+To build Krok, simply run:
+
+```
+make
+```
+
+This will build all binaries.
+
+Fork it, work, work, zug, zug, create PR, done. The PR checker will run all tests but it's always advised to run them locally as well with
+
+```
+make test
+```
+
+Always have an accompanying issue with your PR so we know what problem it's trying to solve. Whether that is simply a refactor, or test coverage
+increase, or even a typo fix, all PRs are welcomed and appreciated.
 
 # Contributions
 
@@ -67,3 +118,7 @@ We do plan on having a frontend for Krok alongside the CLI([krokctl](https://git
 
 Commands are never enough. Krok lives for the command it can execute on each webhook action. Without the commands Krok is almost useless.
 Writing commands extends the universe of Krok and makes Krok itself more useful.
+
+## Krok core
+
+The server, which is this repository, can always use implementation of another platform for example. Or just general improvement of the code.
