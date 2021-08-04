@@ -198,6 +198,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Logger:        log,
 		CommandRuns:   commandRunStore,
 		CommandStorer: commandStore,
+		Clock:         clock,
 	})
 
 	// ************************

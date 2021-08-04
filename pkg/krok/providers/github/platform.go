@@ -18,28 +18,6 @@ import (
 	"github.com/krok-o/krok/pkg/models"
 )
 
-// Hook represent a github based webhook context.
-type Hook struct {
-	Signature string
-	Event     string
-	ID        string
-	Payload   []byte
-}
-
-// Repository contains information about the repository. All we care about
-// here are the possible urls for identification.
-type Repository struct {
-	GitURL  string `json:"git_url"`
-	SSHURL  string `json:"ssh_url"`
-	HTMLURL string `json:"html_url"`
-}
-
-// Payload contains information about the event like, user, commit id and so on.
-// All we care about for the sake of identification is the repository.
-type Payload struct {
-	Repo Repository `json:"repository"`
-}
-
 // Dependencies defines the dependencies for the plugin provider.
 type Dependencies struct {
 	Logger                zerolog.Logger

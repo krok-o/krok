@@ -107,6 +107,75 @@ make test
 Always have an accompanying issue with your PR so we know what problem it's trying to solve. Whether that is simply a refactor, or test coverage
 increase, or even a typo fix, all PRs are welcomed and appreciated.
 
+Start up Krok, but note that the `hookbase` value has to be set to your public IP address so the hook creation can work. Otherwise it will fail, because
+localhost is not supported as a callback url.
+
+```
+➜  krok git:(main) ✗ ./bin/darwin/amd64/krok --file-vault-location .tmp --hostname 0.0.0.0:9998 --plugin-location .tmp/plugins --hookbase <your-ip>:9998
+8:56AM INF Please set a global secret key... Randomly generating one for now...
+8:56AM INF Start listening...
+
+   ____    __
+  / __/___/ /  ___
+ / _// __/ _ \/ _ \
+/___/\__/_//_/\___/ v4.1.17
+High performance, minimalist Go web framework
+https://echo.labstack.com
+____________________________________O/_______
+                                    O\
+⇨ http server started on [::]:9998
+```
+
+Once everything is running, use [krokctl](https://github.com/krok-o/krokctl) to test your running server.
+
+You should have a test repository on some platform so Krok can create a webhook for it. This guide uses Github.
+
+First, you'll need to save a token:
+
+```
+➜  krokctl git:(main) ✗ ./bin/darwin/amd64/krokctl create vcs --token <token> --vcs 1
+Success!
+```
+
+Second, you'll need a command to test with. A couple test commands can be found under the [plugins](https://github.com/krok-o/plugins) repository.
+Download some, build them, and upload the tar-ed up binary after making sure you exported the necessary credentials.
+
+```
+➜  krokctl git:(main) ✗ export KROK_API_KEY_ID=api-key-id
+➜  krokctl git:(main) ✗ export KROK_API_KEY_SECRET=secret
+➜  krokctl git:(main) ✗ export KROK_EMAIL=admin@admin.com
+./bin/darwin/amd64/krokctl upload command --file slack-notification.tar.gz
+ID      NAME                    HASH                                                                    LOCATION        FILENAME              SCHEDULE        ENABLED REPOSITORIES
+1       slack-notification      5bac4e2aeff81e2453dd099128eaa65cd076d02bad7b6927e5afd4892cbacc2a        .tmp/plugins    slack-notification                    true
+```
+
+If the upload succeeded, you should see the above table.
+
+Finally, register a repository:
+
+```
+./bin/darwin/amd64/krokctl create repository --events ping --name test-repo-1 --secret secret --vcs 1 --url https://github.com/Skarlso/test
+9:51AM DBG Creating repository...
+ID      NAME            URL                             VCS     CALLBACK-URL                                                    ATTACHED-COMMANDS     PROJECT-ID
+1       test-repo-1     https://github.com/Skarlso/test 1       http://176.63.219.155:9998/rest/api/1/hooks/1/1/callback                              -1
+```
+
+Associate the test command to this repository with the following:
+
+```
+➜  krokctl git:(main) ✗ ./bin/darwin/amd64/krokctl relationship command add --command-id 1 --repository-id 1
+Success!
+```
+
+And add the command association to the platform:
+
+```
+➜  krokctl git:(main) ✗ ./bin/darwin/amd64/krokctl relationship platform add --command-id 1 --platform-id 1
+Success!
+```
+
+Now, if you navigate to the Github repository, you can keep sending it the ping event to test further functionality, like running commands and passing arguments correctly.
+
 # Contributions
 
 ## Frontend

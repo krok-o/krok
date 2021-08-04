@@ -93,7 +93,7 @@ create table file_lock (
 -- store events for a repository.
 create table events (
     id serial primary key,
-    event_id varchar unique not null,
+    event_id varchar not null,
     repository_id int,
     payload varchar,
     created_at date,

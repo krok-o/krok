@@ -41,16 +41,6 @@ func TestEventsStore_Create(t *testing.T) {
 	})
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
-
-	_, err = es.Create(ctx, &models.Event{
-		EventID:      "uuid1",
-		CreateAt:     time.Now(),
-		RepositoryID: 1,
-		CommandRuns:  make([]*models.CommandRun, 0),
-		Payload:      "{}",
-		VCS:          1,
-	})
-	assert.Error(t, err)
 }
 
 func TestEventsStore_GetWithRuns(t *testing.T) {
