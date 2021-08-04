@@ -166,6 +166,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	commandStore, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Dependencies: deps,
 		Connector:    connector,
+		Vault:        v,
 	})
 
 	if err != nil {
