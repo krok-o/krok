@@ -145,7 +145,7 @@ func (s *KrokServer) Run(ctx context.Context) error {
 
 	// events
 	auth.POST("/events/:repoid", s.Dependencies.EventsHandler.List())
-	auth.POST("/event/:id", s.Dependencies.EventsHandler.Get())
+	auth.GET("/event/:id", s.Dependencies.EventsHandler.Get())
 
 	// vault settings
 	auth.POST("/vault/secret", s.Dependencies.VaultHandler.CreateSecret())
