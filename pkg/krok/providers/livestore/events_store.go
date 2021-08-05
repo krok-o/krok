@@ -133,6 +133,7 @@ func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 		}
 		return nil
 	}
+	// TODO: Add command runs
 	if err := e.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		return nil, fmt.Errorf("failed to execute List all events: %w", err)
 	}

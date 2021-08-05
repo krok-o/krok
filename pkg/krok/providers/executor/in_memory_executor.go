@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"os/exec"
 	"path/filepath"
-	"strings"
 	"sync"
 	"time"
 
@@ -119,7 +118,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		}
 		location := filepath.Join(c.Location, c.Name)
 		// run the plugin, which should be an executable.
-		cmd := exec.Command(location, strings.Join(args, ","))
+		cmd := exec.Command(location, args...)
 		cmds = append(cmds, cmd)
 		log.Debug().Str("location", location).Msg("Preparing to run command at location...")
 		// this needs its own context, since the context from above is already cancelled.
