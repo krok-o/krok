@@ -99,6 +99,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 		// confidential. The platform must always be the first arg.
 		args := []string{
 			fmt.Sprintf("--platform=%s", platform.Name),
+			fmt.Sprintf("--event-name=%s", event.EventType),
 		}
 		for _, s := range settings {
 			args = append(args, fmt.Sprintf("--%s=%s", s.Key, s.Value))

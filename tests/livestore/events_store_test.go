@@ -7,12 +7,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rs/zerolog"
+	"github.com/stretchr/testify/assert"
+
 	"github.com/krok-o/krok/pkg/krok/providers/environment"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/tests/dbaccess"
-	"github.com/rs/zerolog"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestEventsStore_Create(t *testing.T) {
@@ -38,6 +39,7 @@ func TestEventsStore_Create(t *testing.T) {
 		CommandRuns:  make([]*models.CommandRun, 0),
 		Payload:      "{}",
 		VCS:          1,
+		EventType:    "push",
 	})
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -76,6 +78,7 @@ func TestEventsStore_GetWithRuns(t *testing.T) {
 		RepositoryID: 1,
 		Payload:      "{}",
 		VCS:          1,
+		EventType:    "push",
 	})
 	assert.NoError(t, err)
 	assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -98,6 +101,7 @@ func TestEventsStore_GetWithRuns(t *testing.T) {
 	assert.Equal(t, event.ID, e.ID)
 	assert.Equal(t, event.EventID, e.EventID)
 	assert.Equal(t, event.Payload, e.Payload)
+	assert.Equal(t, event.EventType, e.EventType)
 	assert.Equal(t, run.CommandName, e.CommandRuns[0].CommandName)
 	assert.Equal(t, run.EventID, e.CommandRuns[0].EventID)
 	assert.Equal(t, run.ID, e.CommandRuns[0].ID)
@@ -131,6 +135,7 @@ func TestEventsStore_List(t *testing.T) {
 			RepositoryID: 1,
 			Payload:      "{}",
 			VCS:          1,
+			EventType:    "push",
 		})
 		assert.NoError(t, err)
 		assert.NotEqual(t, 0, event.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -155,6 +160,7 @@ func TestEventsStore_List(t *testing.T) {
 			RepositoryID: 1,
 			Payload:      "{}",
 			VCS:          1,
+			EventType:    "push",
 		})
 		assert.NoError(t, err)
 		assert.NotEqual(t, 0, event1.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -164,6 +170,7 @@ func TestEventsStore_List(t *testing.T) {
 			RepositoryID: 1,
 			Payload:      "{}",
 			VCS:          1,
+			EventType:    "push",
 		})
 		assert.NoError(t, err)
 		assert.NotEqual(t, 0, event2.ID, "Event ID should have been a sequence and increased to above 0.")
@@ -206,6 +213,7 @@ func TestEventsStore_List(t *testing.T) {
 			RepositoryID: 1,
 			Payload:      "{}",
 			VCS:          1,
+			EventType:    "push",
 		})
 		assert.NoError(tt, err)
 		_, err = es.Create(ctx, &models.Event{
@@ -214,6 +222,7 @@ func TestEventsStore_List(t *testing.T) {
 			RepositoryID: 1,
 			Payload:      "{}",
 			VCS:          1,
+			EventType:    "push",
 		})
 		assert.NoError(tt, err)
 		event3, err := es.Create(ctx, &models.Event{
@@ -222,6 +231,7 @@ func TestEventsStore_List(t *testing.T) {
 			RepositoryID: 1,
 			Payload:      "{}",
 			VCS:          1,
+			EventType:    "push",
 		})
 		assert.NoError(tt, err)
 

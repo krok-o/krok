@@ -97,7 +97,8 @@ create table events (
     repository_id int,
     payload varchar,
     created_at date,
-    vcs int
+    vcs int,
+    event_type varchar
 );
 
 -- store a run for a command. This is associated with an event.

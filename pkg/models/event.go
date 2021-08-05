@@ -37,4 +37,8 @@ type Event struct {
 	//
 	// required: true
 	VCS int `json:"vcs"`
+	// EventType of the name, i.e.: push, ping, pull-request...
+	//
+	// required: true
+	EventType string `json:"event_type"`
 }
