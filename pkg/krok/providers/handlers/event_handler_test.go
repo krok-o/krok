@@ -34,8 +34,9 @@ func TestEventHandler_List(t *testing.T) {
 					CreateAt:    time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC),
 				},
 			},
-			Payload: `{"id": "uuid", "other": "stuff"}`,
-			VCS:     models.GITHUB,
+			Payload:   `{"id": "uuid", "other": "stuff"}`,
+			VCS:       models.GITHUB,
+			EventType: "push",
 		},
 	}, nil)
 	eh := NewEventHandler(EventHandlerDependencies{
@@ -47,7 +48,7 @@ func TestEventHandler_List(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryExpected := `[{"id":1,"event_id":"uuid","create_at":"1981-01-01T01:01:01.000000001Z","repository_id":1,"command_runs":[{"id":1,"event_id":1,"command_name":"echo","status":"success","outcome":"echo this","create_at":"1981-01-01T01:01:01.000000001Z"}],"payload":"{\"id\": \"uuid\", \"other\": \"stuff\"}","vcs":1}]
+		repositoryExpected := `[{"id":1,"event_id":"uuid","create_at":"1981-01-01T01:01:01.000000001Z","repository_id":1,"command_runs":[{"id":1,"event_id":1,"command_name":"echo","status":"success","outcome":"echo this","create_at":"1981-01-01T01:01:01.000000001Z"}],"payload":"{\"id\": \"uuid\", \"other\": \"stuff\"}","vcs":1,"event_type":"push"}]
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
@@ -82,8 +83,9 @@ func TestEventHandler_Get(t *testing.T) {
 				CreateAt:    time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC),
 			},
 		},
-		Payload: `{"id": "uuid", "other": "stuff"}`,
-		VCS:     models.GITHUB,
+		Payload:   `{"id": "uuid", "other": "stuff"}`,
+		VCS:       models.GITHUB,
+		EventType: "push",
 	}, nil)
 	eh := NewEventHandler(EventHandlerDependencies{
 		Logger:       logger,
@@ -93,7 +95,7 @@ func TestEventHandler_Get(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		repositoryExpected := `{"id":1,"event_id":"uuid","create_at":"1981-01-01T01:01:01.000000001Z","repository_id":1,"command_runs":[{"id":1,"event_id":1,"command_name":"echo","status":"success","outcome":"echo this","create_at":"1981-01-01T01:01:01.000000001Z"}],"payload":"{\"id\": \"uuid\", \"other\": \"stuff\"}","vcs":1}
+		repositoryExpected := `{"id":1,"event_id":"uuid","create_at":"1981-01-01T01:01:01.000000001Z","repository_id":1,"command_runs":[{"id":1,"event_id":1,"command_name":"echo","status":"success","outcome":"echo this","create_at":"1981-01-01T01:01:01.000000001Z"}],"payload":"{\"id\": \"uuid\", \"other\": \"stuff\"}","vcs":1,"event_type":"push"}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", nil)
