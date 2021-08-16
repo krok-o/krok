@@ -35,6 +35,7 @@ Documentation of the Krok API.
 | POST | /rest/api/1/command/add-command-rel-for-platform/{cmdid}/{repoid} | [add command rel for platform command](#add-command-rel-for-platform-command) | Adds a connection to a platform for a command. Defines what platform a command supports. These commands will only be able to run for those platforms. |
 | POST | /rest/api/1/command/add-command-rel-for-repository/{cmdid}/{repoid} | [add command rel for repository command](#add-command-rel-for-repository-command) | Add a connection to a repository. This will make this command to be executed for events for that repository. |
 | POST | /rest/api/1/user/apikey/generate/{name} | [create Api key](#create-api-key) | Creates an api key pair for a given user. |
+| POST | /rest/api/1/command | [create command](#create-command) |  |
 | POST | /rest/api/1/repository | [create repository](#create-repository) |  |
 | POST | /rest/api/1/vault/secret | [create secret](#create-secret) | Create a new secure secret. |
 | POST | /rest/api/1/user | [create user](#create-user) |  |
@@ -71,7 +72,7 @@ Documentation of the Krok API.
 | POST | /rest/api/1/repository/update | [update repository](#update-repository) | Updates an existing repository. |
 | POST | /rest/api/1/vault/secret/update | [update secret](#update-secret) | Updates an existing secret. |
 | POST | /rest/api/1/user/update | [update user](#update-user) | Updates an existing user. |
-| POST | /rest/api/1/command | [upload command](#upload-command) | Upload a command. To set up anything for the command, like schedules etc, |
+| PUT | /rest/api/1/command | [upload command](#upload-command) | Upload a command. To set up anything for the command, like schedules etc, |
 | GET | /rest/api/1/auth/callback | [user callback](#user-callback) | This is the url to which Google calls back after a successful login. |
 | GET | /rest/api/1/auth/login | [user login](#user-login) | User login. |
   
@@ -218,6 +219,64 @@ any
 Status: Internal Server Error
 
 ###### <span id="create-api-key-500-schema"></span> Schema
+   
+  
+
+any
+
+### <span id="create-command"></span> create command (*createCommand*)
+
+```
+POST /rest/api/1/command
+```
+
+Create a command. This endpoint supports settings up a command with
+various settings including a URL from which to download a command.
+
+#### Consumes
+  * application/json
+
+#### Produces
+  * application/json
+
+#### Parameters
+
+| Name | Source | Type | Go type | Separator | Required | Default | Description |
+|------|--------|------|---------|-----------| :------: |---------|-------------|
+| command | `body` | [Command](#command) | `models.Command` | | ✓ | |  |
+
+#### All responses
+| Code | Status | Description | Has headers | Schema |
+|------|--------|-------------|:-----------:|--------|
+| [201](#create-command-201) | Created | in case of successful create |  | [schema](#create-command-201-schema) |
+| [400](#create-command-400) | Bad Request | invalid file format or command already exists |  | [schema](#create-command-400-schema) |
+| [500](#create-command-500) | Internal Server Error | failed to download file, create plugin, create command or copy operations |  | [schema](#create-command-500-schema) |
+
+#### Responses
+
+
+##### <span id="create-command-201"></span> 201 - in case of successful create
+Status: Created
+
+###### <span id="create-command-201-schema"></span> Schema
+   
+  
+
+[Command](#command)
+
+##### <span id="create-command-400"></span> 400 - invalid file format or command already exists
+Status: Bad Request
+
+###### <span id="create-command-400-schema"></span> Schema
+   
+  
+
+any
+
+##### <span id="create-command-500"></span> 500 - failed to download file, create plugin, create command or copy operations
+Status: Internal Server Error
+
+###### <span id="create-command-500-schema"></span> Schema
    
   
 
@@ -2020,7 +2079,7 @@ any
 ### <span id="upload-command"></span> Upload a command. To set up anything for the command, like schedules etc, (*uploadCommand*)
 
 ```
-POST /rest/api/1/command
+PUT /rest/api/1/command
 ```
 
 the command has to be edited. We don't support uploading the same thing twice.
@@ -2204,6 +2263,8 @@ Status: Not Found
 | Name | string| `string` | ✓ | | Name of the command. |  |
 | Repositories | [][Repository](#repository)| `[]*Repository` |  | | Repositories that this command can execute on. |  |
 | Schedule | string| `string` |  | | Schedule of the command. | `0 * * * * // follows cron job syntax.` |
+| URL | string| `string` |  | | URL defines an optional URL field to download the command from.
+No need to store this field, we just use it to indicate downloading the command. |  |
 
 
 
@@ -2269,6 +2330,7 @@ the repository it belongs to and the event that created it...
 | CreateAt | date-time (formatted string)| `strfmt.DateTime` | ✓ | | CreatedAt contains the timestamp when this event occurred. |  |
 | EventID | string| `string` | ✓ | | EvenID is the ID of the corresponding event on the given platform. If that cannot be determined
 an ID is generated. |  |
+| EventType | string| `string` | ✓ | | EventType of the name, i.e.: push, ping, pull-request... |  |
 | ID | int64 (formatted integer)| `int64` | ✓ | | ID is a generated ID. |  |
 | Payload | string| `string` | ✓ | | Payload defines the information received from the platform for this event. |  |
 | RepositoryID | int64 (formatted integer)| `int64` | ✓ | | RepositoryID contains the ID of the repository for which this event occurred. |  |
@@ -2307,7 +2369,7 @@ an ID is generated. |  |
 | Page | int64 (formatted integer)| `int64` |  | | Page defines the current page. | `0` |
 | PageSize | int64 (formatted integer)| `int64` |  | | PageSize defines the number of items per page.
 
-required true | `10` |
+required false | `10` |
 | StartingDate | date-time (formatted string)| `strfmt.DateTime` |  | | StartingDate defines a date of start to look for events. Inclusive. | `2021-02-02` |
 | VCS | int64 (formatted integer)| `int64` |  | | Only list all entries for a given platform ID. | `1` |
 
