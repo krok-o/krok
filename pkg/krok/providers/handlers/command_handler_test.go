@@ -3,6 +3,8 @@ package handlers
 import (
 	"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
@@ -714,7 +716,166 @@ func TestCommandsHandler_RemoveCommandRelForPlatform(t *testing.T) {
 	})
 }
 
-func TestCommandsHandler_Update(t *testing.T) {
+func TestCommandsHandler_CreateCommand(t *testing.T) {
+	logger := zerolog.New(os.Stderr)
+	t.Run("successful file download", func(tt *testing.T) {
+		mcs := &mocks.CommandStorer{}
+		mcs.On("GetByName", mock.Anything, "test-name").Return(nil, kerr.ErrNotFound)
+		content, err := ioutil.ReadFile(filepath.Join("testdata", "test.tar.gz"))
+		assert.NoError(t, err)
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintln(w, string(content))
+		}))
+		defer ts.Close()
+		mcs.On("Create", mock.Anything, &models.Command{
+			Name:     "test-name",
+			ID:       0,
+			Filename: "test",
+			Location: ".",
+			Hash:     "hash",
+			Enabled:  true,
+			URL:      &ts.URL,
+		}).Return(&models.Command{
+			Name:     "test-name",
+			ID:       1,
+			Filename: "test",
+			Location: ".",
+			Hash:     "hash",
+			Enabled:  true,
+		}, nil)
+		mp := &mocks.Plugins{}
+		mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
+		ch := CommandsHandler{
+			CommandsHandlerDependencies: CommandsHandlerDependencies{
+				Logger:        logger,
+				CommandStorer: mcs,
+				Plugins:       mp,
+			},
+			Client: http.DefaultClient,
+		}
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, ts.URL)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = ch.Create()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusCreated, rec.Result().StatusCode)
+	})
+	t.Run("command already exists", func(tt *testing.T) {
+		mcs := &mocks.CommandStorer{}
+		mp := &mocks.Plugins{}
+		mcs.On("GetByName", mock.Anything, "test-name").Return(&models.Command{Name: "test-name"}, nil)
+		ch := CommandsHandler{
+			CommandsHandlerDependencies: CommandsHandlerDependencies{
+				Logger:        logger,
+				CommandStorer: mcs,
+				Plugins:       mp,
+			},
+			Client: http.DefaultClient,
+		}
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, "dummy")
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = ch.Create()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Result().StatusCode)
+		body, err := ioutil.ReadAll(rec.Body)
+		assert.NoError(tt, err)
+		assert.Equal(tt, `{"code":400,"message":"command with name already taken","error":"unexpected error"}
+`, string(body))
+	})
+	t.Run("failed to create command", func(tt *testing.T) {
+		mcs := &mocks.CommandStorer{}
+		mp := &mocks.Plugins{}
+		mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
+		mcs.On("GetByName", mock.Anything, "test-name").Return(nil, kerr.ErrNotFound)
+		content, err := ioutil.ReadFile(filepath.Join("testdata", "test.tar.gz"))
+		assert.NoError(t, err)
+		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintln(w, string(content))
+		}))
+		mcs.On("Create", mock.Anything, &models.Command{
+			Name:     "test-name",
+			ID:       0,
+			Filename: "test",
+			Location: ".",
+			Hash:     "hash",
+			Enabled:  true,
+			URL:      &ts.URL,
+		}).Return(nil, errors.New("nope"))
+		ch := CommandsHandler{
+			CommandsHandlerDependencies: CommandsHandlerDependencies{
+				Logger:        logger,
+				CommandStorer: mcs,
+				Plugins:       mp,
+			},
+			Client: http.DefaultClient,
+		}
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, ts.URL)
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = ch.Create()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusInternalServerError, rec.Result().StatusCode)
+		body, err := ioutil.ReadAll(rec.Body)
+		assert.NoError(tt, err)
+		assert.Equal(tt, `{"code":500,"message":"failed to create command","error":"nope"}
+`, string(body))
+	})
+	t.Run("invalid url", func(tt *testing.T) {
+		mcs := &mocks.CommandStorer{}
+		mp := &mocks.Plugins{}
+		mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
+		mcs.On("GetByName", mock.Anything, "test-name").Return(nil, kerr.ErrNotFound)
+		ch := CommandsHandler{
+			CommandsHandlerDependencies: CommandsHandlerDependencies{
+				Logger:        logger,
+				CommandStorer: mcs,
+				Plugins:       mp,
+			},
+			Client: http.DefaultClient,
+		}
+		token, err := generateTestToken("test@email.com")
+		assert.NoError(tt, err)
+		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, "dummy")
+
+		e := echo.New()
+		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
+		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
+		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
+		rec := httptest.NewRecorder()
+		c := e.NewContext(req, rec)
+		err = ch.Create()(c)
+		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusBadRequest, rec.Result().StatusCode)
+		body, err := ioutil.ReadAll(rec.Body)
+		assert.NoError(tt, err)
+		assert.Equal(tt, `{"code":400,"message":"failed to download binary","error":"failed to download binary from dummy, error: Get \"dummy\": unsupported protocol scheme \"\""}
+`, string(body))
+	})
+}
+
+func TestCommandsHandler_Upload(t *testing.T) {
 	mcs := &mocks.CommandStorer{}
 	mcs.On("GetByName", mock.Anything, "test").Return(nil, kerr.ErrNotFound)
 	mcs.On("Create", mock.Anything, &models.Command{
@@ -759,12 +920,13 @@ func TestCommandsHandler_Update(t *testing.T) {
 		assert.NoError(tt, err)
 
 		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/endpoint", body)
+		req := httptest.NewRequest(http.MethodPut, "/endpoint", body)
 		req.Header.Set("Content-Type", writer.FormDataContentType()) // <<< important part
 		rec := httptest.NewRecorder()
 		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
 		c := e.NewContext(req, rec)
 		err = ch.Upload()(c)
 		assert.NoError(tt, err)
+		assert.Equal(tt, http.StatusCreated, rec.Result().StatusCode)
 	})
 }

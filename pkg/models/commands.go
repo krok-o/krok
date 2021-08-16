@@ -39,6 +39,11 @@ type Command struct {
 	// required: false
 	// example: false
 	Enabled bool `json:"enabled"`
+	// URL defines an optional URL field to download the command from.
+	// No need to store this field, we just use it to indicate downloading the command.
+	//
+	// required: false
+	URL *string `json:"url,omitempty"`
 }
 
 // CommandSetting defines the settings a command can have.

@@ -116,6 +116,12 @@ definitions:
         example: 0 * * * * // follows cron job syntax.
         type: string
         x-go-name: Schedule
+      url:
+        description: |-
+          URL defines an optional URL field to download the command from.
+          No need to store this field, we just use it to indicate downloading the command.
+        type: string
+        x-go-name: URL
     required:
     - name
     - id
@@ -223,6 +229,10 @@ definitions:
           an ID is generated.
         type: string
         x-go-name: EventID
+      event_type:
+        description: 'EventType of the name, i.e.: push, ping, pull-request...'
+        type: string
+        x-go-name: EventType
       id:
         description: ID is a generated ID.
         format: int64
@@ -251,6 +261,7 @@ definitions:
     - repository_id
     - payload
     - vcs
+    - event_type
     type: object
     x-go-package: github.com/krok-o/krok/pkg/models
   GitLab:
@@ -286,7 +297,7 @@ definitions:
         description: |-
           PageSize defines the number of items per page.
 
-          required true
+          required false
         example: 10
         format: int64
         type: integer
@@ -521,6 +532,35 @@ paths:
       summary: Refresh the authentication token.
   /command:
     post:
+      consumes:
+      - application/json
+      description: |-
+        Create a command. This endpoint supports settings up a command with
+        various settings including a URL from which to download a command.
+      operationId: createCommand
+      parameters:
+      - in: body
+        name: command
+        required: true
+        schema:
+          $ref: '#/definitions/Command'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: in case of successful create
+          schema:
+            $ref: '#/definitions/Command'
+        "400":
+          description: invalid file format or command already exists
+          schema:
+            $ref: '#/responses/Message'
+        "500":
+          description: failed to download file, create plugin, create command or copy
+            operations
+          schema:
+            $ref: '#/responses/Message'
+    put:
       description: |-
         the command has to be edited. We don't support uploading the same thing twice.
         If the command binary needs to be updated, delete the command and upload the

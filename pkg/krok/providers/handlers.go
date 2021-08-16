@@ -17,6 +17,7 @@ type RepositoryHandler interface {
 
 // CommandHandler defines the actions of commands.
 type CommandHandler interface {
+	Create() echo.HandlerFunc
 	Upload() echo.HandlerFunc
 	Delete() echo.HandlerFunc
 	Get() echo.HandlerFunc
