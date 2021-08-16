@@ -305,6 +305,10 @@ func (ch *CommandsHandler) Create() echo.HandlerFunc {
 		if command.Name == "" {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("name must be defined", http.StatusBadRequest, errors.New("name must be defined")))
 		}
+		// check if name is already taken:
+		if _, err := ch.CommandStorer.GetByName(c.Request().Context(), command.Name); err == nil {
+			return c.JSON(http.StatusBadRequest, kerr.APIError("command with name already taken", http.StatusBadRequest, err))
+		}
 		req, err := http.NewRequest("GET", *command.URL, nil)
 		if err != nil {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create HTTP request", http.StatusBadRequest, fmt.Errorf("failed to create HTTP request for %s, error: %w", *command.URL, err)))
