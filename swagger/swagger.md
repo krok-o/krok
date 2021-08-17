@@ -2261,6 +2261,8 @@ Status: Not Found
 | ID | int64 (formatted integer)| `int64` | ✓ | | ID of the command. Generated. |  |
 | Location | string| `string` | ✓ | | Location is where this command is located at. This is the full path of the containing folder. | `/tmp/krok-commands` |
 | Name | string| `string` | ✓ | | Name of the command. |  |
+| Platforms | [][Platform](#platform)| `[]*Platform` |  | | Platforms holds all the platforms which this command supports.
+Calculated, not saved. |  |
 | Repositories | [][Repository](#repository)| `[]*Repository` |  | | Repositories that this command can execute on. |  |
 | Schedule | string| `string` |  | | Schedule of the command. | `0 * * * * // follows cron job syntax.` |
 | URL | string| `string` |  | | URL defines an optional URL field to download the command from.

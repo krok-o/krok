@@ -70,13 +70,14 @@ func (s *CommandStore) Create(ctx context.Context, c *models.Command) (*models.C
 
 	f := func(tx pgx.Tx) error {
 		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, schedule, filename, hash, location,"+
-			" enabled) values($1, $2, $3, $4, $5, $6)", commandsTable),
+			" enabled, url) values($1, $2, $3, $4, $5, $6, $7)", commandsTable),
 			c.Name,
 			c.Schedule,
 			c.Filename,
 			c.Hash,
 			c.Location,
-			c.Enabled); err != nil {
+			c.Enabled,
+			c.URL); err != nil {
 			log.Debug().Err(err).Msg("Failed to create command.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -128,11 +129,12 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		location  string
 		hash      string
 		enabled   bool
+		url       string
 	)
 	f := func(tx pgx.Tx) error {
-		query := fmt.Sprintf("select name, id, schedule, filename, location, hash, enabled from %s where %s = $1", commandsTable, field)
+		query := fmt.Sprintf("select name, id, schedule, filename, location, hash, enabled, url from %s where %s = $1", commandsTable, field)
 		if err := tx.QueryRow(ctx, query, value).
-			Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled); err != nil {
+			Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled, &url); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: query,
@@ -162,6 +164,15 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		}
 	}
 
+	platforms, err := s.getPlatformsForCommand(ctx, commandID)
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
+		log.Debug().Err(err).Msg("getPlatformsForCommand failed")
+		return nil, &kerr.QueryError{
+			Query: "select id",
+			Err:   err,
+		}
+	}
+
 	return &models.Command{
 		Name:         name,
 		ID:           commandID,
@@ -171,6 +182,8 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		Location:     location,
 		Hash:         hash,
 		Enabled:      enabled,
+		URL:          url,
+		Platforms:    platforms,
 	}, nil
 }
 
@@ -225,6 +238,49 @@ func (s *CommandStore) getRepositoriesForCommand(ctx context.Context, id int) ([
 	}
 	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
 		return nil, fmt.Errorf("failed to execute GetRepositoriesForCommand: %w", err)
+	}
+	return result, nil
+}
+
+// getPlatformsForCommand returns a list of platforms which this command supports.
+func (s *CommandStore) getPlatformsForCommand(ctx context.Context, id int) ([]models.Platform, error) {
+	log := s.Logger.With().Int("id", id).Logger()
+
+	// Select the related platforms.
+	var result []models.Platform
+	f := func(tx pgx.Tx) error {
+		rows, err := tx.Query(ctx, fmt.Sprintf("select platform_id from %s where command_id = $1", commandsPlatformsRelTable), id)
+		if err != nil {
+			if errors.Is(err, pgx.ErrNoRows) {
+				return &kerr.QueryError{
+					Query: "select id",
+					Err:   kerr.ErrNotFound,
+				}
+			}
+			log.Debug().Err(err).Msg("Failed to query relationship.")
+			return &kerr.QueryError{
+				Query: "select commands for platforms",
+				Err:   fmt.Errorf("failed to query rel table: %w", err),
+			}
+		}
+
+		for rows.Next() {
+			var (
+				platformID int
+			)
+			if err := rows.Scan(&platformID); err != nil {
+				log.Debug().Err(err).Msg("Failed to scan.")
+				return &kerr.QueryError{
+					Query: "select id",
+					Err:   fmt.Errorf("failed to scan: %w", err),
+				}
+			}
+			result = append(result, models.SupportedPlatforms[platformID])
+		}
+		return nil
+	}
+	if err := s.Connector.ExecuteWithTransaction(ctx, log, f); err != nil {
+		return nil, fmt.Errorf("failed to execute getPlatformsForCommand: %w", err)
 	}
 	return result, nil
 }

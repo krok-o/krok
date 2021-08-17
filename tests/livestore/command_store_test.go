@@ -48,6 +48,7 @@ func TestCommandStore_Flow(t *testing.T) {
 		Location:     location,
 		Hash:         "hash1",
 		Enabled:      false,
+		URL:          "test",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -64,6 +65,7 @@ func TestCommandStore_Flow(t *testing.T) {
 		Location:     location,
 		Hash:         "hash1",
 		Enabled:      false,
+		URL:          "test",
 	}, cGet)
 
 	// List commands
@@ -122,13 +124,13 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
-		Name:         "Test_Relationship_Flow",
-		Schedule:     "Test_Relationship_Flow-test-schedule",
-		Repositories: nil,
-		Filename:     "Test_Relationship_Flow-test-filename-create",
-		Location:     location,
-		Hash:         "Test_Relationship_Flow-hash1",
-		Enabled:      false,
+		Name:     "Test_Relationship_Flow",
+		Schedule: "Test_Relationship_Flow-test-schedule",
+		Filename: "Test_Relationship_Flow-test-filename-create",
+		Location: location,
+		Hash:     "Test_Relationship_Flow-hash1",
+		Enabled:  false,
+		URL:      "test",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -169,13 +171,13 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	// deleting the repository removes the relationship from the command
 	// Create the second command.
 	c2, err := cp.Create(ctx, &models.Command{
-		Name:         "Test_Relationship_Flow-2",
-		Schedule:     "Test_Relationship_Flow-test-schedule-2",
-		Repositories: nil,
-		Filename:     "Test_Relationship_Flow-test-filename-create-2",
-		Location:     location,
-		Hash:         "Test_Relationship_Flow-hash1-2",
-		Enabled:      false,
+		Name:     "Test_Relationship_Flow-2",
+		Schedule: "Test_Relationship_Flow-test-schedule-2",
+		Filename: "Test_Relationship_Flow-test-filename-create-2",
+		Location: location,
+		Hash:     "Test_Relationship_Flow-hash1-2",
+		Enabled:  false,
+		URL:      "test",
 	})
 	assert.NoError(t, err)
 
@@ -255,6 +257,7 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 		Location:     location,
 		Hash:         "hash2",
 		Enabled:      false,
+		URL:          "test",
 	})
 	require.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -268,6 +271,7 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 		Location:     location,
 		Hash:         "hash3",
 		Enabled:      false,
+		URL:          "test",
 	})
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_name_key\""))
@@ -280,6 +284,7 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 		Location:     location,
 		Hash:         "hash3",
 		Enabled:      false,
+		URL:          "test",
 	})
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_filename_key\""))
@@ -292,6 +297,7 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 		Location:     location,
 		Hash:         "hash2",
 		Enabled:      false,
+		URL:          "test",
 	})
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_hash_key\""))
@@ -322,6 +328,7 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 		Location: location,
 		Hash:     "Test_Relationship_Flow_Platform-hash1",
 		Enabled:  true,
+		URL:      "test",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -336,9 +343,18 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.False(t, supported)
 
+	// Get command, platforms should be in platform list.
+	command, err := cp.Get(ctx, c.ID)
+	assert.NoError(t, err)
+	assert.Contains(t, command.Platforms, models.SupportedPlatforms[models.GITHUB], "Github not found in the supported platforms list.")
+
 	// remove the relation
 	err = cp.RemoveCommandRelForPlatform(ctx, c.ID, models.GITHUB)
 	assert.NoError(t, err)
+	// platform list should be empty.
+	command, err = cp.Get(ctx, c.ID)
+	assert.NoError(t, err)
+	assert.Empty(t, command.Platforms, "Github not found in the supported platforms list.")
 
 	supported, err = cp.IsPlatformSupported(ctx, c.ID, models.GITHUB)
 	assert.NoError(t, err)
@@ -370,6 +386,7 @@ func TestCommandStore_Update(t *testing.T) {
 		Location: location,
 		Hash:     "hash-update",
 		Enabled:  false,
+		URL:      "test",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)

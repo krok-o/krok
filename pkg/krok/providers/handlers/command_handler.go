@@ -298,7 +298,7 @@ func (ch *CommandsHandler) Create() echo.HandlerFunc {
 			ch.Logger.Debug().Err(err).Msg("Failed to bind command.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind command", http.StatusBadRequest, err))
 		}
-		if command.URL == nil {
+		if command.URL == "" {
 			ch.Logger.Error().Msg("In case of Create, a URL must be provided to download the command form.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("URL not defined", http.StatusBadRequest, errors.New("url not defined")))
 		}
@@ -309,13 +309,13 @@ func (ch *CommandsHandler) Create() echo.HandlerFunc {
 		if _, err := ch.CommandStorer.GetByName(c.Request().Context(), command.Name); err == nil {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("command with name already taken", http.StatusBadRequest, err))
 		}
-		req, err := http.NewRequest("GET", *command.URL, nil)
+		req, err := http.NewRequest("GET", command.URL, nil)
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create HTTP request", http.StatusBadRequest, fmt.Errorf("failed to create HTTP request for %s, error: %w", *command.URL, err)))
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create HTTP request", http.StatusBadRequest, fmt.Errorf("failed to create HTTP request for %s, error: %w", command.URL, err)))
 		}
 		resp, err := ch.Client.Do(req.WithContext(c.Request().Context()))
 		if err != nil {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to download binary", http.StatusBadRequest, fmt.Errorf("failed to download binary from %s, error: %w", *command.URL, err)))
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to download binary", http.StatusBadRequest, fmt.Errorf("failed to download binary from %s, error: %w", command.URL, err)))
 		}
 		defer func() {
 			if err := resp.Body.Close(); err != nil {
@@ -323,7 +323,7 @@ func (ch *CommandsHandler) Create() echo.HandlerFunc {
 			}
 		}()
 		if resp.StatusCode != http.StatusOK {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to download binary", http.StatusBadRequest, fmt.Errorf("failed to download binary from %s, status: %d", *command.URL, resp.StatusCode)))
+			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to download binary", http.StatusBadRequest, fmt.Errorf("failed to download binary from %s, status: %d", command.URL, resp.StatusCode)))
 		}
 
 		f, hash, err := ch.createCommand(c.Request().Context(), command.Name, resp.Body)

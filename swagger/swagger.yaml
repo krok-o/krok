@@ -105,6 +105,14 @@ definitions:
         description: Name of the command.
         type: string
         x-go-name: Name
+      providers:
+        description: |-
+          Platforms holds all the platforms which this command supports.
+          Calculated, not saved.
+        items:
+          $ref: '#/definitions/Platform'
+        type: array
+        x-go-name: Platforms
       repositories:
         description: Repositories that this command can execute on.
         items:

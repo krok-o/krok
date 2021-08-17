@@ -734,7 +734,7 @@ func TestCommandsHandler_CreateCommand(t *testing.T) {
 			Location: ".",
 			Hash:     "hash",
 			Enabled:  true,
-			URL:      &ts.URL,
+			URL:      ts.URL,
 		}).Return(&models.Command{
 			Name:     "test-name",
 			ID:       1,
@@ -814,7 +814,7 @@ func TestCommandsHandler_CreateCommand(t *testing.T) {
 			Location: ".",
 			Hash:     "hash",
 			Enabled:  true,
-			URL:      &ts.URL,
+			URL:      ts.URL,
 		}).Return(nil, errors.New("nope"))
 		ch := CommandsHandler{
 			CommandsHandlerDependencies: CommandsHandlerDependencies{

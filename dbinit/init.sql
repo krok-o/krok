@@ -1,12 +1,13 @@
 -- WARNING: If this is modified, also change the configmap in under the helm charts.
 create table commands (
-    id serial primary key ,
+    id serial primary key,
     name varchar unique not null,
     schedule varchar,
     filename varchar unique not null,
     hash varchar unique not null,
     location varchar not null,
-    enabled boolean not null
+    enabled boolean not null,
+    url varchar
 );
 
 create table command_settings

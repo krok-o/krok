@@ -43,7 +43,12 @@ type Command struct {
 	// No need to store this field, we just use it to indicate downloading the command.
 	//
 	// required: false
-	URL *string `json:"url,omitempty"`
+	URL string `json:"url,omitempty"`
+	// Platforms holds all the platforms which this command supports.
+	// Calculated, not saved.
+	//
+	// required: false
+	Platforms []Platform `json:"providers,omitempty"`
 }
 
 // CommandSetting defines the settings a command can have.
