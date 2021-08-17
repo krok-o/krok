@@ -326,7 +326,7 @@ func (ch *CommandsHandler) Create() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to download binary", http.StatusBadRequest, fmt.Errorf("failed to download binary from %s, status: %d", command.URL, resp.StatusCode)))
 		}
 
-		f, hash, err := ch.createCommand(c.Request().Context(), command.Name, resp.Body)
+		f, hash, err := ch.createCommand(c.Request().Context(), command.Name+".tar.gz", resp.Body)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command", http.StatusInternalServerError, err))
 		}
@@ -346,16 +346,6 @@ func (ch *CommandsHandler) Create() echo.HandlerFunc {
 // createCommand takes care of creating the plugin, the file and the hash for the file which
 // was acquired either by uploading a command or downloaded via an external URL.
 func (ch *CommandsHandler) createCommand(ctx context.Context, filename string, src io.Reader) (string, string, error) {
-	dots := strings.Split(filename, ".")
-	if len(dots) == 0 {
-		return "", "", fmt.Errorf("file name does not contain a dot")
-	}
-	name := dots[0]
-	// check if name is already taken:
-	if _, err := ch.CommandStorer.GetByName(ctx, name); err == nil {
-		return "", "", fmt.Errorf("command with name already taken: %w", err)
-	}
-
 	// Destination
 	tmp, err := ioutil.TempDir("", "upload_folder")
 	if err != nil {
