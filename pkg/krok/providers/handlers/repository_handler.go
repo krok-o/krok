@@ -119,6 +119,7 @@ func (r *RepoHandler) Create() echo.HandlerFunc {
 		)
 		if provider, ok = r.PlatformProviders[created.VCS]; !ok {
 			err := fmt.Errorf("vcs provider with id %d is not supported", created.VCS)
+			r.Logger.Debug().Err(err).Msg("vcs not supported")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("unable to find vcs provider", http.StatusBadRequest, err))
 		}
 		if err := provider.CreateHook(ctx, created); err != nil {
