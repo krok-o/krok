@@ -858,6 +858,8 @@ paths:
       summary: Get a specific setting.
   /command/settings/update:
     post:
+      consumes:
+      - application/json
       operationId: updateCommandSetting
       parameters:
       - in: body

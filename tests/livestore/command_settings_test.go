@@ -50,18 +50,25 @@ func TestCommandSettings_Flow(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
 
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	setting, err := cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
 		Key:       "key",
 		Value:     "value",
 		InVault:   false,
 	})
 	assert.NoError(t, err)
+	assert.Equal(t, &models.CommandSetting{
+		ID:        setting.ID,
+		CommandID: c.ID,
+		Key:       "key",
+		Value:     "value",
+		InVault:   false,
+	}, setting)
 	list, err := cp.ListSettings(ctx, c.ID)
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
 
-	setting := list[0]
+	setting = list[0]
 	// Get the setting.
 	getSetting, err := cp.GetSetting(ctx, setting.ID)
 	assert.NoError(t, err)
@@ -128,13 +135,14 @@ func TestCommandSettings_Vault(t *testing.T) {
 	assert.True(t, 0 < c.ID)
 
 	// put setting into vault
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	setting, err := cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
 		Key:       "key",
 		Value:     "confidential_value",
 		InVault:   true,
 	})
 	assert.NoError(t, err)
+	assert.True(t, setting.ID > 0)
 
 	err = v.LoadSecrets()
 	assert.NoError(t, err)
@@ -142,7 +150,7 @@ func TestCommandSettings_Vault(t *testing.T) {
 	list, err := cp.ListSettings(ctx, c.ID)
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
-	setting := list[0]
+	setting = list[0]
 	assert.Equal(t, "confidential_value", setting.Value)
 
 	vKey := fmt.Sprintf("command_setting_%d_%s", c.ID, setting.Key)
@@ -185,18 +193,19 @@ func TestCommandSettings_CascadingDelete(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
 
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	setting, err := cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
 		Key:       "key-5",
 		Value:     "value",
 		InVault:   false,
 	})
 	assert.NoError(t, err)
+	assert.True(t, setting.ID > 0)
 	list, err := cp.ListSettings(ctx, c.ID)
 	assert.NoError(t, err)
 	assert.Len(t, list, 1)
 
-	setting := list[0]
+	setting = list[0]
 
 	err = cp.Delete(ctx, c.ID)
 	assert.NoError(t, err)
@@ -236,21 +245,21 @@ func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
 
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	_, err = cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
 		Key:       "key-5",
 		Value:     "value",
 		InVault:   false,
 	})
 	assert.NoError(t, err)
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	_, err = cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
 		Key:       "key-5",
 		Value:     "value",
 		InVault:   false,
 	})
 	assert.Error(t, err)
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	_, err = cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: 999,
 		Key:       "key-5",
 		Value:     "value",
@@ -297,7 +306,7 @@ func TestCommandSettings_UpdateInVault(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
 
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	_, err = cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
 		Key:       "key",
 		Value:     "value",
@@ -361,7 +370,7 @@ func TestCommandSettings_ErrorOnListIfValueDoesntExistsInVault(t *testing.T) {
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
 
-	err = cp.CreateSetting(ctx, &models.CommandSetting{
+	_, err = cp.CreateSetting(ctx, &models.CommandSetting{
 		CommandID: c.ID,
 		Key:       "key99",
 		Value:     "value",

@@ -91,17 +91,26 @@ func (_m *CommandStorer) Create(ctx context.Context, c *models.Command) (*models
 }
 
 // CreateSetting provides a mock function with given fields: ctx, settings
-func (_m *CommandStorer) CreateSetting(ctx context.Context, settings *models.CommandSetting) error {
+func (_m *CommandStorer) CreateSetting(ctx context.Context, settings *models.CommandSetting) (*models.CommandSetting, error) {
 	ret := _m.Called(ctx, settings)
 
-	var r0 error
-	if rf, ok := ret.Get(0).(func(context.Context, *models.CommandSetting) error); ok {
+	var r0 *models.CommandSetting
+	if rf, ok := ret.Get(0).(func(context.Context, *models.CommandSetting) *models.CommandSetting); ok {
 		r0 = rf(ctx, settings)
 	} else {
-		r0 = ret.Error(0)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*models.CommandSetting)
+		}
 	}
 
-	return r0
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, *models.CommandSetting) error); ok {
+		r1 = rf(ctx, settings)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
 }
 
 // Delete provides a mock function with given fields: ctx, id

@@ -1846,6 +1846,9 @@ any
 POST /rest/api/1/command/settings/update
 ```
 
+#### Consumes
+  * application/json
+
 #### Produces
   * application/json
 

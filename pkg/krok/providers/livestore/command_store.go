@@ -502,7 +502,7 @@ func (s *CommandStore) RemoveCommandRelForRepository(ctx context.Context, comman
 }
 
 // CreateSetting will create a setting for a command.
-func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.CommandSetting) error {
+func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.CommandSetting) (*models.CommandSetting, error) {
 	log := s.Logger.
 		With().
 		Str("func", "CreateSetting").
@@ -510,6 +510,7 @@ func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.Comman
 		Bool("in_vault", setting.InVault).
 		Logger()
 	rollBackValue := ""
+	var returnedID int
 	f := func(tx pgx.Tx) error {
 		value := setting.Value
 		if setting.InVault {
@@ -525,20 +526,17 @@ func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.Comman
 			}
 			rollBackValue = value
 		}
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(command_id, key, value, in_vault) values($1, $2, $3, $4)", commandSettingsTable),
+		query := fmt.Sprintf("insert into %s(command_id, key, value, in_vault) values($1, $2, $3, $4) returning id", commandSettingsTable)
+		rows := tx.QueryRow(ctx, query,
 			setting.CommandID,
 			setting.Key,
 			value,
-			setting.InVault); err != nil {
-			log.Debug().Err(err).Msg("Failed to create setting.")
+			setting.InVault)
+		if err := rows.Scan(&returnedID); err != nil {
+			log.Debug().Err(err).Str("query", query).Msg("Failed to scan row.")
 			return &kerr.QueryError{
 				Err:   err,
-				Query: "insert into command_settings",
-			}
-		} else if tags.RowsAffected() == 0 {
-			return &kerr.QueryError{
-				Err:   kerr.ErrNoRowsAffected,
-				Query: "insert into command_settings",
+				Query: query,
 			}
 		}
 		return nil
@@ -550,17 +548,22 @@ func (s *CommandStore) CreateSetting(ctx context.Context, setting *models.Comman
 		if rollBackValue != "" {
 			if err := s.Vault.LoadSecrets(); err != nil {
 				log.Debug().Err(err).Msg("Failed to load secrets.")
-				return err
+				return nil, err
 			}
 			s.Vault.DeleteSecret(rollBackValue)
 			if err := s.Vault.SaveSecrets(); err != nil {
 				log.Debug().Err(err).Msg("Failed to save secrets.")
-				return err
+				return nil, err
 			}
 		}
-		return err
+		return nil, err
 	}
-	return nil
+	setting, err := s.GetSetting(ctx, returnedID)
+	if err != nil {
+		log.Debug().Err(err).Msg("Failed to get created setting")
+		return nil, err
+	}
+	return setting, nil
 }
 
 // generateUniqueVaultID generates a unique vault key based on the command id and the key name.
@@ -571,7 +574,7 @@ func (s *CommandStore) generateUniqueVaultID(commandID int, key string) string {
 // DeleteSetting takes a
 func (s *CommandStore) DeleteSetting(ctx context.Context, id int) error {
 	log := s.Logger.With().Int("id", id).Logger()
-	// We only delete the values once they successfully been removed from the DB.
+	// We only delete the values once they have successfully been removed from the DB.
 	// If the vault delete would fail that's less of a problem compared to if we
 	// remove the vault value and the database reference remains to it.
 	toDeleteVaultValues := make([]string, 0)

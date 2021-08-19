@@ -32,7 +32,7 @@ type CommandStorer interface {
 
 	// Settings
 
-	CreateSetting(ctx context.Context, settings *models.CommandSetting) error
+	CreateSetting(ctx context.Context, settings *models.CommandSetting) (*models.CommandSetting, error)
 	DeleteSetting(ctx context.Context, id int) error
 	ListSettings(ctx context.Context, commandID int) ([]*models.CommandSetting, error)
 	GetSetting(ctx context.Context, id int) (*models.CommandSetting, error)

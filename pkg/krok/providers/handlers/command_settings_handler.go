@@ -180,7 +180,7 @@ func (ch *CommandSettingsHandler) Get() echo.HandlerFunc {
 // swagger:operation POST /command/settings/update updateCommandSetting
 // Updates a given command setting.
 // ---
-// produces:
+// consumes:
 // - application/json
 // parameters:
 // - name: setting
@@ -221,6 +221,8 @@ func (ch *CommandSettingsHandler) Update() echo.HandlerFunc {
 // swagger:operation POST /command/settings/update updateCommandSetting
 // Create a new command setting.
 // ---
+// consumes:
+// - application/json
 // produces:
 // - application/json
 // parameters:
@@ -249,11 +251,12 @@ func (ch *CommandSettingsHandler) Create() echo.HandlerFunc {
 		}
 
 		ctx := c.Request().Context()
-		if err := ch.CommandStorer.CreateSetting(ctx, setting); err != nil {
+		setting, err := ch.CommandStorer.CreateSetting(ctx, setting)
+		if err != nil {
 			ch.Logger.Debug().Err(err).Msg("Command setting create failed.")
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command setting", http.StatusInternalServerError, err))
 		}
 
-		return c.NoContent(http.StatusCreated)
+		return c.JSON(http.StatusCreated, setting)
 	}
 }
