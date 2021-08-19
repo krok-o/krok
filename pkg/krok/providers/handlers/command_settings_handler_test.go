@@ -31,9 +31,17 @@ func TestCommandSettingsHandler_BasicFlow(t *testing.T) {
 			Key:       "key",
 			Value:     "value",
 			InVault:   false,
-		}).Return(nil)
+		}).Return(&models.CommandSetting{
+			ID:        1,
+			CommandID: 1,
+			Key:       "key",
+			Value:     "value",
+			InVault:   false,
+		}, nil)
 
 		commandSettingsPost := `{"command_id" : 1, "key" : "key", "value": "value", "in_vault": false}`
+		commandSettingsReturned := `{"id":1,"command_id":1,"key":"key","value":"value","in_vault":false}
+`
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/commands/settings", strings.NewReader(commandSettingsPost))
 		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
@@ -43,6 +51,7 @@ func TestCommandSettingsHandler_BasicFlow(t *testing.T) {
 		err = csh.Create()(c)
 		assert.NoError(tt, err)
 		assert.Equal(tt, http.StatusCreated, rec.Code)
+		assert.Equal(tt, commandSettingsReturned, rec.Body.String())
 	})
 	t.Run("delete normal flow", func(tt *testing.T) {
 		token, err := generateTestToken("test@email.com")
