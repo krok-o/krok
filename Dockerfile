@@ -9,7 +9,6 @@ COPY --from=build /krok /app/
 
 EXPOSE 9998
 
-RUN mkdir -p /tmp/krok/plugins
 RUN mkdir -p /tmp/krok/vault
 WORKDIR /app/
 ENTRYPOINT [ "/app/krok" ]

@@ -22,7 +22,6 @@ import (
 
 func TestCommandSettings_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandSettings_Create")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
@@ -42,10 +41,8 @@ func TestCommandSettings_Flow(t *testing.T) {
 		Name:         "Test_Create_Setting_1",
 		Schedule:     "test-schedule-setting-1",
 		Repositories: nil,
-		Filename:     "test-filename-setting-1",
-		Location:     location,
-		Hash:         "settings-hash1",
 		Enabled:      true,
+		Image:        "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -126,10 +123,8 @@ func TestCommandSettings_Vault(t *testing.T) {
 	c, err := cp.Create(ctx, &models.Command{
 		Name:     "Test_Relationship_Vault",
 		Schedule: "Test_Relationship_Vault-test-schedule",
-		Filename: "Test_Relationship_Vault-test-filename-create",
-		Location: location,
-		Hash:     "Test_Relationship_Vault-hash1",
 		Enabled:  false,
+		Image:    "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -165,7 +160,6 @@ func TestCommandSettings_Vault(t *testing.T) {
 
 func TestCommandSettings_CascadingDelete(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandSettings_CascadingDelete")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
@@ -185,10 +179,8 @@ func TestCommandSettings_CascadingDelete(t *testing.T) {
 		Name:         "Test_CascadeDelete_Setting_1",
 		Schedule:     "test-schedule-setting-1",
 		Repositories: nil,
-		Filename:     "test-CascadeDelete",
-		Location:     location,
-		Hash:         "settings-CascadeDelete",
 		Enabled:      true,
+		Image:        "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -217,7 +209,6 @@ func TestCommandSettings_CascadingDelete(t *testing.T) {
 
 func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandSettings_CantCreateSameKeyAndCommandCombination")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
@@ -237,10 +228,8 @@ func TestCommandSettings_CantCreateSameKeyAndCommandCombination(t *testing.T) {
 		Name:         "Test_CreateError_Setting_1",
 		Schedule:     "test-schedule-setting-1",
 		Repositories: nil,
-		Filename:     "test-CreateError",
-		Location:     location,
-		Hash:         "settings-CreateError",
 		Enabled:      true,
+		Image:        "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -298,10 +287,8 @@ func TestCommandSettings_UpdateInVault(t *testing.T) {
 		Name:         "Test_UpdateVault_Setting_1",
 		Schedule:     "test-schedule-setting-1",
 		Repositories: nil,
-		Filename:     "test-filename-update-vault-1",
-		Location:     location,
-		Hash:         "settings-update-vault",
 		Enabled:      true,
+		Image:        "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -362,10 +349,8 @@ func TestCommandSettings_ErrorOnListIfValueDoesntExistsInVault(t *testing.T) {
 		Name:         "Test_Error_On_No_Value_Setting_1",
 		Schedule:     "test-schedule-setting-1",
 		Repositories: nil,
-		Filename:     "Test_Error_On_No_Value_Setting_2",
-		Location:     location,
-		Hash:         "settings-update-vault-2",
 		Enabled:      true,
+		Image:        "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)

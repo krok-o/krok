@@ -1,15 +1,8 @@
 package handlers
 
 import (
-	"context"
 	"errors"
-	"fmt"
-	"io"
-	"io/ioutil"
 	"net/http"
-	"os"
-	"path/filepath"
-	"strings"
 
 	"github.com/labstack/echo/v4"
 	"github.com/rs/zerolog"
@@ -23,7 +16,6 @@ import (
 type CommandsHandlerDependencies struct {
 	Logger        zerolog.Logger
 	CommandStorer providers.CommandStorer
-	Plugins       providers.Plugins
 }
 
 // CommandsHandler is a handler taking care of commands related api calls.
@@ -89,11 +81,6 @@ func (ch *CommandsHandler) Delete() echo.HandlerFunc {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to delete command", http.StatusBadRequest, err))
 		}
 
-		// Delete from storage
-		if err := ch.Plugins.Delete(ctx, command.Name); err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to delete file from permanent storage.")
-			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to delete file from permanent storage", http.StatusInternalServerError, err))
-		}
 		return c.NoContent(http.StatusOK)
 	}
 }
@@ -187,80 +174,6 @@ func (ch *CommandsHandler) Get() echo.HandlerFunc {
 	}
 }
 
-// Upload a command. To set up anything for the command, like schedules etc,
-// the command has to be edited. We don't support uploading the same thing twice.
-// If the command binary needs to be updated, delete the command and upload the
-// new binary.
-// swagger:operation PUT /command uploadCommand
-// Upload a command. To set up anything for the command, like schedules etc,
-// the command has to be edited. We don't support uploading the same thing twice.
-// If the command binary needs to be updated, delete the command and upload the
-// new binary.
-// ---
-// produces:
-// - application/json
-// responses:
-//   '201':
-//     description: 'in case of successful file upload'
-//     schema:
-//       "$ref": "#/definitions/Command"
-//   '400':
-//     description: 'invalid file format or command already exists'
-//     schema:
-//       "$ref": "#/responses/Message"
-//   '500':
-//     description: 'failed to upload file, create plugin, create command or copy operations'
-//     schema:
-//       "$ref": "#/responses/Message"
-func (ch *CommandsHandler) Upload() echo.HandlerFunc {
-	return func(c echo.Context) error {
-		file, err := c.FormFile("file")
-		if err != nil {
-			return err
-		}
-
-		dots := strings.Split(file.Filename, ".")
-		if len(dots) == 0 {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("file name does not contain a dot", http.StatusBadRequest, err))
-		}
-		name := dots[0]
-		ctx := c.Request().Context()
-		// check if name is already taken:
-		if _, err := ch.CommandStorer.GetByName(ctx, name); err == nil {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("command with name already taken", http.StatusBadRequest, err))
-		}
-
-		src, err := file.Open()
-		if err != nil {
-			return err
-		}
-		defer func() {
-			if err := src.Close(); err != nil {
-				ch.Logger.Debug().Err(err).Msg("Failed to close src.")
-			}
-		}()
-		f, hash, err := ch.createCommand(c.Request().Context(), file.Filename, src)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command", http.StatusInternalServerError, err))
-		}
-
-		command := &models.Command{
-			Name:     name,
-			Filename: filepath.Base(f),
-			Location: filepath.Dir(f),
-			Hash:     hash,
-			Enabled:  true,
-		}
-
-		command, err = ch.CommandStorer.Create(ctx, command)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command", http.StatusInternalServerError, err))
-		}
-
-		return c.JSON(http.StatusCreated, command)
-	}
-}
-
 // Create a command. This endpoint supports setting up a command with
 // various settings including a URL field from which to download a command.
 // This could be anything as long as it's accessible.
@@ -288,7 +201,7 @@ func (ch *CommandsHandler) Upload() echo.HandlerFunc {
 //     schema:
 //       "$ref": "#/responses/Message"
 //   '500':
-//     description: 'failed to download file, create plugin, create command or copy operations'
+//     description: 'create command failed'
 //     schema:
 //       "$ref": "#/responses/Message"
 func (ch *CommandsHandler) Create() echo.HandlerFunc {
@@ -298,84 +211,23 @@ func (ch *CommandsHandler) Create() echo.HandlerFunc {
 			ch.Logger.Debug().Err(err).Msg("Failed to bind command.")
 			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to bind command", http.StatusBadRequest, err))
 		}
-		if command.URL == "" {
-			ch.Logger.Error().Msg("In case of Create, a URL must be provided to download the command form.")
-			return c.JSON(http.StatusBadRequest, kerr.APIError("URL not defined", http.StatusBadRequest, errors.New("url not defined")))
-		}
 		if command.Name == "" {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("name must be defined", http.StatusBadRequest, errors.New("name must be defined")))
+		}
+		if command.Image == "" {
+			return c.JSON(http.StatusBadRequest, kerr.APIError("image must be defined", http.StatusBadRequest, errors.New("image must be defined")))
 		}
 		// check if name is already taken:
 		if _, err := ch.CommandStorer.GetByName(c.Request().Context(), command.Name); err == nil {
 			return c.JSON(http.StatusBadRequest, kerr.APIError("command with name already taken", http.StatusBadRequest, err))
 		}
-		req, err := http.NewRequest("GET", command.URL, nil)
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to create HTTP request", http.StatusBadRequest, fmt.Errorf("failed to create HTTP request for %s, error: %w", command.URL, err)))
-		}
-		resp, err := ch.Client.Do(req.WithContext(c.Request().Context()))
-		if err != nil {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to download binary", http.StatusBadRequest, fmt.Errorf("failed to download binary from %s, error: %w", command.URL, err)))
-		}
-		defer func() {
-			if err := resp.Body.Close(); err != nil {
-				fmt.Println("Failed to close body reader.")
-			}
-		}()
-		if resp.StatusCode != http.StatusOK {
-			return c.JSON(http.StatusBadRequest, kerr.APIError("failed to download binary", http.StatusBadRequest, fmt.Errorf("failed to download binary from %s, status: %d", command.URL, resp.StatusCode)))
-		}
-
-		f, hash, err := ch.createCommand(c.Request().Context(), command.Name+".tar.gz", resp.Body)
-		if err != nil {
-			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command", http.StatusInternalServerError, err))
-		}
-		command.Filename = filepath.Base(f)
-		command.Location = filepath.Dir(f)
-		command.Hash = hash
-		command.Enabled = true
-		command, err = ch.CommandStorer.Create(c.Request().Context(), command)
+		command, err := ch.CommandStorer.Create(c.Request().Context(), command)
 		if err != nil {
 			return c.JSON(http.StatusInternalServerError, kerr.APIError("failed to create command", http.StatusInternalServerError, err))
 		}
 
 		return c.JSON(http.StatusCreated, command)
 	}
-}
-
-// createCommand takes care of creating the plugin, the file and the hash for the file which
-// was acquired either by uploading a command or downloaded via an external URL.
-func (ch *CommandsHandler) createCommand(ctx context.Context, filename string, src io.Reader) (string, string, error) {
-	// Destination
-	tmp, err := ioutil.TempDir("", "upload_folder")
-	if err != nil {
-		return "", "", fmt.Errorf("failed to create upload folder: %w", err)
-	}
-	defer func() {
-		if err := os.RemoveAll(tmp); err != nil {
-			ch.Logger.Debug().Err(err).Msg("Warning, failed to clean up temporary folder. Please do that manually.")
-		}
-	}()
-	dst, err := os.Create(filepath.Join(tmp, filename))
-	if err != nil {
-		return "", "", fmt.Errorf("failed to create upload file: %w", err)
-	}
-	defer func() {
-		if err := dst.Close(); err != nil {
-			ch.Logger.Debug().Err(err).Msg("Failed to close destination file.")
-		}
-	}()
-
-	if _, err = io.Copy(dst, src); err != nil {
-		return "", "", fmt.Errorf("failed to copy over uploaded file: %w", err)
-	}
-
-	// Create the file first, then the command.
-	f, hash, err := ch.Plugins.Create(ctx, dst.Name())
-	if err != nil {
-		return "", "", fmt.Errorf("failed to create plugin: %w", err)
-	}
-	return f, hash, nil
 }
 
 // Update updates a command.

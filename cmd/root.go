@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"os"
 
+	_ "github.com/lib/pq"
 	"github.com/rs/zerolog"
 	"github.com/spf13/cobra"
 	"golang.org/x/sync/errgroup"
 
 	"github.com/krok-o/krok/pkg/krok/providers/ready"
-	"github.com/krok-o/krok/pkg/krok/providers/tar"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/krok/providers/auth"
@@ -24,7 +24,6 @@ import (
 	"github.com/krok-o/krok/pkg/krok/providers/handlers"
 	"github.com/krok-o/krok/pkg/krok/providers/livestore"
 	"github.com/krok-o/krok/pkg/krok/providers/mailgun"
-	"github.com/krok-o/krok/pkg/krok/providers/plugins"
 	"github.com/krok-o/krok/pkg/krok/providers/vault"
 	"github.com/krok-o/krok/pkg/models"
 	"github.com/krok-o/krok/pkg/server"
@@ -42,7 +41,6 @@ var (
 		debug     bool
 		server    server.Config
 		store     livestore.Config
-		plugins   plugins.Config
 		email     mailgun.Config
 		fileVault filevault.Config
 		executer  executor.Config
@@ -74,9 +72,6 @@ func init() {
 	// Email
 	flag.StringVar(&krokArgs.email.Domain, "email-domain", "", "--email-domain krok.com")
 	flag.StringVar(&krokArgs.email.APIKey, "email-apikey", "", "--email-apikey ********")
-
-	// Plugins
-	flag.StringVar(&krokArgs.plugins.Location, "plugin-location", "/tmp/krok/plugins", "--plugin-location /tmp/krok/plugins")
 
 	// VaultStorer config
 	flag.StringVar(&krokArgs.fileVault.Location, "file-vault-location", "/tmp/krok/vault", "--file-vault-location /tmp/krok/vault")
@@ -203,22 +198,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	})
 
 	// ************************
-	// Set up the plugin
-	// ************************
-	tarer := tar.NewTarer(tar.Dependencies{
-		Logger: log,
-	})
-
-	pw := plugins.NewPluginsProvider(krokArgs.plugins, plugins.Dependencies{
-		Logger: log,
-		Store:  commandStore,
-		Tar:    tarer,
-	})
-	if err != nil {
-		log.Fatal().Err(err).Msg("Failed to start command watcher.")
-	}
-
-	// ************************
 	// Set up platforms
 	// ************************
 
@@ -288,7 +267,6 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 	commandHandler := handlers.NewCommandsHandler(handlers.CommandsHandlerDependencies{
 		CommandStorer: commandStore,
 		Logger:        log,
-		Plugins:       pw,
 	})
 
 	commandSettingsHandler := handlers.NewCommandSettingsHandler(handlers.CommandSettingsHandlerDependencies{

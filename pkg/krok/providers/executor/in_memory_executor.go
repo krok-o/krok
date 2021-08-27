@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"os/exec"
-	"path/filepath"
 	"sync"
 	"time"
 
@@ -117,11 +116,11 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			log.Debug().Err(err).Msg("Failed to create run for command")
 			return err
 		}
-		location := filepath.Join(c.Location, c.Name)
+		//location := filepath.Join(c.Location, c.Name)
 		// run the plugin, which should be an executable.
-		cmd := exec.Command(location, args...)
+		cmd := exec.Command("", args...)
 		cmds = append(cmds, cmd)
-		log.Debug().Str("location", location).Msg("Preparing to run command at location...")
+		log.Debug().Str("location", "").Msg("Preparing to run command at location...")
 		// this needs its own context, since the context from above is already cancelled.
 		go ime.runCommand(cmd, commandRun.ID, []byte(event.Payload))
 	}

@@ -1,12 +1,9 @@
 package handlers
 
 import (
-	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io/ioutil"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -77,12 +74,9 @@ func TestCommandsHandler_DeleteCommand(t *testing.T) {
 		},
 	}
 	logger := zerolog.New(os.Stderr)
-	mp := &mocks.Plugins{}
-	mp.On("Delete", mock.Anything, "test").Return(nil)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
 		Logger:        logger,
 		CommandStorer: mcs,
-		Plugins:       mp,
 	})
 
 	t.Run("delete normal flow", func(tt *testing.T) {
@@ -147,10 +141,8 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 					VCS:  1,
 				},
 			},
-			Filename: "filename",
-			Location: "location",
-			Hash:     "hash",
-			Enabled:  true,
+			Enabled: true,
+			Image:   "krokhook/slack-notification:v0.0.1",
 		},
 	}
 	logger := zerolog.New(os.Stderr)
@@ -163,7 +155,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		commandExpected := `{"name":"test-command","id":0,"schedule":"* * * * *","repositories":[{"name":"test-repo","id":0,"url":"https://google.com","vcs":1}],"filename":"filename","location":"location","hash":"hash","enabled":true}
+		commandExpected := `{"name":"test-command","id":0,"schedule":"* * * * *","repositories":[{"name":"test-repo","id":0,"url":"https://google.com","vcs":1}],"image":"krokhook/slack-notification:v0.0.1","enabled":true}
 `
 
 		e := echo.New()
@@ -220,19 +212,15 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 				Name:     "test-command1",
 				ID:       0,
 				Schedule: "10 * * * *",
-				Filename: "filename1",
-				Location: "location1",
-				Hash:     "hash1",
 				Enabled:  true,
+				Image:    "krokhook/slack-notification:v0.0.1",
 			},
 			{
 				Name:     "test-command2",
 				ID:       1,
 				Schedule: "15 * * * *",
-				Filename: "filename2",
-				Location: "location2",
-				Hash:     "hash2",
 				Enabled:  true,
+				Image:    "krokhook/hugo-builder:v0.0.1",
 			},
 		},
 	}
@@ -246,7 +234,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","filename":"filename1","location":"location1","hash":"hash1","enabled":true},{"name":"test-command2","id":1,"schedule":"15 * * * *","filename":"filename2","location":"location2","hash":"hash2","enabled":true}]
+		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true},{"name":"test-command2","id":1,"schedule":"15 * * * *","image":"krokhook/hugo-builder:v0.0.1","enabled":true}]
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
@@ -265,7 +253,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		assert.NoError(tt, err)
 
 		listOpts := `{"name": "1"}`
-		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","filename":"filename1","location":"location1","hash":"hash1","enabled":true}]
+		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true}]
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", strings.NewReader(listOpts))
@@ -294,8 +282,8 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		commandPost := `{"name":"test-command1","id":0,"schedule":"10 * * * *","filename":"filename1","location":"location1","hash":"hash1","enabled":true}`
-		commandExpected := `{"name":"test-command1","id":0,"schedule":"10 * * * *","filename":"filename1","location":"location1","hash":"hash1","enabled":true}
+		commandPost := `{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true}`
+		commandExpected := `{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/command/update", strings.NewReader(commandPost))
@@ -340,10 +328,8 @@ func TestCommandsHandler_AddCommandRelForRepository(t *testing.T) {
 					VCS:  1,
 				},
 			},
-			Filename: "filename",
-			Location: "location",
-			Hash:     "hash",
-			Enabled:  true,
+			Enabled: true,
+			Image:   "krokhook/slack-notification:v0.0.1",
 		},
 	}
 	logger := zerolog.New(os.Stderr)
@@ -433,10 +419,8 @@ func TestCommandsHandler_RemoveCommandRelForRepository(t *testing.T) {
 					VCS:  1,
 				},
 			},
-			Filename: "filename",
-			Location: "location",
-			Hash:     "hash",
-			Enabled:  true,
+			Enabled: true,
+			Image:   "krokhook/slack-notification:v0.0.1",
 		},
 	}
 	logger := zerolog.New(os.Stderr)
@@ -526,10 +510,8 @@ func TestCommandsHandler_AddCommandRelForPlatform(t *testing.T) {
 				VCS:  1,
 			},
 		},
-		Filename: "filename",
-		Location: "location",
-		Hash:     "hash",
-		Enabled:  true,
+		Enabled: true,
+		Image:   "krokhook/slack-notification:v0.0.1",
 	}, nil)
 	logger := zerolog.New(os.Stderr)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
@@ -637,10 +619,8 @@ func TestCommandsHandler_RemoveCommandRelForPlatform(t *testing.T) {
 				VCS:  1,
 			},
 		},
-		Filename: "filename",
-		Location: "location",
-		Hash:     "hash",
-		Enabled:  true,
+		Enabled: true,
+		Image:   "krokhook/slack-notification:v0.0.1",
 	}, nil)
 	logger := zerolog.New(os.Stderr)
 	ch := NewCommandsHandler(CommandsHandlerDependencies{
@@ -718,7 +698,7 @@ func TestCommandsHandler_RemoveCommandRelForPlatform(t *testing.T) {
 
 func TestCommandsHandler_CreateCommand(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	t.Run("successful file download", func(tt *testing.T) {
+	t.Run("successful create", func(tt *testing.T) {
 		mcs := &mocks.CommandStorer{}
 		mcs.On("GetByName", mock.Anything, "test-name").Return(nil, kerr.ErrNotFound)
 		content, err := ioutil.ReadFile(filepath.Join("testdata", "test.tar.gz"))
@@ -728,34 +708,26 @@ func TestCommandsHandler_CreateCommand(t *testing.T) {
 		}))
 		defer ts.Close()
 		mcs.On("Create", mock.Anything, &models.Command{
-			Name:     "test-name",
-			ID:       0,
-			Filename: "test",
-			Location: ".",
-			Hash:     "hash",
-			Enabled:  true,
-			URL:      ts.URL,
+			Name:    "test-name",
+			ID:      0,
+			Enabled: true,
+			Image:   "krokhook/slack-notification:v0.0.1",
 		}).Return(&models.Command{
-			Name:     "test-name",
-			ID:       1,
-			Filename: "test",
-			Location: ".",
-			Hash:     "hash",
-			Enabled:  true,
+			Name:    "test-name",
+			ID:      1,
+			Enabled: true,
+			Image:   "krokhook/slack-notification:v0.0.1",
 		}, nil)
-		mp := &mocks.Plugins{}
-		mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
 		ch := CommandsHandler{
 			CommandsHandlerDependencies: CommandsHandlerDependencies{
 				Logger:        logger,
 				CommandStorer: mcs,
-				Plugins:       mp,
 			},
 			Client: http.DefaultClient,
 		}
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
-		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, ts.URL)
+		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s", "image": "krokhook/slack-notification:v0.0.1", "enabled": true}`, ts.URL)
 
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
@@ -769,19 +741,17 @@ func TestCommandsHandler_CreateCommand(t *testing.T) {
 	})
 	t.Run("command already exists", func(tt *testing.T) {
 		mcs := &mocks.CommandStorer{}
-		mp := &mocks.Plugins{}
 		mcs.On("GetByName", mock.Anything, "test-name").Return(&models.Command{Name: "test-name"}, nil)
 		ch := CommandsHandler{
 			CommandsHandlerDependencies: CommandsHandlerDependencies{
 				Logger:        logger,
 				CommandStorer: mcs,
-				Plugins:       mp,
 			},
 			Client: http.DefaultClient,
 		}
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
-		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, "dummy")
+		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s", "image": "image"}`, "dummy")
 
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
@@ -796,137 +766,5 @@ func TestCommandsHandler_CreateCommand(t *testing.T) {
 		assert.NoError(tt, err)
 		assert.Equal(tt, `{"code":400,"message":"command with name already taken","error":"unexpected error"}
 `, string(body))
-	})
-	t.Run("failed to create command", func(tt *testing.T) {
-		mcs := &mocks.CommandStorer{}
-		mp := &mocks.Plugins{}
-		mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
-		mcs.On("GetByName", mock.Anything, "test-name").Return(nil, kerr.ErrNotFound)
-		content, err := ioutil.ReadFile(filepath.Join("testdata", "test.tar.gz"))
-		assert.NoError(t, err)
-		ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintln(w, string(content))
-		}))
-		mcs.On("Create", mock.Anything, &models.Command{
-			Name:     "test-name",
-			ID:       0,
-			Filename: "test",
-			Location: ".",
-			Hash:     "hash",
-			Enabled:  true,
-			URL:      ts.URL,
-		}).Return(nil, errors.New("nope"))
-		ch := CommandsHandler{
-			CommandsHandlerDependencies: CommandsHandlerDependencies{
-				Logger:        logger,
-				CommandStorer: mcs,
-				Plugins:       mp,
-			},
-			Client: http.DefaultClient,
-		}
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, ts.URL)
-
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		err = ch.Create()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusInternalServerError, rec.Result().StatusCode)
-		body, err := ioutil.ReadAll(rec.Body)
-		assert.NoError(tt, err)
-		assert.Equal(tt, `{"code":500,"message":"failed to create command","error":"nope"}
-`, string(body))
-	})
-	t.Run("invalid url", func(tt *testing.T) {
-		mcs := &mocks.CommandStorer{}
-		mp := &mocks.Plugins{}
-		mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
-		mcs.On("GetByName", mock.Anything, "test-name").Return(nil, kerr.ErrNotFound)
-		ch := CommandsHandler{
-			CommandsHandlerDependencies: CommandsHandlerDependencies{
-				Logger:        logger,
-				CommandStorer: mcs,
-				Plugins:       mp,
-			},
-			Client: http.DefaultClient,
-		}
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-		commandPost := fmt.Sprintf(`{"name" : "test-name", "url" : "%s"}`, "dummy")
-
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPost, "/command", strings.NewReader(commandPost))
-		req.Header.Set(echo.HeaderContentType, echo.MIMEApplicationJSON)
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
-		rec := httptest.NewRecorder()
-		c := e.NewContext(req, rec)
-		err = ch.Create()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusBadRequest, rec.Result().StatusCode)
-		body, err := ioutil.ReadAll(rec.Body)
-		assert.NoError(tt, err)
-		assert.Equal(tt, `{"code":400,"message":"failed to download binary","error":"failed to download binary from dummy, error: Get \"dummy\": unsupported protocol scheme \"\""}
-`, string(body))
-	})
-}
-
-func TestCommandsHandler_Upload(t *testing.T) {
-	mcs := &mocks.CommandStorer{}
-	mcs.On("GetByName", mock.Anything, "test").Return(nil, kerr.ErrNotFound)
-	mcs.On("Create", mock.Anything, &models.Command{
-		Name:     "test",
-		ID:       0,
-		Filename: "test",
-		Location: ".",
-		Hash:     "hash",
-		Enabled:  true,
-	}).Return(&models.Command{
-		Name:     "test",
-		ID:       1,
-		Filename: "test",
-		Location: ".",
-		Hash:     "hash",
-		Enabled:  true,
-	}, nil)
-	mp := &mocks.Plugins{}
-	mp.On("Create", mock.Anything, mock.AnythingOfType("string")).Return("test", "hash", nil)
-	logger := zerolog.New(os.Stderr)
-	ch := NewCommandsHandler(CommandsHandlerDependencies{
-		Logger:        logger,
-		CommandStorer: mcs,
-		Plugins:       mp,
-	})
-	content, err := ioutil.ReadFile(filepath.Join("testdata", "test.tar.gz"))
-	assert.NoError(t, err)
-	t.Run("successful file upload", func(tt *testing.T) {
-		body := new(bytes.Buffer)
-		writer := multipart.NewWriter(body)
-		err = writer.WriteField("bu", "HFL")
-		assert.NoError(tt, err)
-		err = writer.WriteField("wk", "10")
-		assert.NoError(tt, err)
-		part, _ := writer.CreateFormFile("file", "test.tar.gz")
-		_, err = part.Write(content)
-		assert.NoError(tt, err)
-		err = writer.Close() // <<< important part
-		assert.NoError(tt, err)
-
-		token, err := generateTestToken("test@email.com")
-		assert.NoError(tt, err)
-
-		e := echo.New()
-		req := httptest.NewRequest(http.MethodPut, "/endpoint", body)
-		req.Header.Set("Content-Type", writer.FormDataContentType()) // <<< important part
-		rec := httptest.NewRecorder()
-		req.Header.Set(echo.HeaderAuthorization, "Bearer "+token)
-		c := e.NewContext(req, rec)
-		err = ch.Upload()(c)
-		assert.NoError(tt, err)
-		assert.Equal(tt, http.StatusCreated, rec.Result().StatusCode)
 	})
 }

@@ -2,7 +2,6 @@ package providers
 
 import (
 	"context"
-	"io"
 
 	"github.com/krok-o/krok/pkg/models"
 )
@@ -24,11 +23,6 @@ type CommandStorer interface {
 	AddCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error
 	// RemoveCommandRelForRepository remove a relation to a repository for a command.
 	RemoveCommandRelForRepository(ctx context.Context, commandID int, repositoryID int) error
-
-	// Lock file functionality to prevent processing multiple commands simultaneously.
-
-	// AcquireLock creates a lock entry for a name
-	AcquireLock(ctx context.Context, name string) (io.Closer, error)
 
 	// Settings
 

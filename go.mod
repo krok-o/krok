@@ -16,6 +16,7 @@ require (
 	github.com/jackc/pgx/v4 v4.9.2
 	github.com/kr/text v0.2.0 // indirect
 	github.com/labstack/echo/v4 v4.1.17
+	github.com/lib/pq v1.10.2 // indirect
 	github.com/mailgun/mailgun-go v2.0.0+incompatible
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.14.2 // indirect
