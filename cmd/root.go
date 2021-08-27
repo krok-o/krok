@@ -190,7 +190,7 @@ func runKrokCmd(cmd *cobra.Command, args []string) {
 		Connector:    connector,
 	})
 
-	ex := executor.NewInMemoryExecuter(krokArgs.executer, executor.Dependencies{
+	ex := executor.NewInMemoryExecutor(krokArgs.executer, executor.Dependencies{
 		Logger:        log,
 		CommandRuns:   commandRunStore,
 		CommandStorer: commandStore,

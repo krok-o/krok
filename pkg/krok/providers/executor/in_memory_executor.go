@@ -1,14 +1,17 @@
 package executor
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"os/exec"
 	"sync"
 	"time"
 
+	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/api/types/network"
+	"github.com/docker/docker/client"
+	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/rs/zerolog"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -29,25 +32,25 @@ type Dependencies struct {
 	Clock         providers.Clock
 }
 
-// InMemoryExecuter defines an Executor which runs commands
+// InMemoryExecutor defines an Executor which runs commands
 // alongside Krok. It saves runs in a map and constantly updates it.
 // Cancelling will go over all processes belonging to that run
 // and kill them.
-type InMemoryExecuter struct {
+type InMemoryExecutor struct {
 	Config
 	Dependencies
 
-	// List of os processes which represent one command each.
-	runs     map[int][]*exec.Cmd
+	// List of container ids which represent one command each.
+	runs     map[int][]string
 	runsLock sync.RWMutex
 }
 
-// NewInMemoryExecuter creates a new InMemoryExecuter which will hold all runs in its memory.
+// NewInMemoryExecutor creates a new InMemoryExecutor which will hold all runs in its memory.
 // In case of a crash, human intervention will be required.
 // TODO: Later, save runs in db with the process id to cancel so Krok can pick up runs again.
-func NewInMemoryExecuter(cfg Config, deps Dependencies) *InMemoryExecuter {
-	m := make(map[int][]*exec.Cmd)
-	return &InMemoryExecuter{
+func NewInMemoryExecutor(cfg Config, deps Dependencies) *InMemoryExecutor {
+	m := make(map[int][]string)
+	return &InMemoryExecutor{
 		Config:       cfg,
 		Dependencies: deps,
 		runs:         m,
@@ -55,7 +58,7 @@ func NewInMemoryExecuter(cfg Config, deps Dependencies) *InMemoryExecuter {
 }
 
 // CreateRun creates a run for an event.
-func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event, commands []*models.Command) error {
+func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event, commands []*models.Command) error {
 	log := ime.Logger.
 		With().
 		Int("event_id", event.ID).
@@ -72,7 +75,7 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 	log = log.With().Str("platform", platform.Name).Logger()
 
 	log.Info().Msg("Starting run")
-	cmds := make([]*exec.Cmd, 0)
+	containers := make([]string, 0)
 	// Start these here with the runner go routine
 	for _, c := range commands {
 		if !c.Enabled {
@@ -116,23 +119,24 @@ func (ime *InMemoryExecuter) CreateRun(ctx context.Context, event *models.Event,
 			log.Debug().Err(err).Msg("Failed to create run for command")
 			return err
 		}
-		//location := filepath.Join(c.Location, c.Name)
-		// run the plugin, which should be an executable.
-		cmd := exec.Command("", args...)
-		cmds = append(cmds, cmd)
-		log.Debug().Str("location", "").Msg("Preparing to run command at location...")
+		log.Debug().Str("image", c.Image).Msg("Preparing to run command...")
 		// this needs its own context, since the context from above is already cancelled.
-		go ime.runCommand(cmd, commandRun.ID, []byte(event.Payload))
+		// eventually return the launched container name in a channel
+		// this needs to be concurrent because the image pull might take a long time.
+		containerID := ime.startContainer(c.Image, c.Name, commandRun.ID, []byte(event.Payload))
+		if containerID != "" {
+			containers = append(containers, containerID)
+		}
 	}
 	ime.runsLock.Lock()
-	ime.runs[event.ID] = cmds
+	ime.runs[event.ID] = containers
 	ime.runsLock.Unlock()
 	return nil
 }
 
 // runCommand takes a single command and executes it, waiting for it to finish,
 // or time out. Either way, it will update the corresponding command row.
-func (ime *InMemoryExecuter) runCommand(cmd *exec.Cmd, commandRunID int, payload []byte) {
+func (ime *InMemoryExecutor) startContainer(image string, commandName string, commandRunID int, payload []byte) string {
 	done := make(chan error, 1)
 	update := func(status string, outcome string) {
 		ime.Logger.Debug().Int("command_run_id", commandRunID).Str("status", status).Str("outcome", outcome).Msg("Updating command run entry.")
@@ -140,50 +144,82 @@ func (ime *InMemoryExecuter) runCommand(cmd *exec.Cmd, commandRunID int, payload
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
 		}
 	}
-	buffer := bytes.Buffer{}
-	buffer.Write(payload)
-	cmd.Stdin = &buffer
-	stdErr := bytes.Buffer{}
-	cmd.Stderr = &stdErr
-	stdOut := bytes.Buffer{}
-	cmd.Stdout = &stdOut
 
-	if err := cmd.Start(); err != nil {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
 		update("failed", err.Error())
-		ime.Logger.Debug().Err(err).Msg("Failed to start command.")
-		return
+		ime.Logger.Debug().Err(err).Msg("Failed to create docker client.")
+		return ""
+	}
+
+	cont, err := cli.ContainerCreate(context.Background(), &container.Config{
+		AttachStdin:  true,
+		AttachStdout: true,
+		AttachStderr: true,
+		Image:        image,
+	}, &container.HostConfig{
+		AutoRemove: true,
+	}, &network.NetworkingConfig{}, &specs.Platform{}, commandName+"_container")
+	if err != nil {
+		update("failed", err.Error())
+		ime.Logger.Debug().Err(err).Strs("warnings", cont.Warnings).Msg("Failed to create container.")
+		return ""
+	}
+
+	// send payload to the waiting command
+	c, _ := cli.ContainerAttach(context.Background(), cont.ID, types.ContainerAttachOptions{
+		Stdin: true,
+	})
+	if _, err := c.Conn.Write(payload); err != nil {
+		update("failed", err.Error())
+		return ""
+	}
+
+	if err := cli.ContainerStart(context.Background(), cont.ID, types.ContainerStartOptions{}); err != nil {
+		update("failed", err.Error())
+		return ""
 	}
 
 	go func() {
-		done <- cmd.Wait()
+		exit, err := cli.ContainerWait(context.Background(), cont.ID, container.WaitConditionNotRunning)
+		select {
+		case e := <-err:
+			done <- e
+		case e := <-exit:
+			if e.StatusCode != 0 {
+				done <- errors.New(e.Error.Message)
+			} else {
+				done <- nil
+			}
+		}
 	}()
 
 	for {
 		select {
 		case err := <-done:
 			if err != nil {
-				update("failed", stdErr.String())
+				update("failed", err.Error())
 				ime.Logger.Debug().Err(err).Msg("Failed to run command.")
-				return
+				return ""
 			}
-			update("success", stdOut.String())
+			update("success", "logs come here from the container")
 			ime.Logger.Info().Msg("Successfully finished command.")
-			return
+			return ""
 		case <-time.After(time.Duration(ime.Config.DefaultMaximumCommandRuntime) * time.Second):
 			// update entry
 			update("failed", "timeout")
 			ime.Logger.Error().Msg("Command timed out.")
-			if err := cmd.Process.Kill(); err != nil {
-				ime.Logger.Error().Int("pid", cmd.Process.Pid).Msg("Failed to kill process with pid.")
+			if err := cli.ContainerKill(context.Background(), cont.ID, "SIGKILL"); err != nil {
+				ime.Logger.Error().Str("container_id", cont.ID).Msg("Failed to kill process with pid.")
 			}
-			return
+			return ""
 		}
 	}
 }
 
 // CancelRun will cancel a run and mark all commands as cancelled then remove the entry from the run map.
 // If the kill was unsuccessful, the user can try running it again.
-func (ime *InMemoryExecuter) CancelRun(ctx context.Context, id int) error {
+func (ime *InMemoryExecutor) CancelRun(ctx context.Context, id int) error {
 	ime.runsLock.RLock()
 	commands, ok := ime.runs[id]
 	ime.runsLock.RUnlock()
@@ -192,9 +228,14 @@ func (ime *InMemoryExecuter) CancelRun(ctx context.Context, id int) error {
 		return errors.New("run with ID not found")
 	}
 	killError := false
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		ime.Logger.Debug().Err(err).Msg("Failed to create docker client.")
+		return err
+	}
 	for _, c := range commands {
-		if err := c.Process.Kill(); err != nil {
-			ime.Logger.Err(err).Int("pid", c.Process.Pid).Msg("Failed to kill process with pid.")
+		if err := cli.ContainerKill(context.Background(), c, "SIGKILL"); err != nil {
+			ime.Logger.Err(err).Msg("Failed to kill container.")
 			killError = true
 		}
 	}
