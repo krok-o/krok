@@ -1,11 +1,13 @@
 package executor
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"strconv"
 	"sync"
 	"time"
@@ -13,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
+	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/rs/zerolog"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -156,6 +159,16 @@ func (ime *InMemoryExecutor) startContainer(image string, args []string, command
 		return ""
 	}
 
+	output, err := cli.ImagePull(context.Background(), image, types.ImagePullOptions{})
+	if err != nil {
+		update("failed", fmt.Sprintf("failed to pull image: %s", err))
+		ime.Logger.Debug().Err(err).Msg("Failed to pull image.")
+		return ""
+	}
+	if _, err := io.Copy(os.Stdout, output); err != nil {
+		update("failed", fmt.Sprintf("failed to pull image: %s", err))
+	}
+
 	ime.Logger.Info().Msg("Creating container...")
 	cont, err := cli.ContainerCreate(context.Background(), &container.Config{
 		AttachStdout: true,
@@ -215,13 +228,20 @@ func (ime *InMemoryExecutor) startContainer(image string, args []string, command
 				update("failed", logErr.Error())
 				return ""
 			}
-			content, _ := ioutil.ReadAll(log)
+			buffer := &bytes.Buffer{}
+			logs := "no logs available"
+			if _, err := stdcopy.StdCopy(buffer, buffer, log); err != nil {
+				ime.Logger.Debug().Err(err).Msg("Failed to de-multiplex the docker log.")
+			} else {
+				logs = buffer.String()
+			}
+
 			if err != nil {
-				update("failed", string(content))
+				update("failed", logs)
 				ime.Logger.Debug().Err(err).Msg("Failed to run command.")
 				return ""
 			}
-			update("success", string(content))
+			update("success", logs)
 			ime.Logger.Info().Msg("Successfully finished command.")
 			return ""
 		case <-time.After(time.Duration(ime.Config.DefaultMaximumCommandRuntime) * time.Second):
