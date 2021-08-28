@@ -77,7 +77,7 @@ func init() {
 	flag.StringVar(&krokArgs.fileVault.Location, "file-vault-location", "/tmp/krok/vault", "--file-vault-location /tmp/krok/vault")
 
 	// Executer config
-	flag.IntVar(&krokArgs.executer.DefaultMaximumCommandRuntime, "default-maximum-command-runtime", 30, "Given in seconds.")
+	flag.IntVar(&krokArgs.executer.DefaultMaximumCommandRuntime, "default-maximum-command-runtime", 120, "Given in seconds.")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.

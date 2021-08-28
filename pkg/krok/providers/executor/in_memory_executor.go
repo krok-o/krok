@@ -2,16 +2,17 @@ package executor
 
 import (
 	"context"
+	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/ioutil"
+	"strconv"
 	"sync"
 	"time"
 
 	"github.com/docker/docker/api/types"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/docker/api/types/network"
 	"github.com/docker/docker/client"
-	specs "github.com/opencontainers/image-spec/specs-go/v1"
 	"github.com/rs/zerolog"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
@@ -76,6 +77,7 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 
 	log.Info().Msg("Starting run")
 	containers := make([]string, 0)
+	payload := base64.StdEncoding.EncodeToString([]byte(event.Payload))
 	// Start these here with the runner go routine
 	for _, c := range commands {
 		if !c.Enabled {
@@ -101,7 +103,8 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 		// confidential. The platform must always be the first arg.
 		args := []string{
 			fmt.Sprintf("--platform=%s", platform.Name),
-			fmt.Sprintf("--event-name=%s", event.EventType),
+			fmt.Sprintf("--event-type=%s", event.EventType),
+			fmt.Sprintf("--payload=%s", payload),
 		}
 		for _, s := range settings {
 			args = append(args, fmt.Sprintf("--%s=%s", s.Key, s.Value))
@@ -123,7 +126,7 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 		// this needs its own context, since the context from above is already cancelled.
 		// eventually return the launched container name in a channel
 		// this needs to be concurrent because the image pull might take a long time.
-		containerID := ime.startContainer(c.Image, c.Name, commandRun.ID, []byte(event.Payload))
+		containerID := ime.startContainer(c.Image, args, commandRun.ID)
 		if containerID != "" {
 			containers = append(containers, containerID)
 		}
@@ -136,9 +139,10 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 
 // runCommand takes a single command and executes it, waiting for it to finish,
 // or time out. Either way, it will update the corresponding command row.
-func (ime *InMemoryExecutor) startContainer(image string, commandName string, commandRunID int, payload []byte) string {
+func (ime *InMemoryExecutor) startContainer(image string, args []string, commandRunID int) string {
 	done := make(chan error, 1)
 	update := func(status string, outcome string) {
+		outcome = strconv.Quote(outcome)
 		ime.Logger.Debug().Int("command_run_id", commandRunID).Str("status", status).Str("outcome", outcome).Msg("Updating command run entry.")
 		if err := ime.CommandRuns.UpdateRunStatus(context.Background(), commandRunID, status, outcome); err != nil {
 			ime.Logger.Debug().Err(err).Msg("Updating status of command failed.")
@@ -152,29 +156,31 @@ func (ime *InMemoryExecutor) startContainer(image string, commandName string, co
 		return ""
 	}
 
+	ime.Logger.Info().Msg("Creating container...")
 	cont, err := cli.ContainerCreate(context.Background(), &container.Config{
-		AttachStdin:  true,
 		AttachStdout: true,
 		AttachStderr: true,
 		Image:        image,
-	}, &container.HostConfig{
-		AutoRemove: true,
-	}, &network.NetworkingConfig{}, &specs.Platform{}, commandName+"_container")
+		Cmd:          args,
+	}, nil, nil, nil, "")
 	if err != nil {
 		update("failed", err.Error())
 		ime.Logger.Debug().Err(err).Strs("warnings", cont.Warnings).Msg("Failed to create container.")
 		return ""
 	}
+	//
+	defer func() {
+		// we remove the container in a `defer` instead of autoRemove, to be able to read out the logs.
+		// If we use autoremove, the container is gone by the time we want to read the output.
+		// Could try streaming the logs. But this is enough for now.
+		if err := cli.ContainerRemove(context.Background(), cont.ID, types.ContainerRemoveOptions{
+			Force: true,
+		}); err != nil {
+			ime.Logger.Debug().Err(err).Str("container_id", cont.ID).Msg("Failed to remove container.")
+		}
+	}()
 
-	// send payload to the waiting command
-	c, _ := cli.ContainerAttach(context.Background(), cont.ID, types.ContainerAttachOptions{
-		Stdin: true,
-	})
-	if _, err := c.Conn.Write(payload); err != nil {
-		update("failed", err.Error())
-		return ""
-	}
-
+	ime.Logger.Info().Msg("Starting container...")
 	if err := cli.ContainerStart(context.Background(), cont.ID, types.ContainerStartOptions{}); err != nil {
 		update("failed", err.Error())
 		return ""
@@ -187,7 +193,11 @@ func (ime *InMemoryExecutor) startContainer(image string, commandName string, co
 			done <- e
 		case e := <-exit:
 			if e.StatusCode != 0 {
-				done <- errors.New(e.Error.Message)
+				if e.Error != nil {
+					done <- errors.New(e.Error.Message)
+				} else {
+					done <- fmt.Errorf("status code: %d", e.StatusCode)
+				}
 			} else {
 				done <- nil
 			}
@@ -197,12 +207,21 @@ func (ime *InMemoryExecutor) startContainer(image string, commandName string, co
 	for {
 		select {
 		case err := <-done:
+			log, logErr := cli.ContainerLogs(context.Background(), cont.ID, types.ContainerLogsOptions{
+				ShowStderr: true,
+				ShowStdout: true,
+			})
+			if logErr != nil {
+				update("failed", logErr.Error())
+				return ""
+			}
+			content, _ := ioutil.ReadAll(log)
 			if err != nil {
-				update("failed", err.Error())
+				update("failed", string(content))
 				ime.Logger.Debug().Err(err).Msg("Failed to run command.")
 				return ""
 			}
-			update("success", "logs come here from the container")
+			update("success", string(content))
 			ime.Logger.Info().Msg("Successfully finished command.")
 			return ""
 		case <-time.After(time.Duration(ime.Config.DefaultMaximumCommandRuntime) * time.Second):
