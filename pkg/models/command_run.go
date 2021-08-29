@@ -23,7 +23,7 @@ type CommandRun struct {
 	// Status is the current state of the command run.
 	//
 	// required: true
-	// example: running, failed, success
+	// example: created, running, failed, success
 	Status string `json:"status"`
 	// Outcome is any output of the command. Stdout and stderr combined.
 	//
