@@ -45,19 +45,17 @@ type InMemoryExecutor struct {
 
 	// For each event, a list of commandName=>containerIDs.
 	// ContainerIDs are filled in as the containers are pulled and started.
-	runs     map[int]*sync.Map
-	runsLock sync.RWMutex
+	runs *sync.Map
 }
 
 // NewInMemoryExecutor creates a new InMemoryExecutor which will hold all runs in its memory.
 // In case of a crash, human intervention will be required.
 // TODO: Later, save runs in db with the process id to cancel so Krok can pick up runs again.
 func NewInMemoryExecutor(cfg Config, deps Dependencies) *InMemoryExecutor {
-	m := make(map[int]*sync.Map)
 	return &InMemoryExecutor{
 		Config:       cfg,
 		Dependencies: deps,
-		runs:         m,
+		runs:         &sync.Map{},
 	}
 }
 
@@ -128,9 +126,7 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 		containers.Store(c.Name, "")
 		go ime.pullAndCreateContainer(c.Name, c.Image, args, event.ID, commandRun.ID)
 	}
-	ime.runsLock.Lock()
-	ime.runs[event.ID] = containers
-	ime.runsLock.Unlock()
+	ime.runs.Store(event.ID, containers)
 	return nil
 }
 
@@ -165,10 +161,10 @@ func (ime *InMemoryExecutor) pullAndCreateContainer(commandName, image string, a
 		ime.Logger.Debug().Err(err).Strs("warnings", cont.Warnings).Msg("Failed to create container.")
 		return
 	}
-	ime.runsLock.Lock()
-	ime.runs[eventID].Store(commandName, cont.ID)
-	ime.runsLock.Unlock()
-	go ime.startAndWaitForContainer(commandName, cont.ID, eventID, commandRunID)
+	event, _ := ime.runs.Load(eventID)
+	event.(*sync.Map).Store(commandName, cont.ID)
+	//ime.runs[eventID].Store(commandName, cont.ID)
+	ime.startAndWaitForContainer(commandName, cont.ID, eventID, commandRunID)
 }
 
 // TODO: this should return an error and we should log that.
@@ -191,8 +187,6 @@ func (ime *InMemoryExecutor) startAndWaitForContainer(commandName, containerID s
 		return
 	}
 	defer func() {
-		ime.runsLock.Lock()
-		defer ime.runsLock.Unlock()
 		// we remove the container in a `defer` instead of autoRemove, to be able to read out the logs.
 		// If we use AutoRemove, the container is gone by the time we want to read the output.
 		// Could try streaming the logs. But this is enough for now.
@@ -203,16 +197,18 @@ func (ime *InMemoryExecutor) startAndWaitForContainer(commandName, containerID s
 		}
 
 		// we also delete this command run from memory since it has been saved in the db.
-
-		ime.runs[eventID].Delete(commandName)
+		event, _ := ime.runs.Load(eventID)
+		event.(*sync.Map).Delete(commandName)
+		//ime.runs[eventID].Delete(commandName)
 		// if there are no more runs for this event, remove the event entry too.
 		empty := true
-		ime.runs[eventID].Range(func(key, value interface{}) bool {
+		event.(*sync.Map).Range(func(key, value interface{}) bool {
 			empty = false
 			return false
 		})
 		if empty {
-			delete(ime.runs, eventID)
+			ime.runs.Delete(eventID)
+			//delete(ime.runs, eventID)
 		}
 	}()
 
@@ -282,9 +278,7 @@ func (ime *InMemoryExecutor) startAndWaitForContainer(commandName, containerID s
 // CancelRun will cancel a run and mark all commands as cancelled then remove the entry from the run map.
 // If the kill was unsuccessful, the user can try running it again.
 func (ime *InMemoryExecutor) CancelRun(ctx context.Context, id int) error {
-	ime.runsLock.RLock()
-	commands, ok := ime.runs[id]
-	ime.runsLock.RUnlock()
+	commands, ok := ime.runs.Load(id)
 	if !ok {
 		ime.Logger.Error().Int("id", id).Msg("Run with ID not found")
 		return errors.New("run with ID not found")
@@ -296,7 +290,7 @@ func (ime *InMemoryExecutor) CancelRun(ctx context.Context, id int) error {
 		return err
 	}
 
-	commands.Range(func(key, value interface{}) bool {
+	commands.(*sync.Map).Range(func(key, value interface{}) bool {
 		if value.(string) == "" {
 			ime.Logger.Debug().Str("command_name", key.(string)).Msg("Command has no container running.")
 			return true
@@ -311,9 +305,7 @@ func (ime *InMemoryExecutor) CancelRun(ctx context.Context, id int) error {
 		return errors.New("there was an error while cancelling running commands, " +
 			"please inspect the log for more details")
 	}
-	ime.runsLock.Lock()
-	delete(ime.runs, id)
-	ime.runsLock.Unlock()
+	ime.runs.Delete(id)
 	ime.Logger.Debug().Msg("All commands successfully cancelled.")
 	return nil
 }

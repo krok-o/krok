@@ -82,21 +82,19 @@ func TestInMemoryExecutor_CreateRun(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
-	assert.NotEmpty(t, ime.runs)
+	empty := true
+	ime.runs.Range(func(key, value interface{}) bool {
+		empty = false
+		return false
+	})
+	assert.False(t, empty)
 	assert.Eventually(t, func() bool {
-		var b bool
-		ime.runsLock.Lock()
-		if len(ime.runs) == 0 {
-			return true
-		}
 		empty := true
-		ime.runs[1].Range(func(key, value interface{}) bool {
+		ime.runs.Range(func(key, value interface{}) bool {
 			empty = false
 			return false
 		})
-		b = empty
-		ime.runsLock.Unlock()
-		return b
+		return empty
 	}, 20*time.Second, 5*time.Second)
 }
 
@@ -130,13 +128,9 @@ func TestInMemoryExecutor_CancelRun_WithNoCommandsDeletesEventEntry(t *testing.T
 		CommandStorer: mcs,
 		Clock:         mt,
 	})
-	ime.runsLock.Lock()
-	ime.runs[99] = &sync.Map{}
-	ime.runsLock.Unlock()
+	ime.runs.Store(99, &sync.Map{})
 	err := ime.CancelRun(context.Background(), 99)
 	assert.NoError(t, err)
-	ime.runsLock.Lock()
-	_, ok := ime.runs[99]
+	_, ok := ime.runs.Load(99)
 	assert.False(t, ok)
-	ime.runsLock.Unlock()
 }
