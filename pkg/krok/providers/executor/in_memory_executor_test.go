@@ -3,6 +3,7 @@ package executor
 import (
 	"context"
 	"os"
+	"sync"
 	"testing"
 	"time"
 
@@ -85,7 +86,15 @@ func TestInMemoryExecutor_CreateRun(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		var b bool
 		ime.runsLock.Lock()
-		b = len(ime.runs[1]) == 0
+		if len(ime.runs) == 0 {
+			return true
+		}
+		empty := true
+		ime.runs[1].Range(func(key, value interface{}) bool {
+			empty = false
+			return false
+		})
+		b = empty
 		ime.runsLock.Unlock()
 		return b
 	}, 20*time.Second, 5*time.Second)
@@ -121,7 +130,7 @@ func TestInMemoryExecutor_CancelRun_WithNoCommandsDeletesEventEntry(t *testing.T
 		CommandStorer: mcs,
 		Clock:         mt,
 	})
-	ime.runs[99] = make(map[string]string)
+	ime.runs[99] = &sync.Map{}
 	err := ime.CancelRun(context.Background(), 99)
 	assert.NoError(t, err)
 	ime.runsLock.Lock()

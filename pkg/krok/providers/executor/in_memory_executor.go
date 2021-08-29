@@ -45,7 +45,7 @@ type InMemoryExecutor struct {
 
 	// For each event, a list of commandName=>containerIDs.
 	// ContainerIDs are filled in as the containers are pulled and started.
-	runs     map[int]map[string]string
+	runs     map[int]*sync.Map
 	runsLock sync.RWMutex
 }
 
@@ -53,7 +53,7 @@ type InMemoryExecutor struct {
 // In case of a crash, human intervention will be required.
 // TODO: Later, save runs in db with the process id to cancel so Krok can pick up runs again.
 func NewInMemoryExecutor(cfg Config, deps Dependencies) *InMemoryExecutor {
-	m := make(map[int]map[string]string)
+	m := make(map[int]*sync.Map)
 	return &InMemoryExecutor{
 		Config:       cfg,
 		Dependencies: deps,
@@ -79,7 +79,7 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 	log = log.With().Str("platform", platform.Name).Logger()
 
 	log.Info().Msg("Starting run")
-	containers := make(map[string]string)
+	containers := &sync.Map{}
 	payload := base64.StdEncoding.EncodeToString([]byte(event.Payload))
 	// Start these here with the runner go routine
 	for _, c := range commands {
@@ -125,7 +125,7 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 			return err
 		}
 		log.Debug().Str("image", c.Image).Msg("Preparing to run command...")
-		containers[c.Name] = ""
+		containers.Store(c.Name, "")
 		go ime.pullAndCreateContainer(c.Name, c.Image, args, event.ID, commandRun.ID)
 	}
 	ime.runsLock.Lock()
@@ -166,7 +166,7 @@ func (ime *InMemoryExecutor) pullAndCreateContainer(commandName, image string, a
 		return
 	}
 	ime.runsLock.Lock()
-	ime.runs[eventID][commandName] = cont.ID
+	ime.runs[eventID].Store(commandName, cont.ID)
 	ime.runsLock.Unlock()
 	go ime.startAndWaitForContainer(commandName, cont.ID, eventID, commandRunID)
 }
@@ -202,9 +202,14 @@ func (ime *InMemoryExecutor) startAndWaitForContainer(commandName, containerID s
 
 		// we also delete this command run from memory since it has been saved in the db.
 		ime.runsLock.Lock()
-		delete(ime.runs[eventID], commandName)
+		ime.runs[eventID].Delete(commandName)
 		// if there are no more runs for this event, remove the event entry too.
-		if len(ime.runs[eventID]) == 0 {
+		empty := true
+		ime.runs[eventID].Range(func(key, value interface{}) bool {
+			empty = false
+			return false
+		})
+		if empty {
 			delete(ime.runs, eventID)
 		}
 		ime.runsLock.Unlock()
@@ -289,16 +294,18 @@ func (ime *InMemoryExecutor) CancelRun(ctx context.Context, id int) error {
 		ime.Logger.Debug().Err(err).Msg("Failed to create docker client.")
 		return err
 	}
-	for k, c := range commands {
-		if c == "" {
-			ime.Logger.Debug().Str("command_name", k).Msg("Command has no container running.")
-			continue
+
+	commands.Range(func(key, value interface{}) bool {
+		if value.(string) == "" {
+			ime.Logger.Debug().Str("command_name", key.(string)).Msg("Command has no container running.")
+			return true
 		}
-		if err := cli.ContainerKill(context.Background(), c, "SIGKILL"); err != nil {
+		if err := cli.ContainerKill(context.Background(), value.(string), "SIGKILL"); err != nil {
 			ime.Logger.Err(err).Msg("Failed to kill container.")
 			killError = true
 		}
-	}
+		return true
+	})
 	if killError {
 		return errors.New("there was an error while cancelling running commands, " +
 			"please inspect the log for more details")
