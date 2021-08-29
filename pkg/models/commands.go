@@ -20,30 +20,17 @@ type Command struct {
 	//
 	// required: false
 	Repositories []*Repository `json:"repositories,omitempty"`
-	// Filename is the name of the file which holds this command.
+	// Image defines the image name and tag of the command
+	// Note: At the moment, only docker is supported. Later, runc, containerd...
 	//
 	// required: true
-	// example: my_awesome_command
-	Filename string `json:"filename"`
-	// Location is where this command is located at. This is the full path of the containing folder.
-	//
-	// required: true
-	// example: /tmp/krok-commands
-	Location string `json:"location"`
-	// Hash is the hash of the command file.
-	//
-	// required: true
-	Hash string `json:"hash"`
+	// example: krok-hook/slack-notification:v0.0.1
+	Image string `json:"image"`
 	// Enabled defines if this command can be executed or not.
 	//
 	// required: false
 	// example: false
 	Enabled bool `json:"enabled"`
-	// URL defines an optional URL field to download the command from.
-	// No need to store this field, we just use it to indicate downloading the command.
-	//
-	// required: false
-	URL string `json:"url,omitempty"`
 	// Platforms holds all the platforms which this command supports.
 	// Calculated, not saved.
 	//

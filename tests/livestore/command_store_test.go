@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"cirello.io/pglock"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -24,7 +23,6 @@ import (
 
 func TestCommandStore_Flow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandStore_Create")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
@@ -44,11 +42,8 @@ func TestCommandStore_Flow(t *testing.T) {
 		Name:         "Test_Create",
 		Schedule:     "test-schedule",
 		Repositories: nil,
-		Filename:     "test-filename-create",
-		Location:     location,
-		Hash:         "hash1",
 		Enabled:      false,
-		URL:          "test",
+		Image:        "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -61,11 +56,8 @@ func TestCommandStore_Flow(t *testing.T) {
 		ID:           c.ID,
 		Schedule:     "test-schedule",
 		Repositories: []*models.Repository{},
-		Filename:     "test-filename-create",
-		Location:     location,
-		Hash:         "hash1",
 		Enabled:      false,
-		URL:          "test",
+		Image:        "krokhook/slack-notification:v0.0.1",
 	}, cGet)
 
 	// List commands
@@ -126,11 +118,8 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	c, err := cp.Create(ctx, &models.Command{
 		Name:     "Test_Relationship_Flow",
 		Schedule: "Test_Relationship_Flow-test-schedule",
-		Filename: "Test_Relationship_Flow-test-filename-create",
-		Location: location,
-		Hash:     "Test_Relationship_Flow-hash1",
 		Enabled:  false,
-		URL:      "test",
+		Image:    "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -173,11 +162,8 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	c2, err := cp.Create(ctx, &models.Command{
 		Name:     "Test_Relationship_Flow-2",
 		Schedule: "Test_Relationship_Flow-test-schedule-2",
-		Filename: "Test_Relationship_Flow-test-filename-create-2",
-		Location: location,
-		Hash:     "Test_Relationship_Flow-hash1-2",
 		Enabled:  false,
-		URL:      "test",
+		Image:    "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 
@@ -200,41 +186,8 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	assert.Empty(t, c2.Repositories)
 }
 
-func TestCommandStore_AcquireAndReleaseLock(t *testing.T) {
-	logger := zerolog.New(os.Stderr)
-	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
-	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
-		Connector: livestore.NewDatabaseConnector(livestore.Config{
-			Hostname: hostname,
-			Database: dbaccess.Db,
-			Username: dbaccess.Username,
-			Password: dbaccess.Password,
-		}, livestore.Dependencies{
-			Logger:    logger,
-			Converter: env,
-		}),
-	})
-	assert.NoError(t, err)
-	ctx := context.Background()
-	// Acquire lock
-	l, err := cp.AcquireLock(ctx, "lock-test")
-	assert.NoError(t, err)
-	// Release lock
-	err = l.Close()
-	assert.NoError(t, err)
-	// Can acquire again after release
-	l, err = cp.AcquireLock(ctx, "lock-test")
-	assert.NoError(t, err)
-	// Can't acquire lock again for the same name
-	_, err = cp.AcquireLock(ctx, "lock-test")
-	assert.True(t, errors.Is(err, pglock.ErrNotAcquired))
-	err = l.Close()
-	assert.NoError(t, err)
-}
-
 func TestCommandStore_Create_Unique(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandStore_Create_Unique")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
@@ -253,11 +206,8 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 		Name:         "Test_Create_Error",
 		Schedule:     "test-schedule",
 		Repositories: nil,
-		Filename:     "test-filename-create-error",
-		Location:     location,
-		Hash:         "hash2",
+		Image:        "krokhook/slack-notification:v0.0.1",
 		Enabled:      false,
-		URL:          "test",
 	})
 	require.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -267,45 +217,15 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 		Name:         "Test_Create_Error",
 		Schedule:     "test-schedule",
 		Repositories: nil,
-		Filename:     "test-filename-create-error-2",
-		Location:     location,
-		Hash:         "hash3",
 		Enabled:      false,
-		URL:          "test",
+		Image:        "krokhook/slack-notification:v0.0.1",
 	})
 	assert.Error(t, err)
 	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_name_key\""))
-	// Create the second command with the same filename.
-	_, err = cp.Create(context.Background(), &models.Command{
-		Name:         "Test_Create_Error-2",
-		Schedule:     "test-schedule",
-		Repositories: nil,
-		Filename:     "test-filename-create-error",
-		Location:     location,
-		Hash:         "hash3",
-		Enabled:      false,
-		URL:          "test",
-	})
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_filename_key\""))
-	// Create the second command with the same hash.
-	_, err = cp.Create(context.Background(), &models.Command{
-		Name:         "Test_Create_Error-2",
-		Schedule:     "test-schedule",
-		Repositories: nil,
-		Filename:     "test-filename-create-error=2",
-		Location:     location,
-		Hash:         "hash2",
-		Enabled:      false,
-		URL:          "test",
-	})
-	assert.Error(t, err)
-	assert.True(t, strings.Contains(err.Error(), "unique constraint \"commands_hash_key\""))
 }
 
 func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandStore_PlatformRelationshipFlow")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	connector := livestore.NewDatabaseConnector(livestore.Config{
 		Hostname: hostname,
@@ -323,12 +243,9 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
-		Name:     "Test_Relationship_Flow_Platform",
-		Filename: "Test_Relationship_Flow_Platform",
-		Location: location,
-		Hash:     "Test_Relationship_Flow_Platform-hash1",
-		Enabled:  true,
-		URL:      "test",
+		Name:    "Test_Relationship_Flow_Platform",
+		Enabled: true,
+		Image:   "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -363,7 +280,6 @@ func TestCommandStore_PlatformRelationshipFlow(t *testing.T) {
 
 func TestCommandStore_Update(t *testing.T) {
 	logger := zerolog.New(os.Stderr)
-	location, _ := ioutil.TempDir("", "TestCommandStore_Create")
 	env := environment.NewDockerConverter(environment.Dependencies{Logger: logger})
 	cp, err := livestore.NewCommandStore(livestore.CommandDependencies{
 		Connector: livestore.NewDatabaseConnector(livestore.Config{
@@ -382,11 +298,8 @@ func TestCommandStore_Update(t *testing.T) {
 	c, err := cp.Create(ctx, &models.Command{
 		Name:     "Test_Update",
 		Schedule: "test-schedule",
-		Filename: "test-filename-update",
-		Location: location,
-		Hash:     "hash-update",
 		Enabled:  false,
-		URL:      "test",
+		Image:    "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -396,9 +309,7 @@ func TestCommandStore_Update(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, "UpdatedName2", updatedC.Name)
 	// Make sure nothing else changed.
-	assert.Equal(t, c.Filename, updatedC.Filename)
-	assert.Equal(t, c.Hash, updatedC.Hash)
-	assert.Equal(t, c.Location, updatedC.Location)
 	assert.Equal(t, c.Schedule, updatedC.Schedule)
 	assert.Equal(t, c.Enabled, updatedC.Enabled)
+	assert.Equal(t, c.Image, updatedC.Image)
 }

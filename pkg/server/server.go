@@ -114,7 +114,6 @@ func (s *KrokServer) Run(ctx context.Context) error {
 	auth.POST("/repository/update", s.Dependencies.RepositoryHandler.Update())
 
 	// command related actions.
-	auth.PUT("/command", s.Dependencies.CommandHandler.Upload())
 	auth.POST("/command", s.Dependencies.CommandHandler.Create())
 	auth.GET("/command/:id", s.Dependencies.CommandHandler.Get())
 	auth.DELETE("/command/:id", s.Dependencies.CommandHandler.Delete())

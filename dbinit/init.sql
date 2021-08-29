@@ -1,13 +1,10 @@
 -- WARNING: If this is modified, also change the configmap in under the helm charts.
 create table commands (
-    id serial primary key,
-    name varchar unique not null,
-    schedule varchar,
-    filename varchar unique not null,
-    hash varchar unique not null,
-    location varchar not null,
     enabled boolean not null,
-    url varchar
+    id serial primary key,
+    image varchar not null,
+    name varchar unique not null,
+    schedule varchar
 );
 
 create table command_settings
@@ -81,14 +78,6 @@ create table apikeys (
     user_id int not null,
     ttl varchar,
     created_at date
-);
-
--- The files lock which will contain the lock for a file with a timestamp of creation.
--- Locks that are older than 10 minutes will be purged.
--- Note: Delete this when we remove the watcher.
-create table file_lock (
-    name varchar ( 256 ) unique not null,
-    lock_start date
 );
 
 -- store events for a repository.

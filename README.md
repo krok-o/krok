@@ -144,9 +144,9 @@ Download some, build them, and upload the tar-ed up binary after making sure you
 ➜  krokctl git:(main) ✗ export KROK_API_KEY_ID=api-key-id
 ➜  krokctl git:(main) ✗ export KROK_API_KEY_SECRET=secret
 ➜  krokctl git:(main) ✗ export KROK_EMAIL=admin@admin.com
-./bin/darwin/amd64/krokctl upload command --file slack-notification.tar.gz
-ID      NAME                    HASH                                                                    LOCATION        FILENAME              SCHEDULE        ENABLED REPOSITORIES
-1       slack-notification      5bac4e2aeff81e2453dd099128eaa65cd076d02bad7b6927e5afd4892cbacc2a        .tmp/plugins    slack-notification                    true
+./bin/darwin/amd64/krokctl create command --name slack-notification --image krok-o/slack-notification:v0.0.1
+ID      NAME                    SCHEDULE        IMAGE                                   ENABLED REPOSITORIES    PLATFORMS
+1       slack-notification      -               skarlso/slack-notification:v0.0.5       true    -               -
 ```
 
 If the upload succeeded, you should see the above table.
@@ -182,6 +182,7 @@ Now, if you navigate to the Github repository, you can keep sending it the ping 
 
 We would love to have help with Krok especially on the frontend side. None of us ( currently ) know frontend development too well.
 We do plan on having a frontend for Krok alongside the CLI([krokctl](https://github.com/krok-o/krokctl)).
+There is also a Terraform provider available here [Krok terraform](https://github.com/krok-o/terraform-provider-krok)
 
 ## Commands
 

@@ -194,10 +194,8 @@ func TestRepositoryStore_Create_Unique(t *testing.T) {
 	c, err := cp.Create(ctx, &models.Command{
 		Name:     "CommandConnectionName",
 		Schedule: "Schedule100",
-		Filename: "Create_Filename",
-		Location: "Location-10",
-		Hash:     "Hash-10",
 		Enabled:  false,
+		Image:    "krokhook/slack-notification:v0.0.1",
 	})
 	assert.NoError(t, err)
 	repo, err := rp.Create(ctx, &models.Repository{

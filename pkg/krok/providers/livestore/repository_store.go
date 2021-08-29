@@ -279,7 +279,7 @@ func (r *RepositoryStore) getCommandsForRepository(ctx context.Context, id int) 
 	// Select the related commands.
 	result := make([]*models.Command, 0)
 	f := func(tx pgx.Tx) error {
-		rows, err := tx.Query(ctx, fmt.Sprintf("select c.id, name, schedule, filename, hash, location, enabled from %s as c inner join %s as relc"+
+		rows, err := tx.Query(ctx, fmt.Sprintf("select c.id, name, schedule, enabled, image from %s as c inner join %s as relc"+
 			" on c.id = relc.command_id where relc.repository_id = $1", commandsTable, commandsRepositoriesRelTable), id)
 		if err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
@@ -300,12 +300,10 @@ func (r *RepositoryStore) getCommandsForRepository(ctx context.Context, id int) 
 				storedID int
 				name     string
 				schedule string
-				fileName string
-				hash     string
-				location string
 				enabled  bool
+				image    string
 			)
-			if err := rows.Scan(&storedID, &name, &schedule, &fileName, &hash, &location, &enabled); err != nil {
+			if err := rows.Scan(&storedID, &name, &schedule, &enabled, &image); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select id",
@@ -316,10 +314,8 @@ func (r *RepositoryStore) getCommandsForRepository(ctx context.Context, id int) 
 				Name:     name,
 				ID:       storedID,
 				Schedule: schedule,
-				Filename: fileName,
-				Location: location,
-				Hash:     hash,
 				Enabled:  enabled,
+				Image:    image,
 			}
 			result = append(result, command)
 		}

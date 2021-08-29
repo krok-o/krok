@@ -4,12 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"strconv"
 	"strings"
-	"time"
 
-	"cirello.io/pglock"
 	"github.com/jackc/pgx/v4"
 	"github.com/rs/zerolog"
 
@@ -39,25 +36,7 @@ type CommandDependencies struct {
 
 // NewCommandStore creates a new CommandStore
 func NewCommandStore(deps CommandDependencies) (*CommandStore, error) {
-	db, err := deps.Connector.GetDB()
-	if err != nil {
-		deps.Logger.Debug().Err(err).Msg("Failed to get DB for locking.")
-		return nil, err
-	}
-	c, err := pglock.New(db,
-		pglock.WithLeaseDuration(10*time.Second),
-		pglock.WithHeartbeatFrequency(1*time.Second),
-	)
-	if err != nil {
-		deps.Logger.Debug().Err(err).Msg("Cannot create lock client.")
-		return nil, err
-	}
-	if err := c.CreateTable(); err != nil && !strings.Contains(err.Error(), "relation \"locks\" already exists") {
-		deps.Logger.Debug().Err(err).Msg("Failed to create lock table.")
-		return nil, err
-	}
-	cs := &CommandStore{CommandDependencies: deps}
-	return cs, nil
+	return &CommandStore{CommandDependencies: deps}, nil
 }
 
 var _ providers.CommandStorer = &CommandStore{}
@@ -69,15 +48,11 @@ func (s *CommandStore) Create(ctx context.Context, c *models.Command) (*models.C
 	// id will be generated.
 
 	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, schedule, filename, hash, location,"+
-			" enabled, url) values($1, $2, $3, $4, $5, $6, $7)", commandsTable),
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, schedule, enabled, image) values($1, $2, $3, $4)", commandsTable),
 			c.Name,
 			c.Schedule,
-			c.Filename,
-			c.Hash,
-			c.Location,
 			c.Enabled,
-			c.URL); err != nil {
+			c.Image); err != nil {
 			log.Debug().Err(err).Msg("Failed to create command.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -125,16 +100,13 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		name      string
 		commandID int
 		schedule  string
-		filename  string
-		location  string
-		hash      string
 		enabled   bool
-		url       string
+		image     string
 	)
 	f := func(tx pgx.Tx) error {
-		query := fmt.Sprintf("select name, id, schedule, filename, location, hash, enabled, url from %s where %s = $1", commandsTable, field)
+		query := fmt.Sprintf("select name, id, schedule, enabled, image from %s where %s = $1", commandsTable, field)
 		if err := tx.QueryRow(ctx, query, value).
-			Scan(&name, &commandID, &schedule, &filename, &location, &hash, &enabled, &url); err != nil {
+			Scan(&name, &commandID, &schedule, &enabled, &image); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: query,
@@ -178,11 +150,8 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 		ID:           commandID,
 		Schedule:     schedule,
 		Repositories: repositories,
-		Filename:     filename,
-		Location:     location,
-		Hash:         hash,
 		Enabled:      enabled,
-		URL:          url,
+		Image:        image,
 		Platforms:    platforms,
 	}, nil
 }
@@ -360,7 +329,7 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 	// Select all commands.
 	result := make([]*models.Command, 0)
 	f := func(tx pgx.Tx) error {
-		sql := fmt.Sprintf("select id, name, schedule, filename, hash, location, enabled from %s", commandsTable)
+		sql := fmt.Sprintf("select id, name, schedule, enabled, image from %s", commandsTable)
 		where := " where "
 		filters := make([]string, 0)
 		if opts.Name != "" {
@@ -390,12 +359,10 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 				id       int
 				name     string
 				schedule string
-				filename string
-				hash     string
-				location string
+				image    string
 				enabled  bool
 			)
-			if err := rows.Scan(&id, &name, &schedule, &filename, &hash, &location, &enabled); err != nil {
+			if err := rows.Scan(&id, &name, &schedule, &enabled, &image); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select all commands",
@@ -406,10 +373,8 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 				Name:     name,
 				ID:       id,
 				Schedule: schedule,
-				Filename: filename,
-				Location: location,
-				Hash:     hash,
 				Enabled:  enabled,
+				Image:    image,
 			}
 			result = append(result, command)
 		}
@@ -419,32 +384,6 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 		return nil, fmt.Errorf("failed to execute List all commands: %w", err)
 	}
 	return result, nil
-}
-
-// AcquireLock acquires a lock on a file so no other process deals with the same file.
-func (s *CommandStore) AcquireLock(ctx context.Context, name string) (io.Closer, error) {
-	log := s.Logger.With().Str("func", "AcquireLock").Str("name", name).Logger()
-	db, err := s.Connector.GetDB()
-	if err != nil {
-		log.Debug().Err(err).Msg("Failed to get DB for locking.")
-		return nil, err
-	}
-	c, err := pglock.New(db,
-		pglock.WithLeaseDuration(3*time.Second),
-		pglock.WithHeartbeatFrequency(1*time.Second),
-	)
-	if err != nil {
-		log.Debug().Err(err).Msg("Cannot create lock client.")
-		return nil, err
-	}
-	ctx, cancel := context.WithTimeout(ctx, 3*time.Second)
-	defer cancel()
-	l, err := c.AcquireContext(ctx, name)
-	if err != nil {
-		log.Debug().Err(err).Msg("unexpected error while acquiring 1st lock")
-		return nil, err
-	}
-	return l, nil
 }
 
 // AddCommandRelForRepository add an assignment for a command to a repository.
