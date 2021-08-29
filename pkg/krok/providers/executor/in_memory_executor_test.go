@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/docker/docker/client"
 	"github.com/rs/zerolog"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -15,6 +16,9 @@ import (
 )
 
 func TestCreateRun(t *testing.T) {
+	if _, err := client.NewClientWithOpts(client.FromEnv); err != nil {
+		t.Skip("Could not run test. This test requires Docker to be accessible.")
+	}
 	logger := zerolog.New(os.Stderr)
 	mcr := &mocks.CommandRunStorer{}
 	mcr.On("CreateRun", mock.Anything, &models.CommandRun{
@@ -76,4 +80,6 @@ func TestCreateRun(t *testing.T) {
 		},
 	})
 	assert.NoError(t, err)
+	// todo: wait here for the finishing of containers and such.
+	// also add a Skip if there is no docker socket available.
 }
