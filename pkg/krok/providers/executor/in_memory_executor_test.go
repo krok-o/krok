@@ -130,7 +130,9 @@ func TestInMemoryExecutor_CancelRun_WithNoCommandsDeletesEventEntry(t *testing.T
 		CommandStorer: mcs,
 		Clock:         mt,
 	})
+	ime.runsLock.Lock()
 	ime.runs[99] = &sync.Map{}
+	ime.runsLock.Unlock()
 	err := ime.CancelRun(context.Background(), 99)
 	assert.NoError(t, err)
 	ime.runsLock.Lock()

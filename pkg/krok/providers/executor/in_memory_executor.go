@@ -191,6 +191,8 @@ func (ime *InMemoryExecutor) startAndWaitForContainer(commandName, containerID s
 		return
 	}
 	defer func() {
+		ime.runsLock.Lock()
+		defer ime.runsLock.Unlock()
 		// we remove the container in a `defer` instead of autoRemove, to be able to read out the logs.
 		// If we use AutoRemove, the container is gone by the time we want to read the output.
 		// Could try streaming the logs. But this is enough for now.
@@ -201,7 +203,7 @@ func (ime *InMemoryExecutor) startAndWaitForContainer(commandName, containerID s
 		}
 
 		// we also delete this command run from memory since it has been saved in the db.
-		ime.runsLock.Lock()
+
 		ime.runs[eventID].Delete(commandName)
 		// if there are no more runs for this event, remove the event entry too.
 		empty := true
@@ -212,7 +214,6 @@ func (ime *InMemoryExecutor) startAndWaitForContainer(commandName, containerID s
 		if empty {
 			delete(ime.runs, eventID)
 		}
-		ime.runsLock.Unlock()
 	}()
 
 	ime.Logger.Info().Msg("Starting container...")
