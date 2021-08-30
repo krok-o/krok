@@ -24,11 +24,22 @@ Krok can handle webhooks for various implement platforms. At the time of this wr
 Once a repository is created (more on that in the [How do I use it?](#how-do-i-use-it) section) it will receive webhook for the
 configured events from these platforms, i.e.: push, pull, pull-request, issue comment, etc. Whatever the respective platform supports.
 
-### Specific commands
+### What are commands
 
-There is a whole section on what [commands](#commands) are. To tl;dr they are small, runnable scripts which perform something on
-the respective action. Like, sending a slack message, running some command, performing code generation, building a hugo blog... etc.
+They are smallish, runnable scripts which perform something on the respective action. Like, sending a Slack message,
+running an AWS build, performing code generation, building a hugo blog... etc. These commands live in containers which
+contains all the necessary third party libraries and components which they need in order to execute. For example, the
+Hugo builder comes with a container which has the latest version of [Hugo](https://gohugo.io/) blog installed.
 
+At the time of this writing there are some missing feature regarding commands.
+
+- [ ] Have interaction between them
+- [ ] Build a dependency tree between running commands
+
+Commands mostly should be independent entities from each other, but it can occur that one command's output is needed
+by another. For example, an archiver or one command builds a blog the other pushes it. Requires different credentials
+and has a nice separation of concern.
+ 
 # How do I use it?
 
 To set up and use krok, refer to the Krok documentation [Installation](https://krok.app/basics/installation/) section. There, you'll
@@ -47,10 +58,9 @@ url is, and what kind of events it's subscribed too. Those events are platform s
 Then, take this repository and affiliate commands to it. By adding relationships to commands you specify what commands
 should execute on the event that happens. Currently, we don't support running specific commands per event, but maybe in the
 future we'll do that. In any case, once the action is set up, and an event happens, Krok runs these commands and passes over
-certain details to the command so it can perform the action it's supposed to. The command can do whatever an executing binary
-is capable of, which is virtually limitless as long as the necessary credentials are provided.
-
-Krok can save these securely and pass them along to the command so it can perform its function.
+certain details to them, so they can perform the action they are supposed to. The command can do whatever an executing binary
+is capable of, which is virtually limitless as long as the necessary credentials are provided. Krok can save these securely
+and pass them along to the command as command line arguments.
 
 # Scenarios / Use cases
 
@@ -138,7 +148,7 @@ Success!
 ```
 
 Second, you'll need a command to test with. A couple test commands can be found under the [plugins](https://github.com/krok-o/plugins) repository.
-Download some, build them, and upload the tar-ed up binary after making sure you exported the necessary credentials.
+Download some, build them, and create a docker container for them.
 
 ```
 ➜  krokctl git:(main) ✗ export KROK_API_KEY_ID=api-key-id
@@ -148,8 +158,6 @@ Download some, build them, and upload the tar-ed up binary after making sure you
 ID      NAME                    SCHEDULE        IMAGE                                   ENABLED REPOSITORIES    PLATFORMS
 1       slack-notification      -               skarlso/slack-notification:v0.0.5       true    -               -
 ```
-
-If the upload succeeded, you should see the above table.
 
 Finally, register a repository:
 
