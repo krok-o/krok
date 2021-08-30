@@ -81,26 +81,18 @@ definitions:
         example: false
         type: boolean
         x-go-name: Enabled
-      filename:
-        description: Filename is the name of the file which holds this command.
-        example: my_awesome_command
-        type: string
-        x-go-name: Filename
-      hash:
-        description: Hash is the hash of the command file.
-        type: string
-        x-go-name: Hash
       id:
         description: ID of the command. Generated.
         format: int64
         type: integer
         x-go-name: ID
-      location:
-        description: Location is where this command is located at. This is the full
-          path of the containing folder.
-        example: /tmp/krok-commands
+      image:
+        description: |-
+          Image defines the image name and tag of the command
+          Note: At the moment, only docker is supported. Later, runc, containerd...
+        example: krok-hook/slack-notification:v0.0.1
         type: string
-        x-go-name: Location
+        x-go-name: Image
       name:
         description: Name of the command.
         type: string
@@ -124,18 +116,10 @@ definitions:
         example: 0 * * * * // follows cron job syntax.
         type: string
         x-go-name: Schedule
-      url:
-        description: |-
-          URL defines an optional URL field to download the command from.
-          No need to store this field, we just use it to indicate downloading the command.
-        type: string
-        x-go-name: URL
     required:
     - name
     - id
-    - filename
-    - location
-    - hash
+    - image
     title: Command is a command which can be executed by Krok.
     type: object
     x-go-package: github.com/krok-o/krok/pkg/models
@@ -169,7 +153,7 @@ definitions:
         x-go-name: Outcome
       status:
         description: Status is the current state of the command run.
-        example: running, failed, success
+        example: created, running, failed, success
         type: string
         x-go-name: Status
     required:
@@ -564,34 +548,9 @@ paths:
           schema:
             $ref: '#/responses/Message'
         "500":
-          description: failed to download file, create plugin, create command or copy
-            operations
+          description: create command failed
           schema:
             $ref: '#/responses/Message'
-    put:
-      description: |-
-        the command has to be edited. We don't support uploading the same thing twice.
-        If the command binary needs to be updated, delete the command and upload the
-        new binary.
-      operationId: uploadCommand
-      produces:
-      - application/json
-      responses:
-        "201":
-          description: in case of successful file upload
-          schema:
-            $ref: '#/definitions/Command'
-        "400":
-          description: invalid file format or command already exists
-          schema:
-            $ref: '#/responses/Message'
-        "500":
-          description: failed to upload file, create plugin, create command or copy
-            operations
-          schema:
-            $ref: '#/responses/Message'
-      summary: Upload a command. To set up anything for the command, like schedules
-        etc,
   /command/{id}:
     delete:
       operationId: deleteCommand
