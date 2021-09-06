@@ -141,6 +141,15 @@ func (g *Github) GetEventID(ctx context.Context, r *http.Request) (string, error
 	return id, nil
 }
 
+// GetEventType Based on the platform, retrieve the Type of the event.
+func (g *Github) GetEventType(ctx context.Context, r *http.Request) (string, error) {
+	event := r.Header.Get("X-Github-Event")
+	if len(event) == 0 {
+		return "", fmt.Errorf("failed to get event type")
+	}
+	return event, nil
+}
+
 // CreateHook can create a hook for the Github platform.
 func (g *Github) CreateHook(ctx context.Context, repo *models.Repository) error {
 	log := g.Logger.With().Str("unique_url", repo.UniqueURL).Str("repo", repo.Name).Strs("events", repo.Events).Logger()

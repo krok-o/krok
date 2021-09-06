@@ -116,12 +116,18 @@ func (k *KrokHookHandler) HandleHooks() echo.HandlerFunc {
 			apiError := kerr.APIError("failed to get payload", http.StatusBadRequest, err)
 			return c.JSON(http.StatusBadRequest, apiError)
 		}
+		eventType, err := provider.GetEventType(ctx, c.Request())
+		if err != nil {
+			apiError := kerr.APIError("failed to get event type", http.StatusBadRequest, err)
+			return c.JSON(http.StatusBadRequest, apiError)
+		}
 		event := &models.Event{
 			RepositoryID: rid,
 			CreateAt:     k.Timer.Now(),
 			EventID:      id,
 			Payload:      string(payload),
 			VCS:          vid,
+			EventType:    eventType,
 		}
 		// Create an ID for this event from the database.
 		storedEvent, err := k.EventsStorer.Create(ctx, event)

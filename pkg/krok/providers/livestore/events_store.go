@@ -124,6 +124,7 @@ func (e *EventsStore) ListEventsForRepository(ctx context.Context, repoID int, o
 					Err:   fmt.Errorf("failed to scan: %w", err),
 				}
 			}
+			// todo: should add a list of command run event ids...
 			event := &models.Event{
 				ID:           storedID,
 				EventID:      storedEventID,

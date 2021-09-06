@@ -22,6 +22,8 @@ type Platform interface {
 	ValidateRequest(ctx context.Context, r *http.Request, repoID int) error
 	// GetEventID Based on the platform, retrieve the ID of the event.
 	GetEventID(ctx context.Context, r *http.Request) (string, error)
+	// GetEventType Based on the platform, retrieve the Type of the event.
+	GetEventType(ctx context.Context, r *http.Request) (string, error)
 }
 
 // PlatformTokenProvider defines the operations a token provider must perform.

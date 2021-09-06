@@ -21,7 +21,6 @@ require (
 	github.com/morikuni/aec v1.0.0 // indirect
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/onsi/ginkgo v1.14.2 // indirect
-	github.com/opencontainers/image-spec v1.0.1
 	github.com/ory/dockertest/v3 v3.6.3
 	github.com/rs/zerolog v1.20.0
 	github.com/spf13/cobra v1.1.1

@@ -25,6 +25,7 @@ func TestHandleHooks(t *testing.T) {
 	mgp := &mocks.Platform{}
 	mgp.On("ValidateRequest", mock.Anything, mock.Anything, 1).Return(nil)
 	mgp.On("GetEventID", mock.Anything, mock.Anything).Return("id", nil)
+	mgp.On("GetEventType", mock.Anything, mock.Anything).Return("push", nil)
 	mt := &mocks.Clock{}
 	mt.On("Now").Return(time.Date(0, time.January, 1, 1, 1, 1, 1, time.UTC))
 	platformProviders := make(map[int]providers.Platform)
@@ -36,6 +37,7 @@ func TestHandleHooks(t *testing.T) {
 		RepositoryID: 1,
 		CommandRuns:  make([]*models.CommandRun, 0),
 		Payload:      "",
+		EventType:    "push",
 	}, nil)
 	ex := &mocks.Executor{}
 	ex.On("CreateRun", mock.Anything, mock.Anything, mock.Anything).Return(nil)
@@ -79,6 +81,7 @@ func TestHandleHooksWithMissingEventId(t *testing.T) {
 		RepositoryID: 1,
 		CommandRuns:  make([]*models.CommandRun, 0),
 		Payload:      "",
+		EventType:    "push",
 	}, nil)
 	ex := &mocks.Executor{}
 	ex.On("CreateRun", mock.Anything, mock.Anything, mock.Anything).Return(nil)
