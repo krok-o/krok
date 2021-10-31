@@ -1,0 +1,24 @@
+syntax = "proto3";
+package krok.v1;
+option go_package = "github.com/krok-o/krok/pkg/protos";
+
+import "google/api/annotations.proto";
+
+service KrokService {
+    // HandleHooks handles all hooks incoming to Krok.
+    rpc HandleHooks(HandleHooksRequest) returns (HandleHooksResponse) {
+        option (google.api.http) = {
+            post: "/v1/krok/{rid}/{vid}/callback"
+            body: "*"
+        };
+    }
+}
+
+// HandleHooksRequest contains information to handle hook requests
+message HandleHooksRequest {
+    int64 rid = 1;
+    int64 vid = 2;
+}
+
+// HandleHooksResponse contains information of the response from handle hooks
+message HandleHooksResponse {}

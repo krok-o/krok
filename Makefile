@@ -3,13 +3,17 @@ NAME=krok
 # Set the build dir, where built cross-compiled binaries will be output
 BUILDDIR := bin
 
+# VERSION defines the project version for the bundle. 
+VERSION ?= 0.0.1
+
 # List the GOOS and GOARCH to build
 GO_LDFLAGS_STATIC="-s -w $(CTIMEVAR) -extldflags -static"
 
-.DEFAULT_GOAL := binaries
+.DEFAULT_GOAL := help
 
-.PHONY: binaries
-binaries:
+##@ Build
+
+binaries: ## Builds binaries for all supported platforms, linux, darwin
 	CGO_ENABLED=0 gox \
 		-osarch="linux/amd64 linux/arm darwin/amd64" \
 		-ldflags=${GO_LDFLAGS_STATIC} \
@@ -17,12 +21,12 @@ binaries:
 		-tags="netgo" \
 		./
 
-.PHONY: bootstrap
-bootstrap:
+bootstrap: ## Installs necessary third party components
 	go get github.com/mitchellh/gox
 
-.PHONY: test-db
-test-db:
+##@ Testing
+
+test-db: ## Generates a Test database to use for local development of Krok
 	docker run -d \
 		--rm \
 		-e POSTGRES_USER=krok \
@@ -32,40 +36,40 @@ test-db:
 		--name krok-test-db \
 		postgres:13.1-alpine
 
-.PHONY: rm-test-db
-rm-test-db:
+rm-test-db: ## Removes the created test database.
 	docker rm -f krok-test-db
 
-# Check if we are in circleci. If yes, start a postgres docker instance.
-.PHONY: test
-test: lint
+test: lint ## Lints Krok then runs all tests
 	go test -count=1 ./...
 
-.PHONY: clean
-clean:
+clean: ## Runs go clean
 	go clean -i
 
-lint:
+lint: ## Runs golangci-lint on Krok
 	golangci-lint run ./...
 
-.PHONY: run
-run:
-	go run main.go
+##@ Docker
 
-docker_image:
+docker_image: ## Creates a docker image for Krok. Requires `image` and `version` variables on command line
 	docker build -t $(image):$(version) .
 
-generate_mocks:
+##@ Utilities
+
+generate_mocks: ## Generates all mocks for all defined interfaces for testing purposes.
 	go build -o pkg/krok/providers/interfaces generate_interface_mocks/main.go && cd pkg/krok/providers && ./interfaces && rm ./interfaces
 
-.PHONY: swagger
-swagger:
-	swagger generate spec -o ./swagger/swagger.yaml -c server -c handlers -c main -c docs -c models -c errors --scan-models
+generate-protoc: ## Generate the protobuf files
+	buf generate
 
-.PHONY: swagger-server
-swagger-serve:
-	swagger serve -F=swagger ./swagger/swagger.yaml
+protoc-update: ## Update the protobuf modules
+	buf mod update
 
-.PHONY: swagger-docs
-swagger-docs:
-	swagger generate markdown -f ./swagger/swagger.yaml --output ./swagger/swagger.md
+lint-protoc: ## lint the protocol files
+	buf lint
+	
+help:  ## Display this help. Thanks to https://www.thapaliya.com/en/writings/well-documented-makefiles/
+ifeq ($(OS),Windows_NT)
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make <target>\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  %-40s %s\n", $$1, $$2 } /^##@/ { printf "\n%s\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+else
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-40s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
+endif
