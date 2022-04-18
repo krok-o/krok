@@ -14,7 +14,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@v2
         with:
-          go-version: '^1.16'
+          go-version: '^1.18'
       - name: Cache go-build and mod
         uses: actions/cache@v2
         with:
@@ -24,7 +24,7 @@ jobs:
           key: ${{ hashFiles('go.sum') }}
       - name: Setup lint
         run: |
-          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.41.0
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.45.2
       - name: Test
         run: |
           PATH=$PATH:$(go env GOPATH)/bin make test

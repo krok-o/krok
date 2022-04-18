@@ -8,7 +8,7 @@ import (
 )
 
 // GetParamAsInt returns a number for an echo context parameter
-// and checks its existance.
+// and checks its existence.
 func GetParamAsInt(name string, c echo.Context) (int, error) {
 	param := c.Param(name)
 	if param == "" {
