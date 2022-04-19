@@ -47,31 +47,44 @@ func (a *RepoAuth) CreateRepositoryAuth(ctx context.Context, repositoryID int, i
 		log.Debug().Msg("No auth information for repository. Skip storing anything.")
 		return nil
 	}
+
 	if err := a.Vault.LoadSecrets(); err != nil {
 		log.Debug().Err(err).Msg("Failed to load secrets")
 		return fmt.Errorf("failed to get repository auth: %w", err)
 	}
-	if info.Password != "" {
-		log.Debug().Msg("Store password")
-		a.Vault.AddSecret(fmt.Sprintf(passwordFormat, repositoryID), []byte(info.Password))
+
+	addIfNotEmpty := func(k, v string) {
+		if v != "" {
+			a.Vault.AddSecret(k, []byte(v))
+		}
 	}
-	if info.Username != "" {
-		log.Debug().Msg("Store username")
-		a.Vault.AddSecret(fmt.Sprintf(usernameFormat, repositoryID), []byte(info.Username))
-	}
-	if info.SSH != "" {
-		log.Debug().Msg("Store ssh key")
-		a.Vault.AddSecret(fmt.Sprintf(sshKeyFormat, repositoryID), []byte(info.SSH))
-	}
-	if info.Secret != "" {
-		log.Debug().Msg("Store hook secret")
-		a.Vault.AddSecret(fmt.Sprintf(secretFormat, repositoryID), []byte(info.Secret))
-	}
+	addIfNotEmpty(fmt.Sprintf(passwordFormat, repositoryID), info.Password)
+	addIfNotEmpty(fmt.Sprintf(usernameFormat, repositoryID), info.Username)
+	addIfNotEmpty(fmt.Sprintf(sshKeyFormat, repositoryID), info.SSH)
+	addIfNotEmpty(fmt.Sprintf(secretFormat, repositoryID), info.Secret)
+
 	if err := a.Vault.SaveSecrets(); err != nil {
 		log.Debug().Err(err).Msg("Failed to save secrets")
 		return fmt.Errorf("failed to save secrets: %w", err)
 	}
 	return nil
+}
+
+type secretGetter struct {
+	err error
+}
+
+// getSecret returns the value of a secret. If there was an error, this is a no-op.
+func (s *secretGetter) getSecret(a *RepoAuth, log zerolog.Logger, secret string) []byte {
+	if s.err != nil {
+		return nil
+	}
+	value, err := a.Vault.GetSecret(secret)
+	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
+		log.Debug().Err(err).Msg("GetSecret failed")
+		s.err = fmt.Errorf("failed to get repository auth: %w", err)
+	}
+	return value
 }
 
 // GetRepositoryAuth returns auth data for a repository. Returns ErrNotFound if there is no
@@ -82,28 +95,14 @@ func (a *RepoAuth) GetRepositoryAuth(ctx context.Context, id int) (*models.Auth,
 		log.Debug().Err(err).Msg("Failed to load secrets")
 		return nil, fmt.Errorf("failed to get repository auth: %w", err)
 	}
-	username, err := a.Vault.GetSecret(fmt.Sprintf(usernameFormat, id))
-	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
-		log.Debug().Err(err).Msg("GetSecret failed for username")
-		return nil, fmt.Errorf("failed to get repository auth: %w", err)
-	}
 
-	password, err := a.Vault.GetSecret(fmt.Sprintf(passwordFormat, id))
-	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
-		log.Debug().Err(err).Msg("GetSecret failed for password")
-		return nil, fmt.Errorf("failed to get repository auth: %w", err)
-	}
-
-	sshKey, err := a.Vault.GetSecret(fmt.Sprintf(sshKeyFormat, id))
-	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
-		log.Debug().Err(err).Msg("GetSecret failed sshKey")
-		return nil, fmt.Errorf("failed to get repository auth: %w", err)
-	}
-
-	secret, err := a.Vault.GetSecret(fmt.Sprintf(secretFormat, id))
-	if err != nil && !errors.Is(err, kerr.ErrNotFound) {
-		log.Debug().Err(err).Msg("GetSecret failed secret")
-		return nil, fmt.Errorf("failed to get repository auth: %w", err)
+	getter := &secretGetter{}
+	username := getter.getSecret(a, log, fmt.Sprintf(usernameFormat, id))
+	password := getter.getSecret(a, log, fmt.Sprintf(passwordFormat, id))
+	sshKey := getter.getSecret(a, log, fmt.Sprintf(sshKeyFormat, id))
+	secret := getter.getSecret(a, log, fmt.Sprintf(secretFormat, id))
+	if getter.err != nil {
+		return nil, getter.err
 	}
 
 	if username == nil && password == nil && sshKey == nil && secret == nil {
