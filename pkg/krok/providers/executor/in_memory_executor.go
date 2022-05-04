@@ -9,6 +9,7 @@ import (
 	"io"
 	"os"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -106,7 +107,21 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 			fmt.Sprintf("--event-type=%s", event.EventType),
 			fmt.Sprintf("--payload=%s", payload),
 		}
+
+		normalizeRepositoryKeyName := func(s string) string {
+			// remove the leading number 1234_
+			s = s[strings.Index(s, "_")+1:]
+			// lowercase the whole thing
+			s = strings.ToLower(s)
+			// change _ to -
+			s = strings.ReplaceAll(s, "_", "-")
+			return s
+		}
+
 		for _, s := range settings {
+			if strings.Contains(s.Key, "_REPO_") {
+				s.Key = normalizeRepositoryKeyName(s.Key)
+			}
 			args = append(args, fmt.Sprintf("--%s=%s", s.Key, s.Value))
 		}
 
