@@ -155,7 +155,7 @@ func TestCommandsHandler_GetCommand(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		commandExpected := `{"name":"test-command","id":0,"schedule":"* * * * *","repositories":[{"name":"test-repo","id":0,"url":"https://google.com","vcs":1}],"image":"krokhook/slack-notification:v0.0.1","enabled":true}
+		commandExpected := `{"name":"test-command","id":0,"schedule":"* * * * *","repositories":[{"name":"test-repo","id":0,"url":"https://google.com","vcs":1}],"image":"krokhook/slack-notification:v0.0.1","enabled":true,"requires_clone":false}
 `
 
 		e := echo.New()
@@ -234,7 +234,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true},{"name":"test-command2","id":1,"schedule":"15 * * * *","image":"krokhook/hugo-builder:v0.0.1","enabled":true}]
+		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true,"requires_clone":false},{"name":"test-command2","id":1,"schedule":"15 * * * *","image":"krokhook/hugo-builder:v0.0.1","enabled":true,"requires_clone":false}]
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/", nil)
@@ -253,7 +253,7 @@ func TestCommandsHandler_ListCommands(t *testing.T) {
 		assert.NoError(tt, err)
 
 		listOpts := `{"name": "1"}`
-		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true}]
+		expectedCommandsResponse := `[{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true,"requires_clone":false}]
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodGet, "/", strings.NewReader(listOpts))
@@ -282,8 +282,8 @@ func TestCommandsHandler_UpdateCommand(t *testing.T) {
 		token, err := generateTestToken("test@email.com")
 		assert.NoError(tt, err)
 
-		commandPost := `{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true}`
-		commandExpected := `{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true}
+		commandPost := `{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true,"requires_clone":false}`
+		commandExpected := `{"name":"test-command1","id":0,"schedule":"10 * * * *","image":"krokhook/slack-notification:v0.0.1","enabled":true,"requires_clone":false}
 `
 		e := echo.New()
 		req := httptest.NewRequest(http.MethodPost, "/command/update", strings.NewReader(commandPost))
