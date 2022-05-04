@@ -36,7 +36,7 @@ func TestInMemoryExecutor_CreateRun(t *testing.T) {
 		Outcome:     "",
 		CreateAt:    time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC),
 	}, nil)
-	mcr.On("UpdateRunStatus", mock.Anything, 1, "success", "\"platform: github,event-type: push,payload: e30=,repo-ssh-key: ssh-key\"").Return(nil)
+	mcr.On("UpdateRunStatus", mock.Anything, 1, "success", "\"platform: github,event-type: push,payload: e30=,repo-ssh-key: \"").Return(nil)
 	mcs := &mocks.CommandStorer{}
 	mcs.On("IsPlatformSupported", mock.Anything, 1, 1).Return(true, nil)
 	mcs.On("ListSettings", mock.Anything, 1).Return(nil, nil)
@@ -88,6 +88,7 @@ func TestInMemoryExecutor_CreateRun(t *testing.T) {
 					Name: "github",
 				},
 			},
+			RequiresClone: false,
 		},
 	})
 	assert.NoError(t, err)
@@ -216,6 +217,7 @@ func TestInMemoryExecutor_NormaliseRepositorySettings(t *testing.T) {
 					Name: "github",
 				},
 			},
+			RequiresClone: true,
 		},
 	})
 	assert.NoError(t, err)

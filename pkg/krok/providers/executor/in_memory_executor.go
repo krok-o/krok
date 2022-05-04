@@ -117,14 +117,16 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 			args = append(args, fmt.Sprintf("--%s=%s", s.Key, s.Value))
 		}
 
-		if repository.Auth.SSH != "" {
-			args = append(args, fmt.Sprintf("--repo-ssh-key=%s", repository.Auth.SSH))
-		}
-		if repository.Auth.Username != "" {
-			args = append(args, fmt.Sprintf("--repo-username=%s", repository.Auth.Username))
-		}
-		if repository.Auth.Password != "" {
-			args = append(args, fmt.Sprintf("--repo-password=%s", repository.Auth.Password))
+		if c.RequiresClone {
+			if repository.Auth.SSH != "" {
+				args = append(args, fmt.Sprintf("--repo-ssh-key=%s", repository.Auth.SSH))
+			}
+			if repository.Auth.Username != "" {
+				args = append(args, fmt.Sprintf("--repo-username=%s", repository.Auth.Username))
+			}
+			if repository.Auth.Password != "" {
+				args = append(args, fmt.Sprintf("--repo-password=%s", repository.Auth.Password))
+			}
 		}
 
 		commandRun := &models.CommandRun{

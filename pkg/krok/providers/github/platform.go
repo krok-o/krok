@@ -25,7 +25,7 @@ type Dependencies struct {
 	AuthProvider          providers.RepositoryAuth
 }
 
-// Github is a github based platform implementation.
+// Github is a GitHub based platform implementation.
 type Github struct {
 	Dependencies
 
@@ -33,7 +33,7 @@ type Github struct {
 	repoMock GoogleGithubRepoService
 }
 
-// NewGithubPlatformProvider creates a new hook platform provider for Github.
+// NewGithubPlatformProvider creates a new hook platform provider for GitHub.
 func NewGithubPlatformProvider(deps Dependencies) *Github {
 	return &Github{Dependencies: deps}
 }
@@ -41,7 +41,7 @@ func NewGithubPlatformProvider(deps Dependencies) *Github {
 var _ providers.Platform = &Github{}
 
 // ValidateRequest will take a hook and verify it being a valid hook request according to
-// Github's rules.
+// GitHub's rules.
 func (g *Github) ValidateRequest(ctx context.Context, req *http.Request, repoID int) error {
 	req.Header.Set("Content-type", "application/json")
 
@@ -106,7 +106,7 @@ func (g *Github) ValidateRequest(ctx context.Context, req *http.Request, repoID 
 }
 
 // GoogleGithubRepoService is an interface defining the Wrapper Interface
-// needed to test the github client.
+// needed to test the GitHub client.
 type GoogleGithubRepoService interface {
 	CreateHook(ctx context.Context, owner, repo string, hook *ggithub.Hook) (*ggithub.Hook, *ggithub.Response, error)
 }
@@ -118,7 +118,7 @@ type GoogleGithubClient struct {
 	*ggithub.Client
 }
 
-// NewGoogleGithubClient creates a wrapper around the github client.
+// NewGoogleGithubClient creates a wrapper around the GitHub client.
 func NewGoogleGithubClient(httpClient *http.Client, repoMock GoogleGithubRepoService) GoogleGithubClient {
 	if repoMock != nil {
 		return GoogleGithubClient{
@@ -150,7 +150,7 @@ func (g *Github) GetEventType(ctx context.Context, r *http.Request) (string, err
 	return event, nil
 }
 
-// CreateHook can create a hook for the Github platform.
+// CreateHook can create a hook for the GitHub platform.
 func (g *Github) CreateHook(ctx context.Context, repo *models.Repository) error {
 	log := g.Logger.With().Str("unique_url", repo.UniqueURL).Str("repo", repo.Name).Strs("events", repo.Events).Logger()
 	token, err := g.PlatformTokenProvider.GetTokenForPlatform(repo.VCS)

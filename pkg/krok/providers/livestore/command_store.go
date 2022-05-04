@@ -48,11 +48,12 @@ func (s *CommandStore) Create(ctx context.Context, c *models.Command) (*models.C
 	// id will be generated.
 
 	f := func(tx pgx.Tx) error {
-		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, schedule, enabled, image) values($1, $2, $3, $4)", commandsTable),
+		if tags, err := tx.Exec(ctx, fmt.Sprintf("insert into %s(name, schedule, enabled, image, requires_clone) values($1, $2, $3, $4, $5)", commandsTable),
 			c.Name,
 			c.Schedule,
 			c.Enabled,
-			c.Image); err != nil {
+			c.Image,
+			c.RequiresClone); err != nil {
 			log.Debug().Err(err).Msg("Failed to create command.")
 			return &kerr.QueryError{
 				Err:   err,
@@ -97,16 +98,17 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 	log = s.Logger.With().Str("field", field).Interface("value", value).Logger()
 
 	var (
-		name      string
-		commandID int
-		schedule  string
-		enabled   bool
-		image     string
+		name          string
+		commandID     int
+		schedule      string
+		enabled       bool
+		image         string
+		requiresClone bool
 	)
 	f := func(tx pgx.Tx) error {
-		query := fmt.Sprintf("select name, id, schedule, enabled, image from %s where %s = $1", commandsTable, field)
+		query := fmt.Sprintf("select name, id, schedule, enabled, image, requires_clone from %s where %s = $1", commandsTable, field)
 		if err := tx.QueryRow(ctx, query, value).
-			Scan(&name, &commandID, &schedule, &enabled, &image); err != nil {
+			Scan(&name, &commandID, &schedule, &enabled, &image, &requiresClone); err != nil {
 			if errors.Is(err, pgx.ErrNoRows) {
 				return &kerr.QueryError{
 					Query: query,
@@ -146,13 +148,14 @@ func (s *CommandStore) getByX(ctx context.Context, log zerolog.Logger, field str
 	}
 
 	return &models.Command{
-		Name:         name,
-		ID:           commandID,
-		Schedule:     schedule,
-		Repositories: repositories,
-		Enabled:      enabled,
-		Image:        image,
-		Platforms:    platforms,
+		Name:          name,
+		ID:            commandID,
+		Schedule:      schedule,
+		Repositories:  repositories,
+		Enabled:       enabled,
+		Image:         image,
+		Platforms:     platforms,
+		RequiresClone: requiresClone,
 	}, nil
 }
 
@@ -329,7 +332,7 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 	// Select all commands.
 	result := make([]*models.Command, 0)
 	f := func(tx pgx.Tx) error {
-		sql := fmt.Sprintf("select id, name, schedule, enabled, image from %s", commandsTable)
+		sql := fmt.Sprintf("select id, name, schedule, enabled, image, requires_clone from %s", commandsTable)
 		where := " where "
 		filters := make([]string, 0)
 		if opts.Name != "" {
@@ -356,13 +359,14 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 
 		for rows.Next() {
 			var (
-				id       int
-				name     string
-				schedule string
-				image    string
-				enabled  bool
+				id            int
+				name          string
+				schedule      string
+				image         string
+				enabled       bool
+				requiresClone bool
 			)
-			if err := rows.Scan(&id, &name, &schedule, &enabled, &image); err != nil {
+			if err := rows.Scan(&id, &name, &schedule, &enabled, &image, &requiresClone); err != nil {
 				log.Debug().Err(err).Msg("Failed to scan.")
 				return &kerr.QueryError{
 					Query: "select all commands",
@@ -370,11 +374,12 @@ func (s *CommandStore) List(ctx context.Context, opts *models.ListOptions) ([]*m
 				}
 			}
 			command := &models.Command{
-				Name:     name,
-				ID:       id,
-				Schedule: schedule,
-				Enabled:  enabled,
-				Image:    image,
+				Name:          name,
+				ID:            id,
+				Schedule:      schedule,
+				Enabled:       enabled,
+				Image:         image,
+				RequiresClone: requiresClone,
 			}
 			result = append(result, command)
 		}
