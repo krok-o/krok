@@ -36,19 +36,28 @@ func TestInMemoryExecutor_CreateRun(t *testing.T) {
 		Outcome:     "",
 		CreateAt:    time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC),
 	}, nil)
-	mcr.On("UpdateRunStatus", mock.Anything, 1, "success", "\"platform: github,event-type: push,payload: e30=,repo-ssh-key: \"").Return(nil)
+	mcr.On("UpdateRunStatus", mock.Anything, 1, "success", "\"platform: github,event-type: push,payload: e30=,repo-ssh-key: ssh-key\"").Return(nil)
 	mcs := &mocks.CommandStorer{}
 	mcs.On("IsPlatformSupported", mock.Anything, 1, 1).Return(true, nil)
 	mcs.On("ListSettings", mock.Anything, 1).Return(nil, nil)
+	mrs := &mocks.RepositoryStorer{}
+	mrs.On("Get", mock.Anything, 1).Return(&models.Repository{
+		ID: 1,
+		Auth: &models.Auth{
+			Secret: "secret",
+			SSH:    "ssh-key",
+		},
+	}, nil)
 	mt := &mocks.Clock{}
 	mt.On("Now").Return(time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC))
 	ime := NewInMemoryExecutor(Config{
 		DefaultMaximumCommandRuntime: 10,
 	}, Dependencies{
-		Logger:        logger,
-		CommandRuns:   mcr,
-		CommandStorer: mcs,
-		Clock:         mt,
+		Logger:           logger,
+		CommandRuns:      mcr,
+		CommandStorer:    mcs,
+		RepositoryStorer: mrs,
+		Clock:            mt,
 	})
 	err := ime.CreateRun(context.Background(), &models.Event{
 		ID:           1,
@@ -158,13 +167,13 @@ func TestInMemoryExecutor_NormaliseRepositorySettings(t *testing.T) {
 	mcr.On("UpdateRunStatus", mock.Anything, 1, "success", "\"platform: github,event-type: push,payload: e30=,repo-ssh-key: ssh-key\"").Return(nil)
 	mcs := &mocks.CommandStorer{}
 	mcs.On("IsPlatformSupported", mock.Anything, 1, 1).Return(true, nil)
-	mcs.On("ListSettings", mock.Anything, 1).Return([]*models.CommandSetting{
-		{
-			ID:        0,
-			CommandID: 1,
-			Key:       "1234_REPO_SSH_KEY",
-			Value:     "ssh-key",
-			InVault:   false,
+	mcs.On("ListSettings", mock.Anything, 1).Return(nil, nil)
+	mrs := &mocks.RepositoryStorer{}
+	mrs.On("Get", mock.Anything, 1).Return(&models.Repository{
+		ID: 1,
+		Auth: &models.Auth{
+			Secret: "secret",
+			SSH:    "ssh-key",
 		},
 	}, nil)
 	mt := &mocks.Clock{}
@@ -172,10 +181,11 @@ func TestInMemoryExecutor_NormaliseRepositorySettings(t *testing.T) {
 	ime := NewInMemoryExecutor(Config{
 		DefaultMaximumCommandRuntime: 10,
 	}, Dependencies{
-		Logger:        logger,
-		CommandRuns:   mcr,
-		CommandStorer: mcs,
-		Clock:         mt,
+		Logger:           logger,
+		CommandRuns:      mcr,
+		CommandStorer:    mcs,
+		RepositoryStorer: mrs,
+		Clock:            mt,
 	})
 	err := ime.CreateRun(context.Background(), &models.Event{
 		ID:           1,

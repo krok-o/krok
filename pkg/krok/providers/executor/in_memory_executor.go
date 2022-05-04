@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"strconv"
-	"strings"
 	"sync"
 	"time"
 
@@ -30,10 +29,11 @@ type Config struct {
 
 // Dependencies defines dependencies for this provider
 type Dependencies struct {
-	Logger        zerolog.Logger
-	CommandRuns   providers.CommandRunStorer
-	CommandStorer providers.CommandStorer
-	Clock         providers.Clock
+	Logger           zerolog.Logger
+	CommandRuns      providers.CommandRunStorer
+	CommandStorer    providers.CommandStorer
+	RepositoryStorer providers.RepositoryStorer
+	Clock            providers.Clock
 }
 
 // InMemoryExecutor defines an Executor which runs commands
@@ -75,6 +75,11 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 		return fmt.Errorf("failed to find %d in supported platforms", event.VCS)
 	}
 
+	repository, err := ime.RepositoryStorer.Get(ctx, event.RepositoryID)
+	if err != nil {
+		return fmt.Errorf("failed to get repository: %w", err)
+	}
+
 	log = log.With().Str("platform", platform.Name).Logger()
 
 	log.Info().Msg("Starting run")
@@ -108,21 +113,18 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 			fmt.Sprintf("--payload=%s", payload),
 		}
 
-		normalizeRepositoryKeyName := func(s string) string {
-			// remove the leading number 1234_
-			s = s[strings.Index(s, "_")+1:]
-			// lowercase the whole thing
-			s = strings.ToLower(s)
-			// change _ to -
-			s = strings.ReplaceAll(s, "_", "-")
-			return s
+		for _, s := range settings {
+			args = append(args, fmt.Sprintf("--%s=%s", s.Key, s.Value))
 		}
 
-		for _, s := range settings {
-			if strings.Contains(s.Key, "_REPO_") {
-				s.Key = normalizeRepositoryKeyName(s.Key)
-			}
-			args = append(args, fmt.Sprintf("--%s=%s", s.Key, s.Value))
+		if repository.Auth.SSH != "" {
+			args = append(args, fmt.Sprintf("--repo-ssh-key=%s", repository.Auth.SSH))
+		}
+		if repository.Auth.Username != "" {
+			args = append(args, fmt.Sprintf("--repo-username=%s", repository.Auth.Username))
+		}
+		if repository.Auth.Password != "" {
+			args = append(args, fmt.Sprintf("--repo-password=%s", repository.Auth.Password))
 		}
 
 		commandRun := &models.CommandRun{
