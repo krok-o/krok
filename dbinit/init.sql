@@ -4,7 +4,8 @@ create table commands (
     id serial primary key,
     image varchar not null,
     name varchar unique not null,
-    schedule varchar
+    schedule varchar,
+    requires_clone boolean
 );
 
 create table command_settings

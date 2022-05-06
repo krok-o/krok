@@ -39,11 +39,12 @@ func TestCommandStore_Flow(t *testing.T) {
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
-		Name:         "Test_Create",
-		Schedule:     "test-schedule",
-		Repositories: nil,
-		Enabled:      false,
-		Image:        "krokhook/slack-notification:v0.0.1",
+		Name:          "Test_Create",
+		Schedule:      "test-schedule",
+		Repositories:  nil,
+		Enabled:       false,
+		Image:         "krokhook/slack-notification:v0.0.1",
+		RequiresClone: true,
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -52,12 +53,13 @@ func TestCommandStore_Flow(t *testing.T) {
 	cGet, err := cp.Get(ctx, c.ID)
 	assert.NoError(t, err)
 	assert.Equal(t, &models.Command{
-		Name:         "Test_Create",
-		ID:           c.ID,
-		Schedule:     "test-schedule",
-		Repositories: []*models.Repository{},
-		Enabled:      false,
-		Image:        "krokhook/slack-notification:v0.0.1",
+		Name:          "Test_Create",
+		ID:            c.ID,
+		Schedule:      "test-schedule",
+		Repositories:  []*models.Repository{},
+		Enabled:       false,
+		Image:         "krokhook/slack-notification:v0.0.1",
+		RequiresClone: true,
 	}, cGet)
 
 	// List commands
@@ -116,10 +118,11 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
-		Name:     "Test_Relationship_Flow",
-		Schedule: "Test_Relationship_Flow-test-schedule",
-		Enabled:  false,
-		Image:    "krokhook/slack-notification:v0.0.1",
+		Name:          "Test_Relationship_Flow",
+		Schedule:      "Test_Relationship_Flow-test-schedule",
+		Enabled:       false,
+		Image:         "krokhook/slack-notification:v0.0.1",
+		RequiresClone: true,
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -160,10 +163,11 @@ func TestCommandStore_RelationshipFlow(t *testing.T) {
 	// deleting the repository removes the relationship from the command
 	// Create the second command.
 	c2, err := cp.Create(ctx, &models.Command{
-		Name:     "Test_Relationship_Flow-2",
-		Schedule: "Test_Relationship_Flow-test-schedule-2",
-		Enabled:  false,
-		Image:    "krokhook/slack-notification:v0.0.1",
+		Name:          "Test_Relationship_Flow-2",
+		Schedule:      "Test_Relationship_Flow-test-schedule-2",
+		Enabled:       false,
+		Image:         "krokhook/slack-notification:v0.0.1",
+		RequiresClone: true,
 	})
 	assert.NoError(t, err)
 
@@ -203,11 +207,12 @@ func TestCommandStore_Create_Unique(t *testing.T) {
 	assert.NoError(t, err)
 	// Create the first command.
 	c, err := cp.Create(context.Background(), &models.Command{
-		Name:         "Test_Create_Error",
-		Schedule:     "test-schedule",
-		Repositories: nil,
-		Image:        "krokhook/slack-notification:v0.0.1",
-		Enabled:      false,
+		Name:          "Test_Create_Error",
+		Schedule:      "test-schedule",
+		Repositories:  nil,
+		Image:         "krokhook/slack-notification:v0.0.1",
+		Enabled:       false,
+		RequiresClone: false,
 	})
 	require.NoError(t, err)
 	assert.True(t, 0 < c.ID)
@@ -296,10 +301,11 @@ func TestCommandStore_Update(t *testing.T) {
 	ctx := context.Background()
 	// Create the first command.
 	c, err := cp.Create(ctx, &models.Command{
-		Name:     "Test_Update",
-		Schedule: "test-schedule",
-		Enabled:  false,
-		Image:    "krokhook/slack-notification:v0.0.1",
+		Name:          "Test_Update",
+		Schedule:      "test-schedule",
+		Enabled:       false,
+		Image:         "krokhook/slack-notification:v0.0.1",
+		RequiresClone: true,
 	})
 	assert.NoError(t, err)
 	assert.True(t, 0 < c.ID)

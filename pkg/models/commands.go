@@ -36,6 +36,11 @@ type Command struct {
 	//
 	// required: false
 	Platforms []Platform `json:"providers,omitempty"`
+	// RequiresClone defines if this command wants to clone the repository
+	// and thus, requires auth information from the repository (which should have it).
+	//
+	// required: false
+	RequiresClone bool `json:"requires_clone"`
 }
 
 // CommandSetting defines the settings a command can have.
