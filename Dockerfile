@@ -1,4 +1,5 @@
 FROM golang:1.18-alpine as build
+RUN apk add -u git
 WORKDIR /app
 COPY . .
 RUN go build -o /krok
