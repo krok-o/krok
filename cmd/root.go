@@ -78,6 +78,7 @@ func init() {
 
 	// Executer config
 	flag.IntVar(&krokArgs.executer.DefaultMaximumCommandRuntime, "default-maximum-command-runtime", 120, "Given in seconds.")
+	flag.IntVar(&krokArgs.executer.MaximumParallelCommands, "maximum-parallel-commands", 50, "The maximum number of parallel running containers commands")
 }
 
 // runKrokCmd builds up all the components and starts the krok server.

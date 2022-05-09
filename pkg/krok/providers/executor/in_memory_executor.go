@@ -17,6 +17,7 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/docker/pkg/stdcopy"
 	"github.com/rs/zerolog"
+	"golang.org/x/sync/semaphore"
 
 	"github.com/krok-o/krok/pkg/krok/providers"
 	"github.com/krok-o/krok/pkg/models"
@@ -25,6 +26,7 @@ import (
 // Config defines configuration for this provider
 type Config struct {
 	DefaultMaximumCommandRuntime int
+	MaximumParallelCommands      int
 }
 
 // Dependencies defines dependencies for this provider
@@ -47,16 +49,19 @@ type InMemoryExecutor struct {
 	// For each event, a list of commandName=>containerIDs.
 	// ContainerIDs are filled in as the containers are pulled and started.
 	runs *sync.Map
+	sem  *semaphore.Weighted
 }
 
 // NewInMemoryExecutor creates a new InMemoryExecutor which will hold all runs in its memory.
 // In case of a crash, human intervention will be required.
 // TODO: Later, save runs in db with the process id to cancel so Krok can pick up runs again.
 func NewInMemoryExecutor(cfg Config, deps Dependencies) *InMemoryExecutor {
+	sem := semaphore.NewWeighted(int64(cfg.MaximumParallelCommands))
 	return &InMemoryExecutor{
 		Config:       cfg,
 		Dependencies: deps,
 		runs:         &sync.Map{},
+		sem:          sem,
 	}
 }
 
@@ -150,6 +155,13 @@ func (ime *InMemoryExecutor) CreateRun(ctx context.Context, event *models.Event,
 }
 
 func (ime *InMemoryExecutor) pullAndCreateContainer(commandName, image string, args []string, eventID int, commandRunID int) {
+	ctx := context.Background()
+	if err := ime.sem.Acquire(ctx, 1); err != nil {
+		ime.updateStatus("failed", err.Error(), commandRunID)
+		ime.Logger.Debug().Err(err).Msg("Failed to acquire run semaphore.")
+		return
+	}
+	defer ime.sem.Release(1)
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		ime.updateStatus("failed", err.Error(), commandRunID)

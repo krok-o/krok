@@ -52,6 +52,7 @@ func TestInMemoryExecutor_CreateRun(t *testing.T) {
 	mt.On("Now").Return(time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC))
 	ime := NewInMemoryExecutor(Config{
 		DefaultMaximumCommandRuntime: 10,
+		MaximumParallelCommands:      10,
 	}, Dependencies{
 		Logger:           logger,
 		CommandRuns:      mcr,
@@ -115,6 +116,7 @@ func TestInMemoryExecutor_CancelRun_NonExistent(t *testing.T) {
 	mt := &mocks.Clock{}
 	ime := NewInMemoryExecutor(Config{
 		DefaultMaximumCommandRuntime: 10,
+		MaximumParallelCommands:      10,
 	}, Dependencies{
 		Logger:        logger,
 		CommandRuns:   mcr,
@@ -132,6 +134,7 @@ func TestInMemoryExecutor_CancelRun_WithNoCommandsDeletesEventEntry(t *testing.T
 	mt := &mocks.Clock{}
 	ime := NewInMemoryExecutor(Config{
 		DefaultMaximumCommandRuntime: 10,
+		MaximumParallelCommands:      10,
 	}, Dependencies{
 		Logger:        logger,
 		CommandRuns:   mcr,
@@ -181,6 +184,7 @@ func TestInMemoryExecutor_NormaliseRepositorySettings(t *testing.T) {
 	mt.On("Now").Return(time.Date(1981, 1, 1, 1, 1, 1, 1, time.UTC))
 	ime := NewInMemoryExecutor(Config{
 		DefaultMaximumCommandRuntime: 10,
+		MaximumParallelCommands:      10,
 	}, Dependencies{
 		Logger:           logger,
 		CommandRuns:      mcr,
